@@ -28,7 +28,7 @@ PUBLIC_DIR = os.path.join(BASE_DIR, "public")
 URL = os.getenv("ODOO_URL", "https://retoz.odoo.com")
 DB = os.getenv("ODOO_DB", "retoz")
 USERNAME = os.getenv("ODOO_USERNAME", "retoz2023@gmail.com")
-API_KEY = os.getenv("ODOO_API_KEY", "61f5c5e5e7e56623aa3e116cf77a1839e1d0cbf1")
+API_KEY = os.getenv("ODOO_API_KEY")
 
 # ✅ Session para estabilidad/velocidad
 SESSION = requests.Session()
@@ -439,4 +439,5 @@ def health():
 
 
 if __name__ == "__main__":
+
     app.run(host="0.0.0.0", port=5000)
