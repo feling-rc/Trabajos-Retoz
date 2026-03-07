@@ -18,6 +18,7 @@
       justify-content: flex-start;
       align-items: center;
       gap: 20px;
+      flex-wrap: wrap;
 
       margin: 15px 0 20px 0;
     }
@@ -184,18 +185,6 @@
       border-radius: 8px;
     }
 
-    @media (max-width: 768px) {
-      .selector-btn {
-        font-size: 16px;
-        font-weight: 600;
-      }
-
-      .contador-barra {
-        font-size: 18px;
-        font-weight: 600;
-      }
-    }
-
     .selector-fecha {
       position: relative;
       display: inline-flex;
@@ -224,6 +213,73 @@
 
     .icono-calendario {
       font-size: 13px;
+    }
+
+    .buscador-orden {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #f7f7f7;
+      padding: 6px 12px;
+      border-radius: 20px;
+      min-width: 220px;
+      flex: 1 1 240px;
+      max-width: 320px;
+    }
+
+    .buscador-orden span {
+      font-size: 13px;
+      color: #555;
+      white-space: nowrap;
+    }
+
+    .buscador-orden input {
+      border: none;
+      outline: none;
+      background: transparent;
+      width: 100%;
+      font-size: 14px;
+    }
+
+    .buscador-orden input::placeholder {
+      color: #999;
+    }
+
+    .buscador-btn-limpiar {
+      width: auto !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      background: transparent !important;
+      color: #666 !important;
+      border: none !important;
+      border-radius: 0 !important;
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+      box-shadow: none !important;
+      flex: 0 0 auto;
+    }
+
+    @media (max-width: 768px) {
+      .selector-btn {
+        font-size: 16px;
+        font-weight: 600;
+      }
+
+      .contador-barra {
+        font-size: 18px;
+        font-weight: 600;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .buscador-orden {
+        width: 100%;
+        min-width: unset;
+        max-width: none;
+      }
     }
   </style>
 
@@ -337,6 +393,20 @@ gap:20px;
     <div class="contador-barra">
       <span id="contadorNumero">0</span> Pares
     </div>
+
+    <!-- Buscador -->
+    <div class="buscador-orden">
+      <span>🔎 Orden</span>
+      <input
+        type="text"
+        id="busquedaOrden"
+        placeholder="Solo números"
+        inputmode="numeric"
+        autocomplete="off"
+        oninput="aplicarBusquedaOrden()"
+      >
+      <button class="buscador-btn-limpiar" onclick="limpiarBusquedaOrden()" title="Limpiar">✖</button>
+    </div>
   </div>
 
   <!-- GRID DE TRABAJOS (MESA) -->
@@ -352,21 +422,25 @@ gap:20px;
     const API_BASE = "";
 
     // ==============================
-    // ✅ ESTADOS BONITOS (ARREGLO #2)
+    // ✅ ESTADOS BONITOS
     // ==============================
     const ESTADO_LABELS = {
       "TRABAJADO": "Trabajado",
       "03_approved": "En proceso",
       "02_changes_requested": "Sin material",
       "04_waiting_material": "Atrasado",
+      "04_waiting_normal": "Atrasado",
       "1_done": "Completado",
       "1_cancelled": "Cancelado",
+      "1_canceled": "Cancelado",
       "Entregado": "Entregado",
       "En el Courier": "En el courier",
       "Ya no quiere": "Ya no quiere",
+      "Ya no Quiere": "Ya no quiere",
       "Agendar Con Bot": "Agendar con bot",
       "En progreso": "Agendado",
       "in_progress": "Agendado",
+      "01_in_progress": "Agendado",
       "in_process": "En proceso"
     };
 
@@ -383,13 +457,16 @@ gap:20px;
     function setPending(id, desiredListo, desiredFechaISO, stage) {
       PENDING.set(String(id), { desiredListo, desiredFechaISO, stage, ts: Date.now() });
     }
+
     function setPendingStage(id, stage) {
       const p = PENDING.get(String(id));
       if (p) p.stage = stage;
     }
+
     function clearPending(id) {
       PENDING.delete(String(id));
     }
+
     function hayPendientes() {
       return PENDING.size > 0;
     }
@@ -438,18 +515,15 @@ gap:20px;
       }, REFRESH_MS);
     }
 
-    // Convierte fecha de Odoo a Date (robusto para celular)
     function parseOdooDatetime(s) {
       if (!s) return null;
       if (typeof s !== "string") return null;
 
-      // ISO
       if (s.includes("T")) {
         const d = new Date(s);
         return isNaN(d) ? null : d;
       }
 
-      // "YYYY-MM-DD HH:MM:SS"
       if (s.includes(" ")) {
         const parts = s.split(" ");
         const dPart = parts[0];
@@ -466,13 +540,12 @@ gap:20px;
       return isNaN(d) ? null : d;
     }
 
-    // ✅ LISTO EN MESA = estado TRABAJADO (tu regla)
     function listoEnMesa(segunEstado) {
-      return String(segunEstado || "") === "TRABAJADO";
+      return String(segunEstado || "").trim() === "TRABAJADO";
     }
 
     function setTarjetaEstadoMesa(tarjeta, estadoOdoo, fechaOdoo) {
-      const boton = tarjeta.querySelector("button");
+      const boton = tarjeta.querySelector("button:not(.buscador-btn-limpiar)");
       if (!boton) return;
 
       const listo = listoEnMesa(estadoOdoo);
@@ -480,7 +553,7 @@ gap:20px;
       tarjeta.dataset.estado = String(estadoOdoo || "");
 
       const badge = tarjeta.querySelector(".badge-estado");
-      if (badge) badge.innerText = "Estado: " + estadoBonito(estadoOdoo); // ✅ ARREGLO #2
+      if (badge) badge.innerText = "Estado: " + estadoBonito(estadoOdoo);
 
       if (listo) {
         boton.innerText = "✔ LISTO";
@@ -510,14 +583,13 @@ gap:20px;
       }
     }
 
-    // ✅ Terminados: LISTO se detecta por fecha (y/o verificación si viene)
     function listoEnTerminados(fechaOdoo, verif) {
       if (verif === true) return true;
       return !!fechaOdoo;
     }
 
     function setTarjetaEstadoTerminados(tarjeta, estadoOdoo, fechaOdoo, verif) {
-      const boton = tarjeta.querySelector("button");
+      const boton = tarjeta.querySelector("button:not(.buscador-btn-limpiar)");
       if (!boton) return;
 
       const listo = listoEnTerminados(fechaOdoo, verif);
@@ -525,7 +597,7 @@ gap:20px;
       tarjeta.dataset.estado = String(estadoOdoo || "");
 
       const badge = tarjeta.querySelector(".badge-estado");
-      if (badge) badge.innerText = "Estado: " + estadoBonito(estadoOdoo); // ✅ ARREGLO #2
+      if (badge) badge.innerText = "Estado: " + estadoBonito(estadoOdoo);
 
       if (listo) {
         boton.innerText = "✔ LISTO";
@@ -535,7 +607,6 @@ gap:20px;
         boton.style.background = "green";
       }
 
-      // fecha para filtros
       const d = parseOdooDatetime(fechaOdoo);
       if (d) {
         const iso = d.toISOString();
@@ -554,6 +625,106 @@ gap:20px;
         const hora = tarjeta.querySelector(".hora-listo");
         if (hora) hora.remove();
       }
+    }
+
+    // ==============================
+    // BUSCADOR ORDEN
+    // ==============================
+    function getContenedorActual() {
+      const vista = document.getElementById("textoVista").innerText;
+      return vista === "Trabajos Terminados"
+        ? document.getElementById("terminados")
+        : document.querySelector(".grid");
+    }
+
+    function limpiarSoloNumeros(valor) {
+      return String(valor || "").replace(/\D+/g, "");
+    }
+
+    function recalcularVisibilidadActual() {
+      const cont = getContenedorActual();
+      if (!cont) return;
+
+      const tareas = cont.querySelectorAll(".tarea");
+
+      tareas.forEach(function (tarea) {
+        const okBusqueda = tarea.dataset.matchBusqueda !== "0";
+        const okFecha = tarea.dataset.matchFecha !== "0";
+        tarea.style.display = (okBusqueda && okFecha) ? "block" : "none";
+      });
+
+      actualizarContador();
+    }
+
+    function aplicarBusquedaOrden() {
+      const input = document.getElementById("busquedaOrden");
+      if (!input) return;
+
+      const valor = limpiarSoloNumeros(input.value);
+      input.value = valor;
+
+      const cont = getContenedorActual();
+      if (!cont) return;
+
+      const tareas = cont.querySelectorAll(".tarea");
+
+      tareas.forEach(function (tarea) {
+        const orden = tarea.dataset.orden || "";
+        tarea.dataset.matchBusqueda = (!valor || orden.includes(valor)) ? "1" : "0";
+      });
+
+      recalcularVisibilidadActual();
+    }
+
+    function limpiarBusquedaOrden() {
+      const input = document.getElementById("busquedaOrden");
+      if (!input) return;
+
+      input.value = "";
+
+      const cont = getContenedorActual();
+      if (!cont) return;
+
+      cont.querySelectorAll(".tarea").forEach(function (tarea) {
+        tarea.dataset.matchBusqueda = "1";
+      });
+
+      recalcularVisibilidadActual();
+    }
+
+    function resetFiltroFechaActual() {
+      const cont = document.getElementById("terminados");
+      if (!cont) return;
+
+      cont.querySelectorAll(".tarea").forEach(function (tarea) {
+        tarea.dataset.matchFecha = "1";
+      });
+
+      recalcularVisibilidadActual();
+    }
+
+    function aplicarFiltroActivoTerminados() {
+      const vista = document.getElementById("textoVista").innerText;
+      if (vista !== "Trabajos Terminados") return;
+
+      const tipo = document.getElementById("textoTipoFiltro").innerText;
+
+      if (tipo === "La Fecha es") {
+        aplicarFiltroFecha();
+        return;
+      }
+
+      if (tipo === "La Fecha es Entre") {
+        aplicarFiltroRango();
+        return;
+      }
+
+      if (tipo === "El Mes es") {
+        aplicarFiltroMes();
+        return;
+      }
+
+      resetFiltroFechaActual();
     }
 
     // ==============================
@@ -663,11 +834,11 @@ gap:20px;
       var botonNombre = document.getElementById("nombreActual");
       var botonVista = document.querySelector(".barra-superior .selector-btn");
 
-      if (!botonNombre.contains(event.target) && !listaNombres.contains(event.target)) {
+      if (botonNombre && listaNombres && !botonNombre.contains(event.target) && !listaNombres.contains(event.target)) {
         listaNombres.style.display = "none";
       }
 
-      if (!botonVista.contains(event.target) && !menuVista.contains(event.target)) {
+      if (botonVista && menuVista && !botonVista.contains(event.target) && !menuVista.contains(event.target)) {
         menuVista.style.display = "none";
       }
     });
@@ -693,18 +864,24 @@ gap:20px;
       if (vista !== "Trabajos Terminados") return;
 
       var fechaBase = document.getElementById("fechaBase").value;
-      if (!fechaBase) return;
-
-      var fechaSeleccionada = new Date(fechaBase + "T00:00:00");
-
       var cont = document.getElementById("terminados");
       var tareas = cont.querySelectorAll(".tarea");
+
+      if (!fechaBase) {
+        tareas.forEach(function (tarea) {
+          tarea.dataset.matchFecha = "1";
+        });
+        recalcularVisibilidadActual();
+        return;
+      }
+
+      var fechaSeleccionada = new Date(fechaBase + "T00:00:00");
 
       tareas.forEach(function (tarea) {
         var horaElemento = tarea.querySelector(".hora-listo");
 
         if (!horaElemento) {
-          tarea.style.display = "none";
+          tarea.dataset.matchFecha = "0";
           return;
         }
 
@@ -715,10 +892,10 @@ gap:20px;
           fechaTarea.getMonth() === fechaSeleccionada.getMonth() &&
           fechaTarea.getDate() === fechaSeleccionada.getDate();
 
-        tarea.style.display = mostrar ? "block" : "none";
+        tarea.dataset.matchFecha = mostrar ? "1" : "0";
       });
 
-      actualizarContador();
+      recalcularVisibilidadActual();
     }
 
     function actualizarFechaTexto() {
@@ -728,8 +905,11 @@ gap:20px;
       if (input.value) {
         var partes = input.value.split("-");
         texto.innerText = partes[2] + "/" + partes[1] + "/" + partes[0];
-        aplicarFiltroFecha();
+      } else {
+        texto.innerText = "Seleccionar";
       }
+
+      aplicarFiltroFecha();
     }
 
     function mostrarTipoFiltro() {
@@ -758,6 +938,8 @@ gap:20px;
         document.getElementById("textoTipoFiltro").innerText = "El Mes es";
         document.getElementById("filtroMes").style.display = "block";
       }
+
+      resetFiltroFechaActual();
     }
 
     function aplicarFiltroRango() {
@@ -766,7 +948,11 @@ gap:20px;
 
       var desde = document.getElementById("fechaDesde").value;
       var hasta = document.getElementById("fechaHasta").value;
-      if (!desde || !hasta) return;
+
+      if (!desde || !hasta) {
+        resetFiltroFechaActual();
+        return;
+      }
 
       var fechaDesde = new Date(desde + "T00:00:00");
       var fechaHasta = new Date(hasta + "T23:59:59");
@@ -781,9 +967,13 @@ gap:20px;
       if (vista !== "Trabajos Terminados") return;
 
       var mes = document.getElementById("mesSelect").value;
-      if (mes === "") return;
 
-      var mesNumero = parseInt(mes);
+      if (mes === "") {
+        resetFiltroFechaActual();
+        return;
+      }
+
+      var mesNumero = parseInt(mes, 10);
 
       filtrarPorCondicion(function (fechaTarea) {
         return fechaTarea.getMonth() === mesNumero;
@@ -798,16 +988,15 @@ gap:20px;
         var horaElemento = tarea.querySelector(".hora-listo");
 
         if (!horaElemento) {
-          tarea.style.display = "none";
+          tarea.dataset.matchFecha = "0";
           return;
         }
 
         var fechaTarea = new Date(horaElemento.dataset.fecha);
-
-        tarea.style.display = condicion(fechaTarea) ? "block" : "none";
+        tarea.dataset.matchFecha = condicion(fechaTarea) ? "1" : "0";
       });
 
-      actualizarContador();
+      recalcularVisibilidadActual();
     }
 
     function actualizarTextoRango() {
@@ -817,11 +1006,15 @@ gap:20px;
       if (desdeInput.value) {
         var p = desdeInput.value.split("-");
         document.getElementById("textoDesde").innerText = p[2] + "/" + p[1] + "/" + p[0];
+      } else {
+        document.getElementById("textoDesde").innerText = "Desde";
       }
 
       if (hastaInput.value) {
         var p2 = hastaInput.value.split("-");
         document.getElementById("textoHasta").innerText = p2[2] + "/" + p2[1] + "/" + p2[0];
+      } else {
+        document.getElementById("textoHasta").innerText = "Hasta";
       }
     }
 
@@ -839,8 +1032,8 @@ gap:20px;
       dateFormat: "Y-m-d",
       disableMobile: true,
       onChange: function () {
-        aplicarFiltroRango();
         actualizarTextoRango();
+        aplicarFiltroRango();
       }
     });
 
@@ -849,8 +1042,8 @@ gap:20px;
       dateFormat: "Y-m-d",
       disableMobile: true,
       onChange: function () {
-        aplicarFiltroRango();
         actualizarTextoRango();
+        aplicarFiltroRango();
       }
     });
 
@@ -866,7 +1059,6 @@ gap:20px;
       "Kevin": "KEVIN"
     };
 
-    // ✅ NO incluye ELIZABETH (pedido)
     function obtenerTrabajadoPor(andamio) {
       const equivalencias = {
         "PEDRO": "Pedro",
@@ -935,10 +1127,16 @@ gap:20px;
             tarea.setAttribute("data-nombre", ubicacion);
 
             const estado = linea.x_studio_selection_field_3j_1ivn1ho1m || "-";
+            const ordenTexto = linea.x_studio_orden_de_venta_1 ? linea.x_studio_orden_de_venta_1[1] : "";
+            const ordenNumero = limpiarSoloNumeros(ordenTexto);
+
+            tarea.setAttribute("data-orden", ordenNumero);
+            tarea.dataset.matchBusqueda = "1";
+            tarea.dataset.matchFecha = "1";
 
             tarea.innerHTML = `
               <div class="modelo">${linea.x_studio_modelo_de_par_1 || "Sin modelo"}</div>
-              <div>Orden: ${linea.x_studio_orden_de_venta_1 ? linea.x_studio_orden_de_venta_1[1] : "Sin orden"}</div>
+              <div>Orden: ${ordenTexto || "Sin orden"}</div>
               <div>🧵 Plantilla: ${linea.x_studio_plantillas_1 ? "Sí" : "No"}</div>
               <div>👟 Pasadores: ${linea.x_studio_pasadores_1 ? "Sí" : "No"}</div>
               <div class="badge-estado">Estado: ${estadoBonito(estado)}</div>
@@ -949,7 +1147,7 @@ gap:20px;
 
             if (PENDING.has(idStr)) {
               const p = PENDING.get(idStr);
-              const btn = tarea.querySelector("button");
+              const btn = tarea.querySelector("button:not(.buscador-btn-limpiar)");
               if (btn) btn.disabled = true;
               setSyncInfo(tarea, p.stage === "saving" ? "⏳ Guardando..." : "⏳ Sincronizando...");
 
@@ -971,6 +1169,7 @@ gap:20px;
             grid.appendChild(tarea);
           });
 
+          aplicarBusquedaOrden();
           actualizarContador();
         })
         .catch(err => {
@@ -984,7 +1183,6 @@ gap:20px;
         });
     }
 
-    // ✅ ARREGLO #1: Terminados con botón LISTO también
     function cargarTerminados(trabajadoPor, silencioso = false) {
       if (!trabajadoPor) trabajadoPor = "ALL";
 
@@ -1023,38 +1221,37 @@ gap:20px;
             tarea.setAttribute("data-id", linea.id);
 
             const estado = linea.x_studio_selection_field_3j_1ivn1ho1m || "-";
-            const andamio = linea.x_studio_andamio || ""; // ✅ importante para NO cambiar ubicación al guardar
+            const andamio = linea.x_studio_andamio || "";
             const trabaj = linea.x_studio_trabajado_por || "-";
+            const ordenTexto = linea.x_studio_orden_de_venta_1 ? linea.x_studio_orden_de_venta_1[1] : "";
+            const ordenNumero = limpiarSoloNumeros(ordenTexto);
 
-            // ✅ Guardamos el andamio actual en data-nombre (para toggleListo)
             tarea.setAttribute("data-nombre", andamio);
+            tarea.setAttribute("data-orden", ordenNumero);
+            tarea.dataset.matchBusqueda = "1";
+            tarea.dataset.matchFecha = "1";
 
             tarea.innerHTML = `
               <div class="modelo">${linea.x_studio_modelo_de_par_1 || "Sin modelo"}</div>
-              <div>Orden: ${linea.x_studio_orden_de_venta_1 ? linea.x_studio_orden_de_venta_1[1] : "Sin orden"}</div>
+              <div>Orden: ${ordenTexto || "Sin orden"}</div>
               <div>👤 Trabajado por: <b>${trabaj}</b></div>
               <div>📍 Andamio actual: <b>${andamio || "-"}</b></div>
               <div class="badge-estado">Estado: ${estadoBonito(estado)}</div>
-
-              <!-- ✅ ARREGLO #1 -->
               <button onclick="toggleListo(this)">✅ MARCAR LISTO</button>
             `;
 
             const idStr = String(linea.id);
-
-            // Si backend ya manda verificación, lo usamos; si no, no pasa nada
             const verif = (linea.x_studio_verificacion_de_excel === true);
 
             if (PENDING.has(idStr)) {
               const p = PENDING.get(idStr);
-              const btn = tarea.querySelector("button");
+              const btn = tarea.querySelector("button:not(.buscador-btn-limpiar)");
               if (btn) btn.disabled = true;
               setSyncInfo(tarea, p.stage === "saving" ? "⏳ Guardando..." : "⏳ Sincronizando...");
             } else {
               setSyncInfo(tarea, null);
             }
 
-            // ✅ pinta botón y fecha
             setTarjetaEstadoTerminados(
               tarea,
               estado,
@@ -1065,11 +1262,8 @@ gap:20px;
             cont.appendChild(tarea);
           });
 
-          // filtros
-          aplicarFiltroFecha();
-          aplicarFiltroRango();
-          aplicarFiltroMes();
-
+          aplicarFiltroActivoTerminados();
+          aplicarBusquedaOrden();
           actualizarContador();
         })
         .catch(err => {
@@ -1122,7 +1316,7 @@ gap:20px;
           "x_studio_selection_field_3j_1ivn1ho1m": "03_approved",
           "x_studio_verificacion_de_excel": false,
           "x_studio_fecha_de_trabajado": null,
-          "x_studio_trabajado_por": obtenerTrabajadoPor(tarjeta.dataset.nombre),
+          "x_studio_trabajado_por": false,
           "x_studio_andamio": tarjeta.dataset.nombre
         };
       }
@@ -1144,14 +1338,12 @@ gap:20px;
             const vista = document.getElementById("textoVista").innerText;
 
             if (vista === "Trabajos Terminados") {
-              // ✅ Actualiza visual rápido en la tarjeta (terminados)
               const nuevoEstado = upd ? upd.x_studio_selection_field_3j_1ivn1ho1m : dataToUpdate.x_studio_selection_field_3j_1ivn1ho1m;
               const nuevaFecha = upd ? upd.x_studio_fecha_de_trabajado : dataToUpdate.x_studio_fecha_de_trabajado;
               const nuevaVerif = upd ? !!upd.x_studio_verificacion_de_excel : !!dataToUpdate.x_studio_verificacion_de_excel;
 
               setTarjetaEstadoTerminados(tarjeta, nuevoEstado, nuevaFecha, nuevaVerif);
             } else {
-              // ✅ Mesa (como siempre)
               const nuevoEstado = upd ? upd.x_studio_selection_field_3j_1ivn1ho1m : dataToUpdate.x_studio_selection_field_3j_1ivn1ho1m;
               const nuevaFecha = upd ? upd.x_studio_fecha_de_trabajado : dataToUpdate.x_studio_fecha_de_trabajado;
               setTarjetaEstadoMesa(tarjeta, nuevoEstado, nuevaFecha);
@@ -1163,7 +1355,6 @@ gap:20px;
             actualizarContador();
             GUARDANDO_IDS.delete(tareaId);
 
-            // ✅ refresca la vista correcta
             setTimeout(() => {
               const vista2 = document.getElementById("textoVista").innerText;
               if (vista2 === "Trabajos Terminados") {
