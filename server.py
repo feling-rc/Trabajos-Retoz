@@ -36,6 +36,25 @@ SESSION = requests.Session()
 # ✅ Cache UID para no loguear a cada request
 _UID = None
 
+# ✅ Estados que SACAN de Mesa
+ESTADOS_LISTO_O_FINAL = {
+    "TRABAJADO",
+    "1_done",
+    "Entregado",
+}
+
+# ✅ Estados que obligan a LIMPIAR coherencia
+# Si cae aquí: se borra check, fecha y responsable
+ESTADOS_REINICIO_COHERENCIA = {
+    "01_in_progress",       # Agendado
+    "02_changes_requested", # Sin material
+    "03_approved",          # En proceso
+    "04_waiting_normal",    # Atrasado
+    "1_canceled",           # Cancelado / Ya no quiere (según tu selección)
+    "1_cancelled",          # Variante por si existe en otra base
+    "Ya no Quiere",         # Valor textual directo
+}
+
 
 # =========================
 # ✅ FRONTEND (pantalla bonita)
@@ -194,28 +213,36 @@ def normalize_iso_to_odoo(val):
     return val
 
 
+def normalizar_estado(estado):
+    return (estado or "").strip()
+
+
+def es_estado_listo_o_final(estado):
+    return normalizar_estado(estado) in ESTADOS_LISTO_O_FINAL
+
+
+def es_estado_reinicio_coherencia(estado):
+    return normalizar_estado(estado) in ESTADOS_REINICIO_COHERENCIA
+
+
 # =========================
-# ✅ NUEVO (modo taller): QUITAR DE MESA CUANDO YA ESTÁ LISTO
+# ✅ QUITAR DE MESA SOLO SI REALMENTE YA ESTÁ LISTO / FINAL
 # =========================
 def es_listo_para_quitar_de_mesa(rec):
     """
     ✅ Regla industrial:
-    - Si ya está LISTO (TRABAJADO) -> NO debe verse en 'Trabajos en Mesa'
-    - Si ya está Completado/Entregado -> tampoco
-    - Si verificación Excel está True -> también se considera listo
+    - Si está TRABAJADO -> sale de Mesa
+    - Si está 1_done -> sale de Mesa
+    - Si está Entregado -> sale de Mesa
+    - Si vuelve a Agendado / En proceso / Sin material / Atrasado / Ya no quiere
+      -> sigue apareciendo normal en Mesa como NO listo
     """
-    estado = (rec.get("x_studio_selection_field_3j_1ivn1ho1m") or "").strip()
-    verif = rec.get("x_studio_verificacion_de_excel") is True
-
-    if estado in ("TRABAJADO", "1_done", "Entregado"):
-        return True
-    if verif:
-        return True
-    return False
+    estado = normalizar_estado(rec.get("x_studio_selection_field_3j_1ivn1ho1m"))
+    return es_estado_listo_o_final(estado)
 
 
 # =========================
-# 🔹 TRAER TAREAS (MISMO DOMAIN) + ✅ FILTRO POST (NO TOCA DOMAIN)
+# 🔹 TRAER TAREAS (MISMO DOMAIN) + FILTRO POST
 # =========================
 @app.route("/tareas/<ubicacion>")
 def traer_tareas(ubicacion):
@@ -273,8 +300,11 @@ def traer_tareas(ubicacion):
             req_id=2,
         )
 
-        # ✅ CAMBIO NUEVO (sin tocar domain): si ya está listo, se quita de Mesa
-        result_filtrado = [r for r in (result or []) if not es_listo_para_quitar_de_mesa(r)]
+        # ✅ Solo quitamos de Mesa lo realmente terminado/listo
+        result_filtrado = [
+            r for r in (result or [])
+            if not es_listo_para_quitar_de_mesa(r)
+        ]
 
         return jsonify({"result": result_filtrado})
 
@@ -283,7 +313,7 @@ def traer_tareas(ubicacion):
 
 
 # =========================
-# ✅ TERMINADOS (HISTORIAL) — compatible con el último frontend
+# ✅ TERMINADOS (HISTORIAL)
 # =========================
 @app.route("/terminados/<trabajado_por>")
 def traer_terminados(trabajado_por):
@@ -291,8 +321,8 @@ def traer_terminados(trabajado_por):
     Historial:
     - aparece aunque cambie estado o andamio
     - se basa en trabajado_por + fecha_de_trabajado
-    - NO muestra EN PROCESO (03_approved) para evitar “falsos terminados”
-    - ✅ incluye x_studio_verificacion_de_excel (para el botón del último frontend)
+    - NO muestra EN PROCESO (03_approved) para evitar falsos terminados
+    - incluye x_studio_verificacion_de_excel para el frontend
     """
     try:
         trabajado_por = (trabajado_por or "").strip()
@@ -314,7 +344,7 @@ def traer_terminados(trabajado_por):
             "x_studio_plantillas_1",
             "x_studio_orden_de_venta_1",
             "x_studio_fecha_de_trabajado",
-            "x_studio_verificacion_de_excel",          # ✅ NUEVO para el frontend
+            "x_studio_verificacion_de_excel",
             "x_studio_selection_field_3j_1ivn1ho1m",
             "x_studio_andamio",
             "x_studio_trabajado_por",
@@ -339,17 +369,32 @@ def traer_terminados(trabajado_por):
 
 
 # =========================
-# 🔹 ACTUALIZAR TAREA (marcar / desmarcar) — modo taller industrial
+# 🔹 ACTUALIZAR TAREA — modo industrial
 # =========================
 @app.route("/actualizar_tarea/<int:tarea_id>", methods=["POST"])
 def actualizar_tarea(tarea_id):
     """
-    ✅ Reglas industriales:
+    ✅ Reglas industriales finales:
     - Al marcar LISTO:
-        estado=TRABAJADO, verif=True, fecha=ahora, trabajado_por = según andamio
-    - Al desmarcar (QC lo devuelve):
-        estado=03_approved, verif=False, fecha=False
-        ✅ NO se modifica trabajado_por (se conserva historial del último)
+        estado=TRABAJADO
+        verif=True
+        fecha=ahora
+        trabajado_por = según andamio
+
+    - Si vuelve a cualquiera de estos estados:
+        01_in_progress   (Agendado)
+        02_changes_requested (Sin material)
+        03_approved      (En proceso)
+        04_waiting_normal (Atrasado)
+        1_canceled / 1_cancelled / Ya no Quiere
+
+      entonces SE LIMPIA TODO para forzar coherencia:
+        verif=False
+        fecha=False
+        trabajado_por=False
+
+    - Si solo desmarca sin mandar uno de esos estados:
+        no tocamos trabajado_por
     """
     try:
         body = request.get_json(silent=True) or {}
@@ -358,18 +403,17 @@ def actualizar_tarea(tarea_id):
 
         tarea_data = body["data"] or {}
 
-        # ✅ Normaliza fecha (borrar / ISO)
+        # ✅ Normaliza fecha si vino en ISO
         if "x_studio_fecha_de_trabajado" in tarea_data:
             tarea_data["x_studio_fecha_de_trabajado"] = normalize_iso_to_odoo(
                 tarea_data.get("x_studio_fecha_de_trabajado")
             )
 
-        # Determina acción (marca o desmarca)
-        verif_in = tarea_data.get("x_studio_verificacion_de_excel", None)
-        esta_marcando = (verif_in is True)
-        esta_desmarcando = (verif_in is False)
+        estado_in = normalizar_estado(
+            tarea_data.get("x_studio_selection_field_3j_1ivn1ho1m")
+        )
 
-        # ✅ Puente: andamio (solo si hace falta)
+        # ✅ Andamio actual (si hace falta)
         andamio = tarea_data.get("x_studio_andamio", "")
         if not andamio:
             actual = read_task(tarea_id, ["x_studio_andamio"])
@@ -386,22 +430,46 @@ def actualizar_tarea(tarea_id):
             "EZER": "Even Ezer",
             "KEVIN": "Kevin",
             "SR COCO": "Sr Coco",
-            # ✅ ELIZABETH NO TIENE EQUIVALENTE (pedido)
+            # ELIZABETH no tiene equivalente
         }
 
-        # ✅ CAMBIO CLAVE para tu último frontend:
-        # - Si DESMARCA: NO tocar trabajado_por (aunque el front lo mande)
-        if esta_desmarcando:
-            if "x_studio_trabajado_por" in tarea_data:
-                del tarea_data["x_studio_trabajado_por"]  # ✅ conserva el anterior
-        else:
-            # Si está MARCANDO o cualquier otro update, si viene vacío lo calculamos
+        # =========================
+        # ✅ REGLA 1: Si cae a estados de reinicio, limpiar coherencia
+        # =========================
+        if es_estado_reinicio_coherencia(estado_in):
+            tarea_data["x_studio_verificacion_de_excel"] = False
+            tarea_data["x_studio_fecha_de_trabajado"] = False
+            tarea_data["x_studio_trabajado_por"] = False
+
+        # =========================
+        # ✅ REGLA 2: Si pasa a TRABAJADO, forzar coherencia de listo
+        # =========================
+        elif estado_in == "TRABAJADO":
+            tarea_data["x_studio_verificacion_de_excel"] = True
+
+            # Si no vino fecha, conserva la que mandó el frontend o la deja como está
+            if not tarea_data.get("x_studio_fecha_de_trabajado"):
+                actual = read_task(tarea_id, ["x_studio_fecha_de_trabajado"])
+                if actual.get("x_studio_fecha_de_trabajado"):
+                    tarea_data["x_studio_fecha_de_trabajado"] = actual.get("x_studio_fecha_de_trabajado")
+
+            tarea_data["x_studio_trabajado_por"] = trabajado_por_map.get(andamio, False)
+
+        # =========================
+        # ✅ REGLA 3: Compatibilidad si solo viene el check
+        # =========================
+        verif_in = tarea_data.get("x_studio_verificacion_de_excel", None)
+        esta_marcando = (verif_in is True)
+        esta_desmarcando = (verif_in is False)
+
+        if not estado_in:
             if esta_marcando:
-                tarea_data["x_studio_trabajado_por"] = trabajado_por_map.get(andamio, "")
-            else:
-                # si no viene y existe en Odoo, lo dejamos (no lo forzamos)
-                if not tarea_data.get("x_studio_trabajado_por"):
-                    pass
+                tarea_data["x_studio_trabajado_por"] = trabajado_por_map.get(andamio, False)
+            elif esta_desmarcando:
+                # si solo desmarca el check sin mandar estado,
+                # no borramos responsable automáticamente
+                if "x_studio_trabajado_por" in tarea_data:
+                    del tarea_data["x_studio_trabajado_por"]
 
         # ✅ Write
         ok = odoo_execute_kw(
@@ -414,7 +482,7 @@ def actualizar_tarea(tarea_id):
         if ok is not True:
             return jsonify({"error": "Odoo no confirmó la actualización"}), 500
 
-        # ✅ Devuelve actualizado (compatible con último frontend)
+        # ✅ Devuelve actualizado
         actualizado = read_task(
             tarea_id,
             [
@@ -432,14 +500,11 @@ def actualizar_tarea(tarea_id):
         return jsonify({"error": str(e)}), 500
 
 
-# ✅ Healthcheck rápido (opcional, útil para ngrok)
+# ✅ Healthcheck rápido
 @app.route("/health")
 def health():
     return jsonify({"ok": True}), 200
 
 
 if __name__ == "__main__":
-
     app.run(host="0.0.0.0", port=5000)
-
-
