@@ -1305,7 +1305,7 @@ gap:20px;
   let dataToUpdate = {};
   if (!estabaListo) {
     var ahora = new Date();
-    var fechaHora = ahora.toISOString();
+    var fechaHora = formatearFechaLocal(ahora);
 
     dataToUpdate = {
       "x_studio_selection_field_3j_1ivn1ho1m": "TRABAJADO",
@@ -1388,9 +1388,20 @@ gap:20px;
       alert("❌ No se pudo guardar. Intenta otra vez.");
     });
 }
+    function formatearFechaLocal(fecha) {
+  const y = fecha.getFullYear();
+  const m = String(fecha.getMonth() + 1).padStart(2, "0");
+  const d = String(fecha.getDate()).padStart(2, "0");
+  const hh = String(fecha.getHours()).padStart(2, "0");
+  const mm = String(fecha.getMinutes()).padStart(2, "0");
+  const ss = String(fecha.getSeconds()).padStart(2, "0");
+
+  return `${y}-${m}-${d} ${hh}:${mm}:${ss}`;
+}
   </script>
 
 </body>
 
 </html>
+
 
