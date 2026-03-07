@@ -83,7 +83,6 @@ def extraer_tareas_desde_texto(texto: str):
         if limpia:
             tareas.append(limpia)
 
-    # si alguien pegó todo en una sola línea con ";"
     if len(tareas) == 1 and ";" in tareas[0]:
         nuevas = []
         for pedazo in tareas[0].split(";"):
@@ -92,7 +91,6 @@ def extraer_tareas_desde_texto(texto: str):
                 nuevas.append(limpia)
         tareas = nuevas
 
-    # quitar duplicados vacíos sin alterar mucho
     resultado = []
     for t in tareas:
         if t and len(t) <= 220:
@@ -107,22 +105,22 @@ HTML_TAREAS = """
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mini Tareas</title>
+  <title>RETOZ · Tareas</title>
   <style>
     :root{
-      --bg:#f5f7fb;
-      --bg2:#eef2ff;
-      --card:rgba(255,255,255,.92);
-      --line:rgba(15,23,42,.08);
-      --text:#182235;
-      --muted:#6b7280;
-      --primary:#5b5cf0;
-      --primary2:#8b5cf6;
-      --success:#16a34a;
-      --success2:#10b981;
-      --danger:#ef4444;
-      --danger2:#f97316;
-      --shadow:0 14px 34px rgba(37, 55, 95, .12);
+      --orange:#D66C0E;
+      --orange-dark:#B85C0C;
+      --orange-soft:#F5E2D0;
+      --black:#111111;
+      --black-2:#1B1B1B;
+      --white:#FFFFFF;
+      --bg:#F5F5F4;
+      --bg-soft:#FBFAF8;
+      --line:rgba(17,17,17,.08);
+      --muted:#6B6B6B;
+      --success:#16A34A;
+      --danger:#E64B3C;
+      --shadow:0 14px 36px rgba(0,0,0,.08);
       --radius-xl:26px;
       --radius-lg:20px;
       --radius-md:16px;
@@ -135,11 +133,10 @@ HTML_TAREAS = """
       margin:0;
       padding:0;
       font-family:Inter, Arial, sans-serif;
-      color:var(--text);
       background:
-        radial-gradient(circle at top left, #e5edff 0%, transparent 26%),
-        radial-gradient(circle at top right, #f1e5ff 0%, transparent 24%),
-        linear-gradient(180deg,#f9fbff 0%, #f4f7fc 100%);
+        radial-gradient(circle at top left, rgba(214,108,14,.08), transparent 28%),
+        linear-gradient(180deg, #FBFAF8 0%, #F4F3F1 100%);
+      color:var(--black);
       min-height:100%;
     }
 
@@ -148,94 +145,108 @@ HTML_TAREAS = """
     }
 
     .app{
-      max-width:760px;
+      max-width:780px;
       margin:0 auto;
     }
 
-    .hero{
+    .topbar{
       position:sticky;
       top:0;
       z-index:50;
       padding-bottom:10px;
-      backdrop-filter:blur(12px);
+      backdrop-filter:blur(14px);
     }
 
-    .hero-card{
-      border-radius:30px;
-      background:linear-gradient(135deg, rgba(91,92,240,.96), rgba(139,92,246,.96));
-      color:white;
-      box-shadow:0 18px 44px rgba(91,92,240,.24);
-      padding:18px 16px 16px;
+    .topbar-card{
+      background:rgba(255,255,255,.86);
+      border:1px solid rgba(17,17,17,.06);
+      box-shadow:var(--shadow);
+      border-radius:28px;
+      padding:14px;
     }
 
-    .hero-top{
+    .brand-row{
       display:flex;
+      align-items:center;
       justify-content:space-between;
       gap:12px;
-      align-items:flex-start;
     }
 
-    .hero-title{
-      margin:0;
-      font-size:24px;
-      line-height:1.1;
-      letter-spacing:-.02em;
-      font-weight:900;
+    .brand-wrap{
+      display:flex;
+      align-items:center;
+      min-height:56px;
     }
 
-    .hero-sub{
-      margin:8px 0 0;
-      color:rgba(255,255,255,.85);
-      font-size:13px;
-      line-height:1.45;
+    .brand-logo{
+      height:54px;
+      width:auto;
+      object-fit:contain;
+      display:block;
+    }
+
+    .brand-fallback{
+      display:none;
+      font-size:40px;
+      line-height:1;
+      font-family:Georgia, "Times New Roman", serif;
+      letter-spacing:-.04em;
+      color:#111;
+      user-select:none;
+    }
+
+    .brand-fallback .o{
+      color:var(--orange);
     }
 
     .clock{
-      background:rgba(255,255,255,.16);
-      border:1px solid rgba(255,255,255,.18);
+      background:var(--black);
+      color:var(--white);
       border-radius:999px;
       padding:9px 12px;
       font-size:12px;
+      font-weight:800;
       white-space:nowrap;
-      font-weight:700;
+      box-shadow:0 10px 20px rgba(0,0,0,.14);
     }
 
     .chips{
       display:flex;
       gap:8px;
+      margin-top:14px;
       overflow:auto;
       scrollbar-width:none;
-      margin-top:14px;
       padding-bottom:2px;
     }
 
     .chips::-webkit-scrollbar{display:none}
 
     .chip{
-      border:none;
+      border:1px solid rgba(17,17,17,.08);
+      background:#fff;
+      color:var(--black);
       border-radius:999px;
       padding:11px 14px;
       font-size:13px;
-      font-weight:800;
+      font-weight:900;
       cursor:pointer;
       white-space:nowrap;
       transition:.18s ease;
-      background:rgba(255,255,255,.16);
-      border:1px solid rgba(255,255,255,.20);
-      color:white;
     }
 
     .chip.active{
-      background:white;
-      color:var(--primary);
+      background:var(--orange);
+      color:var(--white);
+      border-color:var(--orange);
       transform:translateY(-1px);
+      box-shadow:0 12px 24px rgba(214,108,14,.22);
     }
 
     .section{
-      background:var(--card);
+      background:rgba(255,255,255,.88);
       border:1px solid var(--line);
-      border-radius:var(--radius-xl);
       box-shadow:var(--shadow);
+      border-radius:var(--radius-xl);
       padding:14px;
       margin-bottom:12px;
       backdrop-filter:blur(10px);
@@ -251,8 +262,8 @@ HTML_TAREAS = """
       border:none;
       border-radius:16px;
       padding:12px 14px;
-      background:#eef2ff;
-      color:#61708a;
+      background:#F2F0EC;
+      color:#4A4A4A;
       font-size:14px;
       font-weight:900;
       cursor:pointer;
@@ -260,9 +271,9 @@ HTML_TAREAS = """
     }
 
     .tab-btn.active{
-      color:white;
-      background:linear-gradient(135deg,var(--primary),var(--primary2));
-      box-shadow:0 12px 24px rgba(91,92,240,.20);
+      background:var(--black);
+      color:var(--white);
+      box-shadow:0 12px 24px rgba(0,0,0,.16);
     }
 
     .head-row{
@@ -281,13 +292,13 @@ HTML_TAREAS = """
     }
 
     .pill{
-      background:#f4f6fb;
-      border:1px solid var(--line);
+      background:#F5F3EF;
       color:var(--muted);
+      border:1px solid var(--line);
       border-radius:999px;
       padding:8px 10px;
       font-size:12px;
-      font-weight:800;
+      font-weight:900;
       white-space:nowrap;
     }
 
@@ -303,22 +314,22 @@ HTML_TAREAS = """
       width:100%;
       min-height:138px;
       resize:vertical;
-      border:1px solid var(--line);
+      border:1px solid rgba(17,17,17,.08);
       border-radius:18px;
       padding:15px;
-      background:white;
+      background:#fff;
       font:inherit;
-      color:var(--text);
+      color:var(--black);
       outline:none;
       transition:.18s ease;
-      box-shadow:inset 0 1px 1px rgba(31,41,55,.03);
+      box-shadow:inset 0 1px 1px rgba(0,0,0,.02);
     }
 
     textarea:focus,
     select:focus,
     input:focus{
-      border-color:rgba(91,92,240,.45);
-      box-shadow:0 0 0 4px rgba(91,92,240,.10);
+      border-color:rgba(214,108,14,.42);
+      box-shadow:0 0 0 4px rgba(214,108,14,.10);
     }
 
     .helper{
@@ -345,33 +356,31 @@ HTML_TAREAS = """
       min-height:48px;
     }
 
-    .btn:active{
-      transform:scale(.985);
-    }
+    .btn:active{transform:scale(.985)}
 
     .btn-primary{
       flex:1;
-      color:white;
-      background:linear-gradient(135deg,var(--primary),var(--primary2));
-      box-shadow:0 12px 24px rgba(91,92,240,.22);
+      color:var(--white);
+      background:linear-gradient(135deg,var(--orange),var(--orange-dark));
+      box-shadow:0 12px 24px rgba(214,108,14,.22);
     }
 
     .btn-soft{
-      background:#f3f5fb;
-      color:#51607a;
-      border:1px solid var(--line);
+      background:#F4F3F1;
+      color:var(--black);
+      border:1px solid rgba(17,17,17,.08);
     }
 
     .btn-success{
-      color:white;
-      background:linear-gradient(135deg,var(--success2),var(--success));
-      box-shadow:0 12px 24px rgba(22,163,74,.18);
+      color:var(--white);
+      background:linear-gradient(135deg,var(--black),#2B2B2B);
+      box-shadow:0 12px 24px rgba(0,0,0,.16);
     }
 
     .btn-danger{
-      color:white;
-      background:linear-gradient(135deg,var(--danger),var(--danger2));
-      box-shadow:0 12px 24px rgba(239,68,68,.18);
+      color:var(--white);
+      background:linear-gradient(135deg,var(--danger),#F97316);
+      box-shadow:0 12px 24px rgba(230,75,60,.18);
     }
 
     .filters{
@@ -392,12 +401,12 @@ HTML_TAREAS = """
 
     select,input[type="date"],input[type="month"]{
       width:100%;
-      border:1px solid var(--line);
-      background:white;
+      border:1px solid rgba(17,17,17,.08);
+      background:#fff;
       border-radius:16px;
       padding:13px 14px;
       font:inherit;
-      color:var(--text);
+      color:var(--black);
       outline:none;
     }
 
@@ -412,11 +421,11 @@ HTML_TAREAS = """
     }
 
     .card{
-      background:white;
-      border:1px solid var(--line);
+      background:#fff;
+      border:1px solid rgba(17,17,17,.08);
       border-radius:22px;
       padding:14px;
-      box-shadow:0 10px 24px rgba(31,41,55,.05);
+      box-shadow:0 10px 24px rgba(0,0,0,.05);
       position:relative;
       overflow:hidden;
     }
@@ -428,7 +437,7 @@ HTML_TAREAS = """
       right:0;
       bottom:0;
       height:3px;
-      background:linear-gradient(90deg, rgba(91,92,240,.18), rgba(139,92,246,.35), rgba(16,185,129,.22));
+      background:linear-gradient(90deg, rgba(214,108,14,.18), rgba(214,108,14,.55), rgba(17,17,17,.20));
     }
 
     .card-top{
@@ -445,8 +454,8 @@ HTML_TAREAS = """
       gap:6px;
       border-radius:999px;
       padding:7px 10px;
-      background:#eef2ff;
-      color:var(--primary);
+      background:var(--orange-soft);
+      color:var(--orange-dark);
       font-size:12px;
       font-weight:900;
       white-space:nowrap;
@@ -484,11 +493,11 @@ HTML_TAREAS = """
       height:48px;
       border:none;
       border-radius:15px;
-      background:#fff1f2;
+      background:#FFF1F0;
       color:var(--danger);
       font-size:18px;
       cursor:pointer;
-      border:1px solid rgba(239,68,68,.10);
+      border:1px solid rgba(230,75,60,.10);
     }
 
     .meta{
@@ -504,9 +513,9 @@ HTML_TAREAS = """
     .empty{
       text-align:center;
       padding:20px 16px;
-      border:1px dashed rgba(91,92,240,.18);
+      border:1px dashed rgba(214,108,14,.20);
       border-radius:20px;
-      background:linear-gradient(180deg,#fff,#f7f9ff);
+      background:linear-gradient(180deg,#fff,#FBF8F4);
       color:var(--muted);
       font-size:14px;
       line-height:1.55;
@@ -524,8 +533,8 @@ HTML_TAREAS = """
       opacity:0;
       pointer-events:none;
       transition:.22s ease;
-      background:rgba(17,24,39,.96);
-      color:white;
+      background:rgba(17,17,17,.96);
+      color:#fff;
       padding:14px 16px;
       border-radius:16px;
       font-size:14px;
@@ -547,35 +556,33 @@ HTML_TAREAS = """
       pointer-events:none;
     }
 
-    @media (min-width: 640px){
+    @media (min-width:640px){
       body{padding:20px}
-
-      .hero-card{
-        padding:22px 20px 18px;
-      }
-
-      .hero-title{
-        font-size:28px;
-      }
-
-      .grid-2{
-        grid-template-columns:1fr 1fr;
-      }
+      .topbar-card{padding:16px}
+      .grid-2{grid-template-columns:1fr 1fr}
+      .brand-logo{height:60px}
+      .brand-fallback{font-size:46px}
     }
   </style>
 </head>
 <body>
   <div class="app">
-    <div class="hero">
-      <div class="hero-card">
-        <div class="hero-top">
-          <div>
-            <h1 class="hero-title">Mini Tareas</h1>
-            <p class="hero-sub">
-              Súper rápida para celular. Escribe una tarea o pega una lista completa.
-              Cada línea se guarda como tarea separada.
-            </p>
+    <div class="topbar">
+      <div class="topbar-card">
+        <div class="brand-row">
+          <div class="brand-wrap">
+            <img
+              id="brandLogo"
+              class="brand-logo"
+              src="/retoz-logo.png"
+              alt="RETOZ"
+              onerror="fallbackLogo()"
+            >
+            <div id="brandFallback" class="brand-fallback">
+              Ret<span class="o">o</span>z
+            </div>
           </div>
+
           <div class="clock" id="clockNow">--:--</div>
         </div>
 
@@ -596,14 +603,18 @@ HTML_TAREAS = """
         <div class="pill" id="countProgramadas">0 tareas</div>
       </div>
 
-      <label class="composer-label">Escribe una tarea o pega varias líneas</label>
+      <label class="composer-label">Escribe una tarea o pega una lista completa</label>
       <textarea
         id="taskInput"
-        placeholder="- Llamar a cliente\\n- Revisar pedido\\n- Coordinar entrega\\n\\nTambién acepta listas con números o [ ]"
+        placeholder="- Llamar a cliente
+- Revisar pedido
+- Coordinar entrega
+
+También acepta listas con números o [ ]"
       ></textarea>
 
       <div class="helper">
-        Consejo: si pegas varias líneas, cada línea se guardará como una tarea separada.
+        Cada línea se guarda como una tarea separada. También puedes separar por punto y coma (;).
       </div>
 
       <div class="composer-actions">
@@ -674,6 +685,13 @@ HTML_TAREAS = """
     let vistaActual = "programadas";
     let programadas = [];
     let hechas = [];
+
+    function fallbackLogo() {
+      const img = document.getElementById("brandLogo");
+      const fb = document.getElementById("brandFallback");
+      if (img) img.style.display = "none";
+      if (fb) fb.style.display = "block";
+    }
 
     function escapeHtml(texto) {
       return String(texto || "")
