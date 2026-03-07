@@ -312,7 +312,7 @@ HTML_TAREAS = """
 
     textarea{
       width:100%;
-      min-height:138px;
+      min-height:80px;
       resize:vertical;
       border:1px solid rgba(17,17,17,.08);
       border-radius:18px;
@@ -850,21 +850,18 @@ También acepta listas con números o [ ]"
       }
     }
 
-    async function eliminarTarea(id) {
-      const ok = confirm("¿Eliminar esta tarea?");
-      if (!ok) return;
+async function eliminarTarea(id) {
+  try {
+    await api(`/tareas/api/${id}/eliminar`, {
+      method: "POST"
+    });
 
-      try {
-        await api(`/tareas/api/${id}/eliminar`, {
-          method: "POST"
-        });
-
-        showToast("Tarea eliminada");
-        await recargarVista();
-      } catch (err) {
-        showToast(err.message);
-      }
-    }
+    showToast("Tarea eliminada");
+    await recargarVista();
+  } catch (err) {
+    showToast(err.message);
+  }
+}
 
     async function vaciarHechas() {
       const ok = confirm(`¿Vaciar todas las terminadas de ${responsableActual}?`);
