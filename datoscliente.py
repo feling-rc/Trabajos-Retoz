@@ -42,7 +42,7 @@ ALLOWED_PROJECT_NAMES = [
 MODEL_NAME = "project.task"
 FIELD_DATOS_CLIENTE = "x_studio_datos_del_cliente"
 
-CHECK_EVERY_SECONDS = 5
+CHECK_EVERY_SECONDS = 180
 PAGE_SIZE = 100
 
 HIDE_CONSOLE = False
@@ -438,6 +438,10 @@ def extract_fields_from_description_html(desc_html: str) -> dict:
             data["agencia_shalom"] = value_after_colon(ln)
             continue
 
+        if low.startswith("agencia de shalom"):
+            data["agencia_shalom"] = value_after_colon(ln)
+            continue
+
         if low.startswith("departamento"):
             data["departamento"] = value_after_colon(ln)
             continue
@@ -715,32 +719,39 @@ def build_structured_text(task: dict, project_name: str) -> str:
     direccion = clean_value(merged.get("direccion"))
     referencia = clean_value(merged.get("referencia"))
     productos = clean_value(merged.get("productos"))
-    is_provincia = bool(merged.get("is_provincia"))
+    departamento = smart_title(merged.get("departamento"))
+    agencia = clean_value(merged.get("agencia_shalom"))
 
     nombre = nombre.upper() if nombre else ""
     celular = only_digits_or_plus(celular) if celular else ""
     dni = only_digits_or_plus(dni) if dni else ""
 
-    if is_provincia:
-        direccion = direccion
-
     encabezado = "Recojo:" if is_recojo_project(project_name) else "Pedido:"
 
-    texto = (
-        f"{encabezado}\n"
-        f"Nombre: {nombre}\n"
-        f"Celular: {celular}\n"
-        f"DNI: {dni}\n"
-        f"Distrito: {distrito}\n"
-        f"Dirección: {direccion}\n"
-        f"Referencia: {referencia}\n"
-        f"Productos: {productos}\n"
-        f"Por cobrar:\n"
-        f"Yape: {FOOTER_YAPE_PHONE}\n"
-        f"Nombre: {FOOTER_CONTACT_NAME}"
-    )
+    lineas = [
+        encabezado,
+        f"Nombre: {nombre}",
+        f"Celular: {celular}",
+        f"DNI: {dni}",
+        f"Distrito: {distrito}",
+        f"Dirección: {direccion}",
+        f"Referencia: {referencia}",
+        f"Productos: {productos}",
+    ]
 
-    return texto.strip()
+    if departamento:
+        lineas.append(f"Departamento: {departamento}")
+
+    if agencia:
+        lineas.append(f"Agencia: {agencia}")
+
+    lineas.extend([
+        "Por cobrar:",
+        f"Yape: {FOOTER_YAPE_PHONE}",
+        f"Nombre: {FOOTER_CONTACT_NAME}",
+    ])
+
+    return "\n".join(lineas).strip()
 
 
 # =========================
