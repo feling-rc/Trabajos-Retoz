@@ -1281,108 +1281,116 @@ gap:20px;
       }).then(res => res.json());
     }
 
-    function toggleListo(boton) {
-      var tarjeta = boton.closest(".tarea");
-      var tareaId = tarjeta.dataset.id;
+  function toggleListo(boton) {
+  var tarjeta = boton.closest(".tarea");
+  var tareaId = tarjeta.dataset.id;
 
-      if (!tareaId) return;
-      if (GUARDANDO_IDS.has(tareaId)) return;
+  if (!tareaId) return;
+  if (GUARDANDO_IDS.has(tareaId)) return;
 
-      GUARDANDO_IDS.add(tareaId);
+  GUARDANDO_IDS.add(tareaId);
 
-      const prevText = boton.innerText;
-      const prevBg = boton.style.background;
+  const prevText = boton.innerText;
+  const prevBg = boton.style.background;
 
-      boton.disabled = true;
-      boton.innerText = "⏳ Guardando...";
-      boton.style.background = "#999";
+  boton.disabled = true;
+  boton.innerText = "⏳ Guardando...";
+  boton.style.background = "#999";
 
-      const estabaListo = (tarjeta.dataset.listo === "1");
+  // ✅ ARREGLO CLAVE:
+  // ya no confiamos en dataset.listo, sino en el estado real de la tarjeta
+  const estadoActual = String(tarjeta.dataset.estado || "").trim();
+  const estabaListo = (estadoActual === "TRABAJADO");
 
-      let dataToUpdate = {};
-      if (!estabaListo) {
-        var ahora = new Date();
-        var fechaHora = ahora.toISOString();
+  let dataToUpdate = {};
+  if (!estabaListo) {
+    var ahora = new Date();
+    var fechaHora = ahora.toISOString();
 
-        dataToUpdate = {
-          "x_studio_selection_field_3j_1ivn1ho1m": "TRABAJADO",
-          "x_studio_verificacion_de_excel": true,
-          "x_studio_fecha_de_trabajado": fechaHora,
-          "x_studio_trabajado_por": obtenerTrabajadoPor(tarjeta.dataset.nombre),
-          "x_studio_andamio": tarjeta.dataset.nombre
-        };
-      } else {
-        dataToUpdate = {
-          "x_studio_selection_field_3j_1ivn1ho1m": "03_approved",
-          "x_studio_verificacion_de_excel": false,
-          "x_studio_fecha_de_trabajado": null,
-          "x_studio_trabajado_por": false,
-          "x_studio_andamio": tarjeta.dataset.nombre
-        };
-      }
+    dataToUpdate = {
+      "x_studio_selection_field_3j_1ivn1ho1m": "TRABAJADO",
+      "x_studio_verificacion_de_excel": true,
+      "x_studio_fecha_de_trabajado": fechaHora,
+      "x_studio_trabajado_por": obtenerTrabajadoPor(tarjeta.dataset.nombre),
+      "x_studio_andamio": tarjeta.dataset.nombre
+    };
+  } else {
+    dataToUpdate = {
+      "x_studio_selection_field_3j_1ivn1ho1m": "03_approved",
+      "x_studio_verificacion_de_excel": false,
+      "x_studio_fecha_de_trabajado": null,
+      "x_studio_trabajado_por": false,
+      "x_studio_andamio": tarjeta.dataset.nombre
+    };
+  }
 
-      const desiredListo = !estabaListo;
-      const desiredFechaISO = desiredListo ? dataToUpdate.x_studio_fecha_de_trabajado : null;
-      setPending(tareaId, desiredListo, desiredFechaISO, "saving");
+  const desiredListo = !estabaListo;
+  const desiredFechaISO = desiredListo ? dataToUpdate.x_studio_fecha_de_trabajado : null;
+  setPending(tareaId, desiredListo, desiredFechaISO, "saving");
 
-      actualizarTareaEnOdoo(tareaId, dataToUpdate)
-        .then(response => {
-          setPendingStage(tareaId, "sync");
+  actualizarTareaEnOdoo(tareaId, dataToUpdate)
+    .then(response => {
+      setPendingStage(tareaId, "sync");
 
-          boton.innerText = estabaListo ? "✅ Desmarcado" : "✅ Guardado";
-          boton.style.background = estabaListo ? "#444" : "green";
+      // ✅ actualizamos estado local al toque para evitar desfaces
+      tarjeta.dataset.estado = dataToUpdate.x_studio_selection_field_3j_1ivn1ho1m;
+      tarjeta.dataset.listo = desiredListo ? "1" : "0";
 
-          setTimeout(() => {
-            const upd = response && response.updated ? response.updated : null;
+      boton.innerText = estabaListo ? "✅ Desmarcado" : "✅ Guardado";
+      boton.style.background = estabaListo ? "#444" : "green";
 
-            const vista = document.getElementById("textoVista").innerText;
+      setTimeout(() => {
+        const upd = response && response.updated ? response.updated : null;
 
-            if (vista === "Trabajos Terminados") {
-              const nuevoEstado = upd ? upd.x_studio_selection_field_3j_1ivn1ho1m : dataToUpdate.x_studio_selection_field_3j_1ivn1ho1m;
-              const nuevaFecha = upd ? upd.x_studio_fecha_de_trabajado : dataToUpdate.x_studio_fecha_de_trabajado;
-              const nuevaVerif = upd ? !!upd.x_studio_verificacion_de_excel : !!dataToUpdate.x_studio_verificacion_de_excel;
+        const vista = document.getElementById("textoVista").innerText;
 
-              setTarjetaEstadoTerminados(tarjeta, nuevoEstado, nuevaFecha, nuevaVerif);
-            } else {
-              const nuevoEstado = upd ? upd.x_studio_selection_field_3j_1ivn1ho1m : dataToUpdate.x_studio_selection_field_3j_1ivn1ho1m;
-              const nuevaFecha = upd ? upd.x_studio_fecha_de_trabajado : dataToUpdate.x_studio_fecha_de_trabajado;
-              setTarjetaEstadoMesa(tarjeta, nuevoEstado, nuevaFecha);
-            }
+        if (vista === "Trabajos Terminados") {
+          const nuevoEstado = upd ? upd.x_studio_selection_field_3j_1ivn1ho1m : dataToUpdate.x_studio_selection_field_3j_1ivn1ho1m;
+          const nuevaFecha = upd ? upd.x_studio_fecha_de_trabajado : dataToUpdate.x_studio_fecha_de_trabajado;
+          const nuevaVerif = upd ? !!upd.x_studio_verificacion_de_excel : !!dataToUpdate.x_studio_verificacion_de_excel;
 
-            boton.disabled = true;
-            setSyncInfo(tarjeta, "⏳ Sincronizando...");
+          setTarjetaEstadoTerminados(tarjeta, nuevoEstado, nuevaFecha, nuevaVerif);
+        } else {
+          const nuevoEstado = upd ? upd.x_studio_selection_field_3j_1ivn1ho1m : dataToUpdate.x_studio_selection_field_3j_1ivn1ho1m;
+          const nuevaFecha = upd ? upd.x_studio_fecha_de_trabajado : dataToUpdate.x_studio_fecha_de_trabajado;
+          setTarjetaEstadoMesa(tarjeta, nuevoEstado, nuevaFecha);
+        }
 
-            actualizarContador();
-            GUARDANDO_IDS.delete(tareaId);
+        boton.disabled = true;
+        setSyncInfo(tarjeta, "⏳ Sincronizando...");
 
-            setTimeout(() => {
-              const vista2 = document.getElementById("textoVista").innerText;
-              if (vista2 === "Trabajos Terminados") {
-                cargarTerminados(obtenerTrabajadoPor(UBICACION_ACTUAL), true);
-              } else {
-                cargarTareas(UBICACION_ACTUAL, true);
-              }
-              clearPending(tareaId);
-            }, 1500);
+        actualizarContador();
+        GUARDANDO_IDS.delete(tareaId);
 
-          }, 600);
-        })
-        .catch(err => {
-          console.error("Error al actualizar tarea en Odoo:", err);
-
-          boton.disabled = false;
-          boton.innerText = prevText;
-          boton.style.background = prevBg || "green";
-
-          GUARDANDO_IDS.delete(tareaId);
+        setTimeout(() => {
+          const vista2 = document.getElementById("textoVista").innerText;
+          if (vista2 === "Trabajos Terminados") {
+            cargarTerminados(obtenerTrabajadoPor(UBICACION_ACTUAL), true);
+          } else {
+            cargarTareas(UBICACION_ACTUAL, true);
+          }
           clearPending(tareaId);
-          setSyncInfo(tarjeta, null);
+        }, 1500);
 
-          alert("❌ No se pudo guardar. Intenta otra vez.");
-        });
-    }
+      }, 600);
+    })
+    .catch(err => {
+      console.error("Error al actualizar tarea en Odoo:", err);
+
+      boton.disabled = false;
+      boton.innerText = prevText;
+      boton.style.background = prevBg || "green";
+
+      GUARDANDO_IDS.delete(tareaId);
+      clearPending(tareaId);
+      setSyncInfo(tarjeta, null);
+
+      alert("❌ No se pudo guardar. Intenta otra vez.");
+    });
+}
   </script>
 
 </body>
 
 </html>
+
