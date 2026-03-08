@@ -205,6 +205,12 @@ def value_after_colon(line: str) -> str:
     return clean_value(line.split(":", 1)[1])
 
 
+def add_line_if_value(lines: list, label: str, value: str):
+    value = clean_value(value)
+    if value:
+        lines.append(f"{label}: {value}")
+
+
 # =========================
 # 3) MAPEO DE CAMPOS
 # =========================
@@ -702,18 +708,13 @@ def build_structured_text(task: dict, project_name: str) -> str:
     task_name = clean_value(task.get("name") or "")
 
     from_description = extract_fields_from_description_html(descripcion)
-
     actual_sin_footer = strip_generated_footer(actual)
     from_current_field = extract_fields_from_structured_text(actual_sin_footer)
 
     merged = merge_fields(from_description, from_current_field)
 
     nombre = choose_best_client_name(task, from_description, from_current_field)
-
     celular = clean_value(merged.get("celular"))
-    if not celular and is_probable_phone(task_name):
-        celular = task_name
-
     dni = clean_value(merged.get("dni"))
     distrito = smart_title(merged.get("distrito"))
     direccion = clean_value(merged.get("direccion"))
@@ -722,34 +723,31 @@ def build_structured_text(task: dict, project_name: str) -> str:
     departamento = smart_title(merged.get("departamento"))
     agencia = clean_value(merged.get("agencia_shalom"))
 
+    if not celular and is_probable_phone(task_name):
+        celular = task_name
+
     nombre = nombre.upper() if nombre else ""
     celular = only_digits_or_plus(celular) if celular else ""
     dni = only_digits_or_plus(dni) if dni else ""
 
     encabezado = "Recojo:" if is_recojo_project(project_name) else "Pedido:"
 
-    lineas = [
-        encabezado,
-        f"Nombre: {nombre}",
-        f"Celular: {celular}",
-        f"DNI: {dni}",
-        f"Distrito: {distrito}",
-        f"Dirección: {direccion}",
-        f"Referencia: {referencia}",
-        f"Productos: {productos}",
-    ]
+    lineas = [encabezado]
 
-    if departamento:
-        lineas.append(f"Departamento: {departamento}")
+    add_line_if_value(lineas, "Nombre", nombre)
+    add_line_if_value(lineas, "Celular", celular)
+    add_line_if_value(lineas, "DNI", dni)
+    add_line_if_value(lineas, "Distrito", distrito)
+    add_line_if_value(lineas, "Dirección", direccion)
+    add_line_if_value(lineas, "Referencia", referencia)
+    add_line_if_value(lineas, "Productos", productos)
+    add_line_if_value(lineas, "Departamento", departamento)
+    add_line_if_value(lineas, "Agencia", agencia)
 
-    if agencia:
-        lineas.append(f"Agencia: {agencia}")
-
-    lineas.extend([
-        "Por cobrar:",
-        f"Yape: {FOOTER_YAPE_PHONE}",
-        f"Nombre: {FOOTER_CONTACT_NAME}",
-    ])
+    if not agencia:
+        lineas.append("Por cobrar:")
+        lineas.append(f"Yape: {FOOTER_YAPE_PHONE}")
+        lineas.append(f"Nombre: {FOOTER_CONTACT_NAME}")
 
     return "\n".join(lineas).strip()
 
