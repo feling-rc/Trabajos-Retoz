@@ -44,7 +44,7 @@ MODEL_MESSAGE = "mail.message"
 FIELD_DATOS_CLIENTE = "x_studio_datos_del_cliente"
 FIELD_FORCE_FILL = "x_studio_llenar_informacion"
 
-CHECK_EVERY_SECONDS = 180
+CHECK_EVERY_SECONDS = 30
 PAGE_SIZE = 100
 CHATTER_FETCH_LIMIT = 20
 
