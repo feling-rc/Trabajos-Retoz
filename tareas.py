@@ -12,7 +12,10 @@ from zoneinfo import ZoneInfo
 tareas_bp = Blueprint("tareas_bp", __name__)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, "tareas_simple.db")
+DATA_DIR = os.path.join(BASE_DIR, "data")
+os.makedirs(DATA_DIR, exist_ok=True)
+
+DB_PATH = os.environ.get("TAREAS_DB_PATH", os.path.join(DATA_DIR, "tareas_simple.db"))
 TZ = ZoneInfo("America/Lima")
 RESPONSABLES = ["Elizabeth", "Shina", "Feling"]
 
@@ -22,7 +25,7 @@ def now_local_str():
 
 
 def get_db():
-    conn = sqlite3.connect(DB_PATH, timeout=30)
+    conn = sqlite3.connect(DB_PATH, timeout=30, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -854,18 +857,18 @@ También acepta listas con números o [ ]"
       }
     }
 
-async function eliminarTarea(id) {
-  try {
-    await api(`/tareas/api/${id}/eliminar`, {
-      method: "POST"
-    });
+    async function eliminarTarea(id) {
+      try {
+        await api(`/tareas/api/${id}/eliminar`, {
+          method: "POST"
+        });
 
-    showToast("Tarea eliminada");
-    await recargarVista();
-  } catch (err) {
-    showToast(err.message);
-  }
-}
+        showToast("Tarea eliminada");
+        await recargarVista();
+      } catch (err) {
+        showToast(err.message);
+      }
+    }
 
     async function vaciarHechas() {
       const ok = confirm(`¿Vaciar todas las terminadas de ${responsableActual}?`);
@@ -1141,6 +1144,7 @@ def api_crear_tareas():
 
     conn.commit()
     conn.close()
+    backup_db_to_drive_safely(DB_PATH)
 
     cantidad = len(tareas)
     mensaje = f"{cantidad} {'tarea agregada' if cantidad == 1 else 'tareas agregadas'}"
@@ -1169,6 +1173,7 @@ def api_marcar_hecha(tarea_id):
 
     conn.commit()
     conn.close()
+    backup_db_to_drive_safely(DB_PATH)
 
     return jsonify({"message": "OK"})
 
@@ -1194,6 +1199,7 @@ def api_deshacer_tarea(tarea_id):
 
     conn.commit()
     conn.close()
+    backup_db_to_drive_safely(DB_PATH)
 
     return jsonify({"message": "OK"})
 
@@ -1213,6 +1219,7 @@ def api_eliminar_tarea(tarea_id):
     cur.execute("DELETE FROM tareas WHERE id = ?", (tarea_id,))
     conn.commit()
     conn.close()
+    backup_db_to_drive_safely(DB_PATH)
 
     return jsonify({"message": "OK"})
 
@@ -1239,8 +1246,10 @@ def api_vaciar_hechas():
     borradas = cur.rowcount
     conn.commit()
     conn.close()
+    backup_db_to_drive_safely(DB_PATH)
 
     return jsonify({"message": f"{borradas} tareas eliminadas"})
 
 
+restore_db_from_drive_if_missing_safely(DB_PATH)
 init_db()
