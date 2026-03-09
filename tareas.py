@@ -2,6 +2,10 @@ from flask import Blueprint, jsonify, request, render_template_string
 import sqlite3
 import os
 import re
+from drive_tasks_backup import (
+    backup_db_to_drive_safely,
+    restore_db_from_drive_if_missing_safely
+)
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
