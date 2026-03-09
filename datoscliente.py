@@ -319,11 +319,54 @@ def extract_fields_from_chatter_body(body: str) -> dict:
     if not body:
         return data
 
+    # ===== respaldo por regex directo =====
+    plain_text = "\n".join(html_to_plain_lines(body))
+
+    m = re.search(r"(?im)^\s*nombre\s+completo\s*:\s*(.+?)\s*$", plain_text)
+    if m:
+        data["nombre"] = clean_value(m.group(1))
+
+    m = re.search(r"(?im)^\s*dni\s*:\s*(.+?)\s*$", plain_text)
+    if m:
+        data["dni"] = clean_value(m.group(1))
+
+    m = re.search(r"(?im)^\s*distrito\s*:\s*(.+?)\s*$", plain_text)
+    if m:
+        data["distrito"] = clean_value(m.group(1))
+
+    m = re.search(r"(?im)^\s*direccion\s*:\s*(.+?)\s*$", plain_text)
+    if m:
+        data["direccion"] = clean_value(m.group(1))
+
+    m = re.search(r"(?im)^\s*referencia\s*:\s*(.+?)\s*$", plain_text)
+    if m:
+        data["referencia"] = clean_value(m.group(1))
+
+    m = re.search(r"(?im)^\s*¿?\s*que\s+productos\s+estas\s+comprando\??\s*:\s*(.+?)\s*$", normalize_text(plain_text))
+    if m:
+        data["productos"] = clean_value(m.group(1))
+
+    m = re.search(r"(?im)^\s*link\s+google\s+maps\s*:\s*(.+?)\s*$", plain_text)
+    if m:
+        data["maps"] = clean_value(m.group(1))
+
+    m = re.search(r"(?im)^\s*(numero|número)\s+de\s+orden\s*:\s*(.+?)\s*$", plain_text)
+    if m:
+        data["orden"] = clean_value(m.group(2))
+
+    m = re.search(r"(?im)^\s*departamento\s*:\s*(.+?)\s*$", plain_text)
+    if m:
+        data["departamento"] = clean_value(m.group(1))
+
+    m = re.search(r"(?im)^\s*(direccion|dirección)\s+de\s+agencia\s+de\s+shalom\s*:\s*(.+?)\s*$", normalize_text(plain_text))
+    if m:
+        data["agencia"] = clean_value(m.group(2))
+
+    # ===== parseo normal línea por línea =====
     lines = html_to_plain_lines(body)
     if not lines:
         return data
 
-    # Si existe el título "Otra información", empezamos desde ahí hacia abajo
     start_index = 0
     for i, ln in enumerate(lines):
         if "otra informacion" in normalize_label(ln):
@@ -346,7 +389,6 @@ def extract_fields_from_chatter_body(body: str) -> dict:
             data[field_name] = value
 
     return data
-
 
 def has_any_client_data(data: dict) -> bool:
     for key in [
