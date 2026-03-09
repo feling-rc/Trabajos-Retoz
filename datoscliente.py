@@ -34,16 +34,19 @@ USERNAME = "retoz2023@gmail.com"
 if not API_KEY:
     raise RuntimeError("Falta la variable de entorno ODOO_API_KEY")
 
-ALLOWED_PROJECT_NAMES = [
-    "Envios de Productos",
-    "Recoger Calzados",
-]
+# Proyectos donde aplica este llenado
+# Ajusta estos IDs si en tu Odoo cambian.
+ALLOWED_PROJECT_IDS = [12, 13, 17]
 
-MODEL_NAME = "project.task"
+MODEL_TASK = "project.task"
+MODEL_MESSAGE = "mail.message"
+
 FIELD_DATOS_CLIENTE = "x_studio_datos_del_cliente"
+FIELD_FORCE_FILL = "x_studio_llenar_informacion"
 
 CHECK_EVERY_SECONDS = 180
 PAGE_SIZE = 100
+CHATTER_FETCH_LIMIT = 20
 
 HIDE_CONSOLE = False
 
@@ -140,24 +143,10 @@ def normalize_label(s: str) -> str:
     return s
 
 
-def is_probable_phone(text: str) -> bool:
-    if not text:
-        return False
-    t = re.sub(r"[^\d+]", "", str(text))
-    return bool(re.fullmatch(r"\+?\d{7,15}", t))
-
-
 def only_digits_or_plus(text: str) -> str:
     if not text:
         return ""
     return re.sub(r"[^\d+]", "", str(text)).strip()
-
-
-def smart_title(s: str) -> str:
-    s = clean_value(s)
-    if not s:
-        return ""
-    return s.title()
 
 
 def normalize_compare_text(s: str) -> str:
@@ -168,47 +157,24 @@ def normalize_compare_text(s: str) -> str:
     return s.strip()
 
 
-def normalize_person_compare(s: str) -> str:
-    s = normalize_text(s).lower()
-    s = re.sub(r"[^a-z0-9 ]+", " ", s)
-    s = re.sub(r"\s+", " ", s).strip()
-    return s
-
-
-def same_person(a: str, b: str) -> bool:
-    return normalize_person_compare(a) != "" and normalize_person_compare(a) == normalize_person_compare(b)
-
-
-def strip_generated_footer(raw_text: str) -> str:
-    if not raw_text:
-        return ""
-    text = html.unescape(str(raw_text))
-    m = re.search(r"(?im)^\s*por cobrar\s*:\s*$", text)
-    if m:
-        text = text[:m.start()]
-    return text
-
-
-def extract_first_group(text: str, patterns) -> str:
-    if not text:
-        return ""
-    for pattern in patterns:
-        m = re.search(pattern, text, re.IGNORECASE)
-        if m:
-            return clean_value(m.group(1))
-    return ""
-
-
-def value_after_colon(line: str) -> str:
+def extract_label_value(line: str):
     if ":" not in line:
-        return ""
-    return clean_value(line.split(":", 1)[1])
+        return None, None
+    left, right = line.split(":", 1)
+    return normalize_label(left), clean_value(right)
 
 
 def add_line_if_value(lines: list, label: str, value: str):
     value = clean_value(value)
     if value:
         lines.append(f"{label}: {value}")
+
+
+def task_project_name(task: dict) -> str:
+    project = task.get("project_id")
+    if isinstance(project, list) and len(project) > 1:
+        return clean_value(project[1])
+    return ""
 
 
 # =========================
@@ -222,26 +188,6 @@ FIELD_ALIASES = {
         "apellidos y nombres",
         "nombre del cliente",
         "cliente",
-        "destinatario",
-        "persona que recibira el pedido",
-        "persona que recibirá el pedido",
-        "persona que recoge",
-        "quien recibe",
-        "quién recibe",
-        "nombre y apellido",
-        "nombres",
-    ],
-    "celular": [
-        "numero de celular",
-        "número de celular",
-        "celular",
-        "telefono",
-        "teléfono",
-        "whatsapp",
-        "numero de contacto",
-        "número de contacto",
-        "telefono de contacto",
-        "teléfono de contacto",
     ],
     "dni": [
         "dni",
@@ -277,16 +223,46 @@ FIELD_ALIASES = {
         "productos que estás comprando",
         "producto",
     ],
+    "maps": [
+        "link google maps",
+        "google maps",
+        "maps",
+        "mapa",
+        "ubicacion",
+        "ubicación",
+    ],
+    "orden": [
+        "numero de orden",
+        "número de orden",
+        "orden",
+        "numero orden",
+        "número orden",
+    ],
     "departamento": [
         "departamento",
     ],
-    "agencia_shalom": [
+    "agencia": [
         "direccion de agencia de shalom",
         "dirección de agencia de shalom",
         "agencia de shalom",
         "direccion agencia shalom",
         "dirección agencia shalom",
+        "agencia",
     ],
+}
+
+OUTPUT_LABELS = {
+    "nombre": "Nombre",
+    "celular": "Celular",
+    "dni": "DNI",
+    "distrito": "Distrito",
+    "direccion": "Dirección",
+    "referencia": "Referencia",
+    "productos": "Productos",
+    "maps": "Maps",
+    "orden": "Orden",
+    "departamento": "Departamento",
+    "agencia": "Agencia",
 }
 
 LABEL_TO_FIELD = {}
@@ -301,15 +277,8 @@ def field_from_label(label_norm: str):
     return LABEL_TO_FIELD.get(normalize_label(label_norm))
 
 
-def extract_label_value(line: str):
-    if ":" not in line:
-        return None, None
-    left, right = line.split(":", 1)
-    return normalize_label(left), clean_value(right)
-
-
 # =========================
-# 4) PARSEO DE TEXTO
+# 4) PARSEO DE CHATTER
 # =========================
 def html_to_plain_lines(raw_text: str):
     if not raw_text:
@@ -321,6 +290,7 @@ def html_to_plain_lines(raw_text: str):
     text = re.sub(r"(?i)</p\s*>", "\n", text)
     text = re.sub(r"(?i)</div\s*>", "\n", text)
     text = re.sub(r"(?i)</li\s*>", "\n", text)
+    text = re.sub(r"(?i)</tr\s*>", "\n", text)
     text = re.sub(r"<.*?>", "", text)
     text = text.replace("\r", "\n")
 
@@ -332,269 +302,74 @@ def html_to_plain_lines(raw_text: str):
     return lines
 
 
-def assign_if_empty(data: dict, key: str, value: str):
-    value = clean_value(value)
-    if key in data and value and not data[key]:
-        data[key] = value
-
-
-def detect_is_provincia(data: dict, raw_text: str) -> bool:
-    if clean_value(data.get("departamento")):
-        return True
-    if clean_value(data.get("agencia_shalom")):
-        return True
-
-    text = normalize_text(raw_text).lower()
-    if "departamento" in text:
-        return True
-    if "agencia de shalom" in text:
-        return True
-    if "direccion de agencia de shalom" in text:
-        return True
-    if "dirección de agencia de shalom" in text:
-        return True
-
-    return False
-
-
-def extract_fields_from_description_html(desc_html: str) -> dict:
+def extract_fields_from_chatter_body(body: str) -> dict:
     data = {
         "nombre": "",
-        "celular": "",
         "dni": "",
         "distrito": "",
         "direccion": "",
         "referencia": "",
         "productos": "",
+        "maps": "",
+        "orden": "",
         "departamento": "",
-        "agencia_shalom": "",
-        "is_provincia": False,
+        "agencia": "",
     }
 
-    if not desc_html:
+    if not body:
         return data
 
-    data["nombre"] = extract_first_group(
-        desc_html,
-        [
-            r"Nombre\s*Completo\s*:\s*([^<\n\r]+)",
-            r"Nombre\s*del\s*cliente\s*:\s*([^<\n\r]+)",
-            r"Nombre\s*y\s*apellido\s*:\s*([^<\n\r]+)",
-            r"Nombres\s*y\s*apellidos\s*:\s*([^<\n\r]+)",
-            r"Cliente\s*:\s*([^<\n\r]+)",
-            r"Nombre\s*:\s*([^<\n\r]+)",
-        ],
-    )
+    lines = html_to_plain_lines(body)
+    if not lines:
+        return data
 
-    data["celular"] = extract_first_group(
-        desc_html,
-        [
-            r"Numero\s*de\s*celular\s*:\s*([^<\n\r]+)",
-            r"Número\s*de\s*celular\s*:\s*([^<\n\r]+)",
-            r"Celular\s*:\s*([^<\n\r]+)",
-            r"Telefono\s*:\s*([^<\n\r]+)",
-            r"Teléfono\s*:\s*([^<\n\r]+)",
-            r"Whatsapp\s*:\s*([^<\n\r]+)",
-        ],
-    )
+    # Si existe el título "Otra información", empezamos desde ahí hacia abajo
+    start_index = 0
+    for i, ln in enumerate(lines):
+        if "otra informacion" in normalize_label(ln):
+            start_index = i + 1
+            break
 
-    data["productos"] = extract_first_group(
-        desc_html,
-        [
-            r"¿?\s*Qué\s*productos\s*est[aá]s\s*comprando\s*\??\s*:\s*([^<\n\r]+)",
-            r"Que\s*productos\s*estas\s*comprando\s*:\s*([^<\n\r]+)",
-            r"Productos\s*:\s*([^<\n\r]+)",
-        ],
-    )
-
-    data["departamento"] = extract_first_group(
-        desc_html,
-        [
-            r"Departamento\s*:\s*([^<\n\r]+)",
-        ],
-    )
-
-    data["agencia_shalom"] = extract_first_group(
-        desc_html,
-        [
-            r"Direcci[oó]n\s*de\s*Agencia\s*de\s*Shalom\s*:\s*([^<\n\r]+)",
-            r"Agencia\s*de\s*Shalom\s*:\s*([^<\n\r]+)",
-        ],
-    )
-
-    text = desc_html.replace("&nbsp;", " ")
-    text = re.sub(r"(?i)<br\s*/?>", "\n", text)
-    text = re.sub(r"<.*?>", "", text)
-    text = text.replace("\r", "\n")
-
-    lines = [clean_value(ln) for ln in text.split("\n") if clean_value(ln)]
+    lines = lines[start_index:] if start_index < len(lines) else lines
 
     for ln in lines:
-        low = normalize_label(ln)
-
-        if low.startswith("dni"):
-            data["dni"] = value_after_colon(ln)
-            continue
-
-        if low.startswith("distrito"):
-            data["distrito"] = value_after_colon(ln)
-            continue
-
-        if low.startswith("direccion de agencia de shalom") or low.startswith("dirección de agencia de shalom"):
-            data["agencia_shalom"] = value_after_colon(ln)
-            continue
-
-        if low.startswith("agencia de shalom"):
-            data["agencia_shalom"] = value_after_colon(ln)
-            continue
-
-        if low.startswith("departamento"):
-            data["departamento"] = value_after_colon(ln)
-            continue
-
-        if low.startswith("direccion") or low.startswith("dirección"):
-            label_norm, value = extract_label_value(ln)
-            if field_from_label(label_norm) == "direccion":
-                data["direccion"] = clean_value(value)
-                continue
-
-        if low.startswith("referencia"):
-            data["referencia"] = value_after_colon(ln)
-            continue
-
-        if low.startswith("productos") or low.startswith("que productos estas comprando") or low.startswith("qué productos estás comprando"):
-            data["productos"] = value_after_colon(ln)
-            continue
-
         label_norm, value = extract_label_value(ln)
+        if not label_norm:
+            continue
 
-        if not data["nombre"] and field_from_label(label_norm) == "nombre":
-            data["nombre"] = clean_value(value)
-
-        if not data["celular"] and field_from_label(label_norm) == "celular":
-            data["celular"] = clean_value(value)
-
-        if not data["productos"] and field_from_label(label_norm) == "productos":
-            data["productos"] = clean_value(value)
-
-        if not data["departamento"] and field_from_label(label_norm) == "departamento":
-            data["departamento"] = clean_value(value)
-
-        if not data["agencia_shalom"] and field_from_label(label_norm) == "agencia_shalom":
-            data["agencia_shalom"] = clean_value(value)
-
-    data["is_provincia"] = detect_is_provincia(data, desc_html)
-    return data
-
-
-def extract_fields_from_structured_text(raw_text: str) -> dict:
-    data = {
-        "nombre": "",
-        "celular": "",
-        "dni": "",
-        "distrito": "",
-        "direccion": "",
-        "referencia": "",
-        "productos": "",
-        "departamento": "",
-        "agencia_shalom": "",
-        "is_provincia": False,
-    }
-
-    if not raw_text:
-        return data
-
-    lines = html_to_plain_lines(raw_text)
-
-    i = 0
-    while i < len(lines):
-        ln = clean_value(lines[i])
-
-        label_norm, value = extract_label_value(ln)
         field_name = field_from_label(label_norm)
-        if field_name:
-            assign_if_empty(data, field_name, value)
-            i += 1
+        if not field_name:
             continue
 
-        standalone_field = field_from_label(ln)
-        if standalone_field:
-            if i + 1 < len(lines):
-                next_line = clean_value(lines[i + 1])
-                next_label_norm, _ = extract_label_value(next_line)
-                next_is_field = field_from_label(next_label_norm) or field_from_label(next_line)
-                if not next_is_field:
-                    assign_if_empty(data, standalone_field, next_line)
-                    i += 2
-                    continue
-            i += 1
-            continue
+        value = clean_value(value)
+        if value and not data[field_name]:
+            data[field_name] = value
 
-        i += 1
-
-    data["is_provincia"] = detect_is_provincia(data, raw_text)
     return data
 
 
-def merge_fields(primary: dict, fallback: dict) -> dict:
-    result = {}
+def has_any_client_data(data: dict) -> bool:
     for key in [
         "nombre",
-        "celular",
         "dni",
         "distrito",
         "direccion",
         "referencia",
         "productos",
+        "maps",
+        "orden",
         "departamento",
-        "agencia_shalom",
+        "agencia",
     ]:
-        result[key] = clean_value(primary.get(key)) or clean_value(fallback.get(key))
-
-    result["is_provincia"] = bool(primary.get("is_provincia")) or bool(fallback.get("is_provincia"))
-    return result
+        if clean_value(data.get(key)):
+            return True
+    return False
 
 
 # =========================
-# 5) ODOO: PROYECTOS Y TAREAS
+# 5) ODOO: TAREAS Y MENSAJES
 # =========================
-def find_allowed_project_ids(uid: int) -> dict:
-    payload = {
-        "jsonrpc": "2.0",
-        "method": "call",
-        "params": {
-            "service": "object",
-            "method": "execute_kw",
-            "args": [
-                DB,
-                uid,
-                API_KEY,
-                "project.project",
-                "search_read",
-                [[["name", "in", ALLOWED_PROJECT_NAMES]]],
-                {"fields": ["id", "name"], "limit": 20},
-            ],
-        },
-        "id": 2,
-    }
-
-    rows = odoo_call(payload).get("result", [])
-    if not rows:
-        raise RuntimeError("No se encontraron los proyectos permitidos.")
-
-    mapping = {}
-    for row in rows:
-        mapping[row["id"]] = row.get("name", "")
-
-    found_names = set(mapping.values())
-    missing = [x for x in ALLOWED_PROJECT_NAMES if x not in found_names]
-    if missing:
-        print("⚠️ Proyectos no encontrados:", missing)
-
-    return mapping
-
-
-def fetch_all_tasks(uid: int, allowed_project_ids: list):
+def fetch_all_tasks(uid: int):
     all_rows = []
     offset = 0
 
@@ -609,21 +384,20 @@ def fetch_all_tasks(uid: int, allowed_project_ids: list):
                     DB,
                     uid,
                     API_KEY,
-                    MODEL_NAME,
+                    MODEL_TASK,
                     "search_read",
                     [
                         [
-                            ["project_id", "in", allowed_project_ids],
+                            ["project_id", "in", ALLOWED_PROJECT_IDS],
                         ]
                     ],
                     {
                         "fields": [
                             "id",
                             "name",
-                            "description",
                             "project_id",
-                            "partner_id",
                             FIELD_DATOS_CLIENTE,
+                            FIELD_FORCE_FILL,
                         ],
                         "limit": PAGE_SIZE,
                         "offset": offset,
@@ -631,7 +405,7 @@ def fetch_all_tasks(uid: int, allowed_project_ids: list):
                     },
                 ],
             },
-            "id": 3,
+            "id": 2,
         }
 
         rows = odoo_call(payload).get("result", [])
@@ -648,7 +422,7 @@ def fetch_all_tasks(uid: int, allowed_project_ids: list):
     return all_rows
 
 
-def write_task_datos_cliente(uid: int, task_id: int, texto: str):
+def fetch_recent_messages_for_task(uid: int, task_id: int):
     payload = {
         "jsonrpc": "2.0",
         "method": "call",
@@ -659,9 +433,63 @@ def write_task_datos_cliente(uid: int, task_id: int, texto: str):
                 DB,
                 uid,
                 API_KEY,
-                MODEL_NAME,
+                MODEL_MESSAGE,
+                "search_read",
+                [
+                    [
+                        ["model", "=", MODEL_TASK],
+                        ["res_id", "=", task_id],
+                    ]
+                ],
+                {
+                    "fields": ["id", "body", "date"],
+                    "limit": CHATTER_FETCH_LIMIT,
+                    "order": "id desc",
+                },
+            ],
+        },
+        "id": 3,
+    }
+    return odoo_call(payload).get("result", [])
+
+
+def fetch_latest_client_data_from_chatter(uid: int, task_id: int) -> dict:
+    messages = fetch_recent_messages_for_task(uid, task_id)
+
+    for msg in messages:
+        body = msg.get("body") or ""
+        parsed = extract_fields_from_chatter_body(body)
+        if has_any_client_data(parsed):
+            return parsed
+
+    return {
+        "nombre": "",
+        "dni": "",
+        "distrito": "",
+        "direccion": "",
+        "referencia": "",
+        "productos": "",
+        "maps": "",
+        "orden": "",
+        "departamento": "",
+        "agencia": "",
+    }
+
+
+def write_task_fields(uid: int, task_id: int, values: dict):
+    payload = {
+        "jsonrpc": "2.0",
+        "method": "call",
+        "params": {
+            "service": "object",
+            "method": "execute_kw",
+            "args": [
+                DB,
+                uid,
+                API_KEY,
+                MODEL_TASK,
                 "write",
-                [[task_id], {FIELD_DATOS_CLIENTE: texto}],
+                [[task_id], values],
             ],
         },
         "id": 4,
@@ -672,117 +500,106 @@ def write_task_datos_cliente(uid: int, task_id: int, texto: str):
 # =========================
 # 6) CONSTRUCCIÓN DEL TEXTO FINAL
 # =========================
-def is_recojo_project(project_name: str) -> bool:
-    low = (project_name or "").strip().lower()
-    return "recoger calzados" == low or "recojo" in low or "recoger" in low
+def build_structured_text(task: dict, chatter_data: dict) -> str:
+    celular = only_digits_or_plus(task.get("name") or "")
+
+    nombre = clean_value(chatter_data.get("nombre"))
+    dni = clean_value(chatter_data.get("dni"))
+    distrito = clean_value(chatter_data.get("distrito"))
+    direccion = clean_value(chatter_data.get("direccion"))
+    referencia = clean_value(chatter_data.get("referencia"))
+    productos = clean_value(chatter_data.get("productos"))
+    maps = clean_value(chatter_data.get("maps"))
+    orden = clean_value(chatter_data.get("orden"))
+    departamento = clean_value(chatter_data.get("departamento"))
+    agencia = clean_value(chatter_data.get("agencia"))
+
+    lines = []
+
+    add_line_if_value(lines, OUTPUT_LABELS["nombre"], nombre)
+    add_line_if_value(lines, OUTPUT_LABELS["celular"], celular)
+    add_line_if_value(lines, OUTPUT_LABELS["dni"], dni)
+    add_line_if_value(lines, OUTPUT_LABELS["distrito"], distrito)
+    add_line_if_value(lines, OUTPUT_LABELS["direccion"], direccion)
+    add_line_if_value(lines, OUTPUT_LABELS["referencia"], referencia)
+    add_line_if_value(lines, OUTPUT_LABELS["productos"], productos)
+    add_line_if_value(lines, OUTPUT_LABELS["maps"], maps)
+    add_line_if_value(lines, OUTPUT_LABELS["orden"], orden)
+    add_line_if_value(lines, OUTPUT_LABELS["departamento"], departamento)
+    add_line_if_value(lines, OUTPUT_LABELS["agencia"], agencia)
+
+    # Si Departamento tiene información, NO va el bloque de cobro.
+    if not departamento and lines:
+        lines.append("Por cobrar:")
+        lines.append(f"Yape: {FOOTER_YAPE_PHONE}")
+        lines.append(f"Nombre: {FOOTER_CONTACT_NAME}")
+
+    return "\n".join(lines).strip()
 
 
-def get_partner_name(task: dict) -> str:
-    partner = task.get("partner_id")
-    if isinstance(partner, list) and len(partner) > 1:
-        return clean_value(partner[1])
-    return ""
+def should_process_task(task: dict) -> bool:
+    actual = task.get(FIELD_DATOS_CLIENTE)
+    force_fill = bool(task.get(FIELD_FORCE_FILL))
 
-
-def choose_best_client_name(task: dict, from_description: dict, from_current_field: dict) -> str:
-    task_name = clean_value(task.get("name") or "")
-    partner_name = get_partner_name(task)
-
-    candidates = [
-        clean_value(from_description.get("nombre")),
-        clean_value(from_current_field.get("nombre")),
-        partner_name,
-        (task_name if not is_probable_phone(task_name) else ""),
-    ]
-
-    for candidate in candidates:
-        if candidate and not same_person(candidate, FOOTER_CONTACT_NAME):
-            return candidate
-
-    return ""
-
-
-def build_structured_text(task: dict, project_name: str) -> str:
-    descripcion = task.get("description") or ""
-    actual = task.get(FIELD_DATOS_CLIENTE) or ""
-    task_name = clean_value(task.get("name") or "")
-
-    from_description = extract_fields_from_description_html(descripcion)
-    actual_sin_footer = strip_generated_footer(actual)
-    from_current_field = extract_fields_from_structured_text(actual_sin_footer)
-
-    merged = merge_fields(from_description, from_current_field)
-
-    nombre = choose_best_client_name(task, from_description, from_current_field)
-    celular = clean_value(merged.get("celular"))
-    dni = clean_value(merged.get("dni"))
-    distrito = smart_title(merged.get("distrito"))
-    direccion = clean_value(merged.get("direccion"))
-    referencia = clean_value(merged.get("referencia"))
-    productos = clean_value(merged.get("productos"))
-    departamento = smart_title(merged.get("departamento"))
-    agencia = clean_value(merged.get("agencia_shalom"))
-
-    if not celular and is_probable_phone(task_name):
-        celular = task_name
-
-    nombre = nombre.upper() if nombre else ""
-    celular = only_digits_or_plus(celular) if celular else ""
-    dni = only_digits_or_plus(dni) if dni else ""
-
-    encabezado = "Recojo:" if is_recojo_project(project_name) else "Pedido:"
-
-    lineas = [encabezado]
-
-    add_line_if_value(lineas, "Nombre", nombre)
-    add_line_if_value(lineas, "Celular", celular)
-    add_line_if_value(lineas, "DNI", dni)
-    add_line_if_value(lineas, "Distrito", distrito)
-    add_line_if_value(lineas, "Dirección", direccion)
-    add_line_if_value(lineas, "Referencia", referencia)
-    add_line_if_value(lineas, "Productos", productos)
-    add_line_if_value(lineas, "Departamento", departamento)
-    add_line_if_value(lineas, "Agencia", agencia)
-
-    if not agencia:
-        lineas.append("Por cobrar:")
-        lineas.append(f"Yape: {FOOTER_YAPE_PHONE}")
-        lineas.append(f"Nombre: {FOOTER_CONTACT_NAME}")
-
-    return "\n".join(lineas).strip()
+    actual_limpio = normalize_compare_text(actual or "")
+    return (not actual_limpio) or force_fill
 
 
 # =========================
 # 7) PROCESO PRINCIPAL
 # =========================
-def process_all_tasks(uid: int, project_map: dict):
-    allowed_project_ids = list(project_map.keys())
-    tasks = fetch_all_tasks(uid, allowed_project_ids)
+def process_all_tasks(uid: int):
+    tasks = fetch_all_tasks(uid)
 
-    updated = 0
     checked = 0
+    updated = 0
+    skipped = 0
 
     for task in tasks:
         checked += 1
 
-        proj = task.get("project_id") or []
-        proj_id = proj[0] if isinstance(proj, list) and len(proj) > 0 else None
-        proj_name = proj[1] if isinstance(proj, list) and len(proj) > 1 else project_map.get(proj_id, "")
-
-        if proj_name not in ALLOWED_PROJECT_NAMES:
+        if not should_process_task(task):
+            skipped += 1
             continue
 
-        nuevo_texto = build_structured_text(task, proj_name)
+        task_id = task["id"]
+        project_name = task_project_name(task)
+        force_fill = bool(task.get(FIELD_FORCE_FILL))
         actual_texto = task.get(FIELD_DATOS_CLIENTE) or ""
 
-        if normalize_compare_text(nuevo_texto) != normalize_compare_text(actual_texto):
-            write_task_datos_cliente(uid, task["id"], nuevo_texto)
-            updated += 1
-            print(f"✅ Actualizado task {task['id']} | Proyecto: {proj_name} | Name: {task.get('name')}")
-        else:
-            print(f"⏭️ Sin cambios task {task['id']} | Proyecto: {proj_name} | Name: {task.get('name')}")
+        chatter_data = fetch_latest_client_data_from_chatter(uid, task_id)
 
-    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Revisadas: {checked} | Actualizadas: {updated}")
+        # Si no hay datos reales en chatter, no escribimos basura.
+        if not has_any_client_data(chatter_data):
+            print(f"⏭️ Sin data en chatter | task {task_id} | Proyecto: {project_name} | Name: {task.get('name')}")
+            continue
+
+        nuevo_texto = build_structured_text(task, chatter_data)
+
+        if not normalize_compare_text(nuevo_texto):
+            print(f"⏭️ Texto final vacío | task {task_id} | Proyecto: {project_name} | Name: {task.get('name')}")
+            continue
+
+        values_to_write = {}
+
+        if normalize_compare_text(nuevo_texto) != normalize_compare_text(actual_texto):
+            values_to_write[FIELD_DATOS_CLIENTE] = nuevo_texto
+
+        # Si se forzó el llenado, al terminar lo apagamos.
+        if force_fill:
+            values_to_write[FIELD_FORCE_FILL] = False
+
+        if values_to_write:
+            write_task_fields(uid, task_id, values_to_write)
+            updated += 1
+            print(f"✅ Actualizado task {task_id} | Proyecto: {project_name} | Name: {task.get('name')}")
+        else:
+            print(f"⏭️ Sin cambios task {task_id} | Proyecto: {project_name} | Name: {task.get('name')}")
+
+    print(
+        f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] "
+        f"Revisadas: {checked} | Actualizadas: {updated} | Omitidas: {skipped}"
+    )
 
 
 def main():
@@ -792,14 +609,13 @@ def main():
     single_instance_or_exit()
 
     uid = login_odoo()
-    project_map = find_allowed_project_ids(uid)
 
-    print("✅ BOT ACTIVO - Ordenando Datos del cliente")
-    print("✅ Proyectos permitidos:", ", ".join(ALLOWED_PROJECT_NAMES))
+    print("✅ BOT ACTIVO - Datos del cliente desde chatter")
+    print(f"✅ Proyectos permitidos: {ALLOWED_PROJECT_IDS}")
 
     while True:
         try:
-            process_all_tasks(uid, project_map)
+            process_all_tasks(uid)
             time.sleep(CHECK_EVERY_SECONDS)
         except Exception as e:
             print("❌ Error:", e)
