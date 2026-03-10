@@ -1,758 +1,931 @@
-from flask import Blueprint, jsonify, request, send_file
-import os
-import time
-import secrets
-from threading import Lock
-from datetime import datetime
-from zoneinfo import ZoneInfo
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trabajo general</title>
+  <style>
+    * { box-sizing: border-box; }
 
-import requests
-
-
-encargado_bp = Blueprint("encargado_bp", __name__)
-
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-PUBLIC_DIR = os.path.join(BASE_DIR, "public")
-
-# =========================
-# CONFIG GENERAL
-# =========================
-TZ = ZoneInfo("America/Lima")
-
-URL = os.getenv("ODOO_URL", "https://retoz.odoo.com")
-DB = os.getenv("ODOO_DB", "retoz")
-USERNAME = os.getenv("ODOO_USERNAME", "retoz2023@gmail.com")
-API_KEY = os.getenv("ODOO_API_KEY")
-
-# código supervisor
-ACCESS_CODE = os.getenv("ENCARGADO_ACCESS_CODE", "210720").strip()
-
-# archivo HTML
-HTML_CANDIDATES = [
-    os.path.join(PUBLIC_DIR, "encargadobonito.html"),
-    os.path.join(BASE_DIR, "encargadobonito.html"),
-]
-
-# requests session
-SESSION = requests.Session()
-_UID = None
-_UID_LOCK = Lock()
-
-# tokens simples en memoria
-TOKENS = {}
-TOKENS_LOCK = Lock()
-TOKEN_TTL_SECONDS = 60 * 60 * 12  # 12 horas
-
-# =========================
-# CAMPOS ODOO
-# =========================
-FIELD_MODELO = "x_studio_modelo_de_par_1"
-FIELD_DETALLE = "x_studio_detalles_del_trabajo_1"
-FIELD_FECHA_TRABAJADO = "x_studio_fecha_de_trabajado"
-FIELD_FECHA_ENTREGA = os.getenv("ODOO_FIELD_FECHA_ENTREGA", "x_studio_fecha_de_entrega_1_1")
-FIELD_ORDEN = "x_studio_orden_de_venta_1"
-FIELD_PASADORES = "x_studio_pasadores_1"
-FIELD_PLANTILLAS = "x_studio_plantillas_1"
-FIELD_RESPONSABLE = "x_studio_responsable_r"
-FIELD_UBICACION = "x_studio_ubicacion_exacta_1"
-FIELD_ESTADO = "x_studio_selection_field_3j_1ivn1ho1m"
-FIELD_VERIF = "x_studio_verificacion_de_excel"
-FIELD_TRABAJADO_POR = "x_studio_trabajado_por"
-FIELD_ANDAMIO = "x_studio_andamio"
-FIELD_CREATE_DATE = "create_date"
-
-OPTIONAL_FIELDS = {FIELD_FECHA_ENTREGA}
-
-# =========================
-# OPCIONES
-# =========================
-RESPONSABLE_OPTIONS = [
-    "PEDRO",
-    "FELING",
-    "YULI",
-    "JORGE",
-    "EZER",
-    "ALEX",
-    "SR COCO",
-    "KEVIN",
-    "SHINA",
-]
-
-UBICACION_OPTIONS = [
-    "DEFINIDO",
-    "A-1",
-    "A-2",
-    "A-3",
-    "A-4",
-    "F-1",
-    "F-2",
-    "F-3",
-    "F-4",
-    "F-5",
-    "P-1",
-    "P-2",
-    "P-3",
-    "P-4",
-    "P-5",
-    "EN ANCHEADORA",
-    "ABANDONADO 1",
-    "ABANDONADO 2",
-    "ENTREGADO",
-    "COMPLETADO",
-    "A",
-    "B",
-    "C",
-    "D",
-    "E",
-    "F",
-    "G",
-    "H",
-    "I",
-    "P-6",
-    "F-7",
-]
-
-TRABAJADO_POR_OPTIONS = [
-    "Pedro",
-    "Feling",
-    "Yuli",
-    "Jorge",
-    "Even Ezer",
-    "Alex",
-    "Sr Juan",
-    "Sr Coco",
-    "Kevin",
-    "Shina",
-]
-
-TRABAJADO_POR_TO_ANDAMIO = {
-    "Pedro": "PEDRO",
-    "Feling": "FELING",
-    "Yuli": "YULI",
-    "Jorge": "JORGE",
-    "Even Ezer": "EZER",
-    "Alex": "ALEX",
-    "Sr Juan": "SR JUAN",
-    "Sr Coco": "SR COCO",
-    "Kevin": "KEVIN",
-    "Shina": "SHINA",
-}
-
-ESTADO_LABELS = {
-    "TRABAJADO": "Trabajado",
-    "03_approved": "En proceso",
-    "02_changes_requested": "Sin material",
-    "04_waiting_material": "Atrasado",
-    "04_waiting_normal": "Atrasado",
-    "1_done": "Completado",
-    "1_cancelled": "Cancelado",
-    "1_canceled": "Cancelado",
-    "Entregado": "Entregado",
-    "En el Courier": "En el courier",
-    "Ya no quiere": "Ya no quiere",
-    "Ya no Quiere": "Ya no quiere",
-    "Agendar Con Bot": "Agendar con bot",
-    "En progreso": "Agendado",
-    "in_progress": "Agendado",
-    "01_in_progress": "Agendado",
-    "in_process": "En proceso",
-    "En Ruta": "En ruta",
-    "Empaquetado": "Empaquetado",
-    "Agendado con Courier": "Agendado con courier",
-}
-
-FINAL_STATES = {"1_done", "Entregado"}
-
-# =========================
-# HELPERS
-# =========================
-def json_error(message, status=400):
-    return jsonify({"error": str(message)}), status
-
-
-def now_lima_str():
-    return datetime.now(TZ).strftime("%Y-%m-%d %H:%M:%S")
-
-
-def normalize_state(value):
-    return str(value or "").strip()
-
-
-def estado_bonito(code):
-    key = normalize_state(code)
-    return ESTADO_LABELS.get(key, key or "-")
-
-
-def find_html_file():
-    for path in HTML_CANDIDATES:
-        if os.path.isfile(path):
-            return path
-    return None
-
-
-def cleanup_tokens():
-    now_ts = time.time()
-    with TOKENS_LOCK:
-        expired = [token for token, meta in TOKENS.items() if meta["exp"] < now_ts]
-        for token in expired:
-            TOKENS.pop(token, None)
-
-
-def create_token():
-    cleanup_tokens()
-    token = secrets.token_urlsafe(32)
-    with TOKENS_LOCK:
-        TOKENS[token] = {
-            "exp": time.time() + TOKEN_TTL_SECONDS,
-            "created": time.time(),
-        }
-    return token
-
-
-def require_token():
-    cleanup_tokens()
-
-    token = request.headers.get("X-Encargado-Token", "").strip()
-    if not token:
-        return None, json_error("Acceso no autorizado.", 401)
-
-    with TOKENS_LOCK:
-        meta = TOKENS.get(token)
-        if not meta:
-            return None, json_error("Acceso inválido o vencido.", 401)
-
-        if meta["exp"] < time.time():
-            TOKENS.pop(token, None)
-            return None, json_error("Tu sesión venció.", 401)
-
-        # renueva TTL al usarlo
-        meta["exp"] = time.time() + TOKEN_TTL_SECONDS
-
-    return token, None
-
-
-def limpiar_numero(texto):
-    return "".join(ch for ch in str(texto or "") if ch.isdigit())
-
-
-def normalize_iso_to_odoo(val):
-    if val in (None, "", "null", False):
-        return False
-
-    if isinstance(val, str):
-        s = val.replace("Z", "")
-        if "T" in s:
-            s = s.replace("T", " ")
-        if "." in s:
-            s = s.split(".")[0]
-        return s
-
-    return val
-
-
-# =========================
-# ODOO HELPERS
-# =========================
-def login_odoo(force=False):
-    global _UID
-
-    if _UID and not force:
-        return _UID
-
-    with _UID_LOCK:
-        if _UID and not force:
-            return _UID
-
-        if not API_KEY:
-            raise Exception("Falta ODOO_API_KEY en variables de entorno.")
-
-        payload = {
-            "jsonrpc": "2.0",
-            "method": "call",
-            "params": {
-                "service": "common",
-                "method": "login",
-                "args": [DB, USERNAME, API_KEY],
-            },
-            "id": 1,
-        }
-
-        resp = SESSION.post(f"{URL}/jsonrpc", json=payload, timeout=30)
-        resp.raise_for_status()
-        uid = resp.json().get("result")
-
-        if not uid:
-            raise Exception("No se pudo iniciar sesión en Odoo.")
-
-        _UID = uid
-        return _UID
-
-
-def odoo_execute_kw(model, method, args=None, kwargs=None, req_id=2, retry=True):
-    if args is None:
-        args = []
-    if kwargs is None:
-        kwargs = {}
-
-    uid = login_odoo()
-
-    payload = {
-        "jsonrpc": "2.0",
-        "method": "call",
-        "params": {
-            "service": "object",
-            "method": "execute_kw",
-            "args": [DB, uid, API_KEY, model, method, args, kwargs],
-        },
-        "id": req_id,
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f2f2f2;
+      color: #222;
     }
 
-    try:
-        resp = SESSION.post(f"{URL}/jsonrpc", json=payload, timeout=35)
-        resp.raise_for_status()
-        data = resp.json()
-    except requests.RequestException as e:
-        if retry:
-            login_odoo(force=True)
-            return odoo_execute_kw(model, method, args, kwargs, req_id=req_id, retry=False)
-        raise Exception(f"Error de conexión con Odoo: {e}")
-
-    if "error" in data:
-        err = data["error"]
-        msg = err.get("data", {}).get("message") or err.get("message") or "Error en Odoo"
-
-        # si caducó algo, reintenta 1 vez
-        if retry and ("Access denied" in msg or "Session" in msg or "login" in msg.lower()):
-            login_odoo(force=True)
-            return odoo_execute_kw(model, method, args, kwargs, req_id=req_id, retry=False)
-
-        raise Exception(msg)
-
-    return data.get("result")
-
-
-def read_task(tarea_id, fields):
-    result = odoo_execute_kw(
-        "project.task",
-        "read",
-        args=[[tarea_id], fields],
-        kwargs={},
-        req_id=9,
-    )
-    return result[0] if isinstance(result, list) and result else {}
-
-
-def search_read_tasks(domain, fields, order="create_date desc", limit=500):
-    try:
-        return odoo_execute_kw(
-            "project.task",
-            "search_read",
-            args=[domain],
-            kwargs={"fields": fields, "order": order, "limit": limit},
-            req_id=5,
-        )
-    except Exception as e:
-        msg = str(e)
-        invalid_optionals = [f for f in OPTIONAL_FIELDS if f in msg]
-
-        if not invalid_optionals:
-            raise
-
-        fallback_fields = [f for f in fields if f not in invalid_optionals]
-
-        rows = odoo_execute_kw(
-            "project.task",
-            "search_read",
-            args=[domain],
-            kwargs={"fields": fallback_fields, "order": order, "limit": limit},
-            req_id=6,
-        )
-
-        for row in rows:
-            for missing in invalid_optionals:
-                row[missing] = False
-
-        return rows
-
-
-def task_to_payload(rec):
-    orden_texto = ""
-    if isinstance(rec.get(FIELD_ORDEN), list) and len(rec.get(FIELD_ORDEN)) >= 2:
-        orden_texto = rec[FIELD_ORDEN][1] or ""
-
-    payload = {
-        "id": rec.get("id"),
-        "modelo": rec.get(FIELD_MODELO) or "",
-        "detalle": rec.get(FIELD_DETALLE) or "",
-        "estado_code": rec.get(FIELD_ESTADO) or "",
-        "estado_label": estado_bonito(rec.get(FIELD_ESTADO)),
-        "fecha_trabajado": rec.get(FIELD_FECHA_TRABAJADO) or False,
-        "fecha_entrega": rec.get(FIELD_FECHA_ENTREGA) or False,
-        "orden_texto": orden_texto,
-        "orden_numero": limpiar_numero(orden_texto),
-        "pasadores": bool(rec.get(FIELD_PASADORES)),
-        "plantillas": bool(rec.get(FIELD_PLANTILLAS)),
-        "responsable": rec.get(FIELD_RESPONSABLE) or "",
-        "ubicacion_seguimiento": rec.get(FIELD_UBICACION) or "",
-        "trabajado_por": rec.get(FIELD_TRABAJADO_POR) or "",
-        "andamio": rec.get(FIELD_ANDAMIO) or "",
-        "verificacion": bool(rec.get(FIELD_VERIF)),
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      background: #ffffff;
+      box-shadow: 0 4px 14px rgba(0,0,0,.08);
+      padding: 14px 18px;
     }
-    return payload
 
+    .topbar-inner {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
 
-def options_to_json(values):
-    return [{"value": v, "label": v} for v in values]
+    .title-pill {
+      background: #fff;
+      border-radius: 999px;
+      padding: 12px 18px;
+      font-size: 24px;
+      font-weight: 700;
+      box-shadow: 0 4px 14px rgba(0,0,0,.10);
+    }
 
+    .count-pill {
+      background: #fff;
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-weight: 700;
+      box-shadow: 0 4px 14px rgba(0,0,0,.10);
+    }
 
-# =========================
-# RUTAS HTML
-# =========================
-@encargado_bp.route("/trabajo-general")
-def trabajo_general_home():
-    html_path = find_html_file()
-    if not html_path:
-        return "No encuentro encargadobonito.html", 404
-    return send_file(html_path)
+    .search-wrap {
+      flex: 1 1 360px;
+      min-width: 260px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #f7f7f7;
+      border-radius: 999px;
+      padding: 10px 14px;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,.04);
+    }
 
+    .search-wrap input {
+      width: 100%;
+      border: none;
+      outline: none;
+      background: transparent;
+      font-size: 15px;
+    }
 
-# =========================
-# API AUTH
-# =========================
-@encargado_bp.route("/trabajo-general/api/login", methods=["POST"])
-def trabajo_general_login():
-    body = request.get_json(silent=True) or {}
-    code = str(body.get("code", "")).strip()
+    .ghost-btn {
+      border: none;
+      background: #fff;
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(0,0,0,.10);
+    }
 
-    if not code:
-        return json_error("Ingresa el código.", 400)
+    .ghost-btn:hover { transform: translateY(-1px); }
 
-    if code != ACCESS_CODE:
-        return json_error("Código inválido.", 401)
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 18px;
+    }
 
-    token = create_token()
-    return jsonify({
-        "ok": True,
-        "token": token,
-        "user": "Trabajo general",
-    })
+    .loading,
+    .empty {
+      background: #fff;
+      border-radius: 18px;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 4px 14px rgba(0,0,0,.08);
+    }
 
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+      gap: 16px;
+    }
 
-@encargado_bp.route("/trabajo-general/api/logout", methods=["POST"])
-def trabajo_general_logout():
-    token = request.headers.get("X-Encargado-Token", "").strip()
-    if token:
-        with TOKENS_LOCK:
-            TOKENS.pop(token, None)
-    return jsonify({"ok": True})
+    .card {
+      background: #fff;
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: 0 4px 14px rgba(0,0,0,.08);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
 
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      gap: 12px;
+    }
 
-@encargado_bp.route("/trabajo-general/api/health")
-def trabajo_general_health():
-    return jsonify({"ok": True}), 200
+    .model-title {
+      font-size: 26px;
+      font-weight: 800;
+      line-height: 1.05;
+      word-break: break-word;
+      text-transform: uppercase;
+    }
 
+    .state-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #efefef;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
 
-# =========================
-# API OPCIONES
-# =========================
-@encargado_bp.route("/trabajo-general/api/options")
-def trabajo_general_options():
-    _, err = require_token()
-    if err:
-        return err
+    .detail-box {
+      background: #fafafa;
+      border: 1px solid #ececec;
+      border-radius: 14px;
+      padding: 12px;
+    }
 
-    return jsonify({
-        "responsables": options_to_json(RESPONSABLE_OPTIONS),
-        "ubicaciones": options_to_json(UBICACION_OPTIONS),
-        "trabajado_por": options_to_json(TRABAJADO_POR_OPTIONS),
-    })
+    .section-label {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 6px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .2px;
+    }
 
+    .detail-text {
+      font-size: 15px;
+      line-height: 1.35;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
 
-# =========================
-# API LISTADO
-# =========================
-@encargado_bp.route("/trabajo-general/api/tasks")
-def trabajo_general_tasks():
-    _, err = require_token()
-    if err:
-        return err
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
 
-    try:
-        domain = [
-            [FIELD_MODELO, "!=", False],
-            [FIELD_ESTADO, "not in", list(FINAL_STATES)],
-        ]
+    .meta-item {
+      background: #fafafa;
+      border: 1px solid #ececec;
+      border-radius: 14px;
+      padding: 10px 12px;
+    }
 
-        fields = [
-            "id",
-            FIELD_MODELO,
-            FIELD_DETALLE,
-            FIELD_FECHA_TRABAJADO,
-            FIELD_FECHA_ENTREGA,
-            FIELD_ORDEN,
-            FIELD_PASADORES,
-            FIELD_PLANTILLAS,
-            FIELD_RESPONSABLE,
-            FIELD_UBICACION,
-            FIELD_ESTADO,
-            FIELD_VERIF,
-            FIELD_TRABAJADO_POR,
-            FIELD_ANDAMIO,
-            FIELD_CREATE_DATE,
-        ]
+    .meta-label {
+      display: block;
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 4px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
 
-        result = search_read_tasks(domain, fields, order=f"{FIELD_CREATE_DATE} desc", limit=500)
+    .meta-value {
+      display: block;
+      font-size: 15px;
+      word-break: break-word;
+      line-height: 1.3;
+    }
 
-        q = (request.args.get("q", "") or "").strip().lower()
-        payload = [task_to_payload(r) for r in (result or [])]
+    .select-box {
+      background: #fafafa;
+      border: 1px solid #ececec;
+      border-radius: 14px;
+      padding: 10px 12px;
+    }
 
-        if q:
-            filtered = []
-            for row in payload:
-                blob = " ".join([
-                    str(row.get("modelo", "")),
-                    str(row.get("detalle", "")),
-                    str(row.get("estado_label", "")),
-                    str(row.get("fecha_trabajado", "")),
-                    str(row.get("fecha_entrega", "")),
-                    str(row.get("orden_texto", "")),
-                    str(row.get("orden_numero", "")),
-                    str(row.get("responsable", "")),
-                    str(row.get("ubicacion_seguimiento", "")),
-                ]).lower()
-                if q in blob:
-                    filtered.append(row)
-            payload = filtered
+    .select-box label {
+      display: block;
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 6px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
 
-        return jsonify({"result": payload})
+    .select-box select {
+      width: 100%;
+      border: 1px solid #ddd;
+      background: #fff;
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 14px;
+      outline: none;
+    }
 
-    except Exception as e:
-        return jsonify({"error": str(e), "result": []}), 500
+    .btn {
+      width: 100%;
+      border: none;
+      border-radius: 12px;
+      padding: 13px 14px;
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+      color: #fff;
+    }
 
+    .btn:disabled {
+      opacity: .65;
+      cursor: not-allowed;
+    }
 
-# =========================
-# API UPDATE CAMPOS DIRECTOS
-# =========================
-@encargado_bp.route("/trabajo-general/api/task/<int:tarea_id>/update", methods=["POST"])
-def trabajo_general_update_task(tarea_id):
-    _, err = require_token()
-    if err:
-        return err
+    .btn-green { background: #008a00; }
+    .btn-dark { background: #444; }
+    .btn-purple { background: #7c5a86; }
+    .btn-gray { background: #7c7c7c; }
 
-    try:
-        body = request.get_json(silent=True) or {}
-        data = body.get("data", {}) or {}
+    .trabajado-box {
+      background: #fafafa;
+      border: 1px solid #ececec;
+      border-radius: 14px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
 
-        update_data = {}
+    .trabajado-actions {
+      display: flex;
+      gap: 8px;
+    }
 
-        if FIELD_RESPONSABLE in data:
-            responsable = str(data.get(FIELD_RESPONSABLE) or "").strip()
-            if responsable and responsable not in RESPONSABLE_OPTIONS:
-                return json_error("Responsable no válido.", 400)
-            update_data[FIELD_RESPONSABLE] = responsable or False
+    .trabajado-actions .btn {
+      width: 100%;
+      padding: 11px 12px;
+      font-size: 14px;
+    }
 
-        if FIELD_UBICACION in data:
-            ubicacion = str(data.get(FIELD_UBICACION) or "").strip()
-            if ubicacion and ubicacion not in UBICACION_OPTIONS:
-                return json_error("Ubicación no válida.", 400)
-            update_data[FIELD_UBICACION] = ubicacion or False
+    .small-note {
+      font-size: 12px;
+      color: #666;
+    }
 
-        if not update_data:
-            return json_error("No hay campos válidos para actualizar.", 400)
+    .toast {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 60;
+      background: #111;
+      color: #fff;
+      padding: 12px 14px;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.18);
+      opacity: 0;
+      pointer-events: none;
+      transition: .25s;
+      max-width: 360px;
+      font-size: 14px;
+    }
 
-        ok = odoo_execute_kw(
-            "project.task",
-            "write",
-            args=[[tarea_id], update_data],
-            kwargs={},
-            req_id=11,
-        )
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
 
-        if ok is not True:
-            return json_error("Odoo no confirmó la actualización.", 500)
+    .toast.error {
+      background: #b3261e;
+    }
 
-        updated = read_task(
-            tarea_id,
-            [
-                "id",
-                FIELD_MODELO,
-                FIELD_DETALLE,
-                FIELD_FECHA_TRABAJADO,
-                FIELD_FECHA_ENTREGA,
-                FIELD_ORDEN,
-                FIELD_PASADORES,
-                FIELD_PLANTILLAS,
-                FIELD_RESPONSABLE,
-                FIELD_UBICACION,
-                FIELD_ESTADO,
-                FIELD_VERIF,
-                FIELD_TRABAJADO_POR,
-                FIELD_ANDAMIO,
-            ],
-        )
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      background: rgba(0,0,0,.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+    }
 
-        return jsonify({
-            "ok": True,
-            "message": "Actualizado correctamente.",
-            "task": task_to_payload(updated),
-        })
+    .login-card {
+      width: 100%;
+      max-width: 420px;
+      background: #fff;
+      border-radius: 18px;
+      padding: 22px;
+      box-shadow: 0 14px 40px rgba(0,0,0,.25);
+    }
 
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    .login-title {
+      margin: 0 0 8px;
+      font-size: 28px;
+      font-weight: 800;
+    }
 
+    .login-sub {
+      margin: 0 0 18px;
+      color: #666;
+      line-height: 1.4;
+    }
 
-# =========================
-# API TOGGLE LISTO
-# =========================
-@encargado_bp.route("/trabajo-general/api/task/<int:tarea_id>/toggle_listo", methods=["POST"])
-def trabajo_general_toggle_listo(tarea_id):
-    _, err = require_token()
-    if err:
-        return err
+    .login-card input {
+      width: 100%;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      padding: 14px;
+      font-size: 18px;
+      margin-bottom: 12px;
+      outline: none;
+      text-align: center;
+      letter-spacing: 3px;
+    }
 
-    try:
-        body = request.get_json(silent=True) or {}
+    .hidden { display: none !important; }
 
-        actual = read_task(
-            tarea_id,
-            [
-                "id",
-                FIELD_ESTADO,
-                FIELD_FECHA_TRABAJADO,
-                FIELD_VERIF,
-                FIELD_TRABAJADO_POR,
-                FIELD_ANDAMIO,
-                FIELD_MODELO,
-                FIELD_DETALLE,
-                FIELD_FECHA_ENTREGA,
-                FIELD_ORDEN,
-                FIELD_PASADORES,
-                FIELD_PLANTILLAS,
-                FIELD_RESPONSABLE,
-                FIELD_UBICACION,
-            ],
-        )
+    @media (max-width: 768px) {
+      .model-title { font-size: 22px; }
+      .meta-grid { grid-template-columns: 1fr; }
+      .grid { grid-template-columns: 1fr; }
+      .topbar-inner { align-items: stretch; }
+      .title-pill { font-size: 22px; }
+    }
+  </style>
+</head>
+<body>
 
-        estado_actual = normalize_state(actual.get(FIELD_ESTADO))
-        estaba_listo = (estado_actual == "TRABAJADO")
+  <div id="loginOverlay" class="overlay">
+    <div class="login-card">
+      <h1 class="login-title">Trabajo general</h1>
+      <p class="login-sub">Ingresa el código de 6 dígitos para entrar al panel del supervisor.</p>
+      <input
+        id="codeInput"
+        type="password"
+        inputmode="numeric"
+        maxlength="6"
+        placeholder="210720"
+        autocomplete="off"
+      />
+      <button id="loginBtn" class="btn btn-green">Entrar</button>
+      <p id="loginError" class="small-note" style="color:#b3261e;margin-top:10px;"></p>
+    </div>
+  </div>
 
-        if not estaba_listo:
-            trabajado_por = str(body.get("trabajado_por", "")).strip()
-            if not trabajado_por:
-                return json_error("Debes seleccionar “Trabajado por”.", 400)
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="title-pill">Trabajo general</div>
 
-            if trabajado_por not in TRABAJADO_POR_OPTIONS:
-                return json_error("Valor de “Trabajado por” no válido.", 400)
+      <div class="count-pill" id="countBadge">0 pares</div>
 
-            data_to_update = {
-                FIELD_ESTADO: "TRABAJADO",
-                FIELD_VERIF: True,
-                FIELD_FECHA_TRABAJADO: now_lima_str(),
-                FIELD_TRABAJADO_POR: trabajado_por,
-                FIELD_ANDAMIO: TRABAJADO_POR_TO_ANDAMIO.get(trabajado_por, False),
-            }
-            msg = "Marcado como listo."
-        else:
-            # mismo comportamiento lógico de desmarcar listo
-            data_to_update = {
-                FIELD_ESTADO: "03_approved",
-                FIELD_VERIF: False,
-                FIELD_FECHA_TRABAJADO: False,
-                FIELD_TRABAJADO_POR: False,
-            }
-            msg = "Listo desmarcado."
+      <div class="search-wrap">
+        <span>🔎</span>
+        <input
+          id="searchInput"
+          type="text"
+          placeholder="Buscar por orden, modelo, detalle, responsable o ubicación"
+          autocomplete="off"
+        />
+      </div>
 
-        ok = odoo_execute_kw(
-            "project.task",
-            "write",
-            args=[[tarea_id], data_to_update],
-            kwargs={},
-            req_id=12,
-        )
+      <button id="refreshBtn" class="ghost-btn">Actualizar</button>
+      <button id="logoutBtn" class="ghost-btn">Salir</button>
+    </div>
+  </div>
 
-        if ok is not True:
-            return json_error("Odoo no confirmó el cambio.", 500)
+  <div class="container">
+    <div id="loadingBox" class="loading">Cargando trabajos...</div>
+    <div id="emptyBox" class="empty hidden">No hay trabajos para mostrar.</div>
+    <div id="cards" class="grid hidden"></div>
+  </div>
 
-        updated = read_task(
-            tarea_id,
-            [
-                "id",
-                FIELD_MODELO,
-                FIELD_DETALLE,
-                FIELD_FECHA_TRABAJADO,
-                FIELD_FECHA_ENTREGA,
-                FIELD_ORDEN,
-                FIELD_PASADORES,
-                FIELD_PLANTILLAS,
-                FIELD_RESPONSABLE,
-                FIELD_UBICACION,
-                FIELD_ESTADO,
-                FIELD_VERIF,
-                FIELD_TRABAJADO_POR,
-                FIELD_ANDAMIO,
-            ],
-        )
+  <div id="toast" class="toast"></div>
 
-        return jsonify({
-            "ok": True,
-            "message": msg,
-            "task": task_to_payload(updated),
-        })
+  <script>
+    const API_ROOT = "/trabajo-general/api";
+    const REFRESH_MS = 8000;
 
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    let TOKEN = sessionStorage.getItem("trabajo_general_token") || "";
+    let OPTIONS = {
+      responsables: [],
+      ubicaciones: [],
+      trabajado_por: []
+    };
+    let ALL_TASKS = [];
+    let REFRESH_TIMER = null;
+    let SAVING_IDS = new Set();
 
+    function byId(id) {
+      return document.getElementById(id);
+    }
 
-# =========================
-# API COMPLETAR
-# =========================
-@encargado_bp.route("/trabajo-general/api/task/<int:tarea_id>/complete", methods=["POST"])
-def trabajo_general_complete(tarea_id):
-    _, err = require_token()
-    if err:
-        return err
+    function escapeHtml(text) {
+      return String(text ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
 
-    try:
-        data_to_update = {
-            FIELD_ESTADO: "1_done",
+    function showToast(message, isError = false) {
+      const toast = byId("toast");
+      toast.textContent = message || "";
+      toast.className = "toast show" + (isError ? " error" : "");
+      clearTimeout(showToast._timer);
+      showToast._timer = setTimeout(() => {
+        toast.className = "toast";
+      }, 2600);
+    }
+
+    function showLogin(show = true) {
+      byId("loginOverlay").classList.toggle("hidden", !show);
+    }
+
+    function setLoading(show, text = "Cargando trabajos...") {
+      byId("loadingBox").textContent = text;
+      byId("loadingBox").classList.toggle("hidden", !show);
+      if (show) {
+        byId("cards").classList.add("hidden");
+        byId("emptyBox").classList.add("hidden");
+      }
+    }
+
+    function formatDate(value) {
+      if (!value) return "-";
+
+      let s = String(value).trim();
+      if (!s) return "-";
+
+      if (s.includes(" ") && !s.includes("T")) {
+        s = s.replace(" ", "T");
+      }
+
+      const d = new Date(s);
+      if (isNaN(d)) return value;
+
+      return d.toLocaleString("es-PE", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    }
+
+    function boolText(v) {
+      return v ? "Sí" : "No";
+    }
+
+    function isListo(task) {
+      return String(task.estado_code || "").trim() === "TRABAJADO";
+    }
+
+    function getTask(id) {
+      return ALL_TASKS.find(t => String(t.id) === String(id));
+    }
+
+    function mergeTask(updatedTask) {
+      const idx = ALL_TASKS.findIndex(t => String(t.id) === String(updatedTask.id));
+      if (idx >= 0) {
+        ALL_TASKS[idx] = { ...ALL_TASKS[idx], ...updatedTask, _openTrabajadoPor: false };
+      }
+    }
+
+    function optionListHtml(items, currentValue) {
+      const seen = new Set();
+      const finalItems = [];
+
+      if (currentValue && !items.some(i => i.value === currentValue)) {
+        finalItems.push({ value: currentValue, label: currentValue });
+        seen.add(currentValue);
+      }
+
+      for (const item of items) {
+        if (seen.has(item.value)) continue;
+        seen.add(item.value);
+        finalItems.push(item);
+      }
+
+      return finalItems.map(item => {
+        const selected = String(item.value) === String(currentValue || "") ? "selected" : "";
+        return `<option value="${escapeHtml(item.value)}" ${selected}>${escapeHtml(item.label)}</option>`;
+      }).join("");
+    }
+
+    function filterTasks() {
+      const q = (byId("searchInput").value || "").trim().toLowerCase();
+      if (!q) return ALL_TASKS;
+
+      return ALL_TASKS.filter(task => {
+        const blob = [
+          task.modelo,
+          task.detalle,
+          task.estado_label,
+          task.fecha_trabajado,
+          task.fecha_entrega,
+          task.orden_texto,
+          task.orden_numero,
+          task.responsable,
+          task.ubicacion_seguimiento
+        ].join(" ").toLowerCase();
+
+        return blob.includes(q);
+      });
+    }
+
+    function cardHtml(task) {
+      const listo = isListo(task);
+      const saving = SAVING_IDS.has(String(task.id));
+
+      return `
+        <div class="card" data-id="${task.id}">
+          <div class="card-head">
+            <div class="model-title">${escapeHtml(task.modelo || "Sin modelo")}</div>
+            <div class="state-badge">Estado: ${escapeHtml(task.estado_label || "-")}</div>
+          </div>
+
+          <div class="detail-box">
+            <div class="section-label">Detalle de Trabajo</div>
+            <div class="detail-text">${escapeHtml(task.detalle || "-")}</div>
+          </div>
+
+          <div class="meta-grid">
+            <div class="meta-item">
+              <span class="meta-label">Fecha de Trabajarlo</span>
+              <span class="meta-value">${escapeHtml(formatDate(task.fecha_trabajado))}</span>
+            </div>
+
+            <div class="meta-item">
+              <span class="meta-label">Fecha de Entrega</span>
+              <span class="meta-value">${escapeHtml(formatDate(task.fecha_entrega))}</span>
+            </div>
+
+            <div class="meta-item">
+              <span class="meta-label">Orden</span>
+              <span class="meta-value">${escapeHtml(task.orden_texto || "-")}</span>
+            </div>
+
+            <div class="meta-item">
+              <span class="meta-label">Pasadores</span>
+              <span class="meta-value">${boolText(task.pasadores)}</span>
+            </div>
+
+            <div class="meta-item">
+              <span class="meta-label">Plantillas</span>
+              <span class="meta-value">${boolText(task.plantillas)}</span>
+            </div>
+
+            <div class="meta-item">
+              <span class="meta-label">ID</span>
+              <span class="meta-value">${escapeHtml(task.id)}</span>
+            </div>
+          </div>
+
+          <div class="select-box">
+            <label>Responsable</label>
+            <select class="js-responsable" data-id="${task.id}" data-prev="${escapeHtml(task.responsable || "")}" ${saving ? "disabled" : ""}>
+              <option value="">Seleccionar responsable</option>
+              ${optionListHtml(OPTIONS.responsables, task.responsable)}
+            </select>
+          </div>
+
+          <div class="select-box">
+            <label>Ubicación de Seguimiento</label>
+            <select class="js-ubicacion" data-id="${task.id}" data-prev="${escapeHtml(task.ubicacion_seguimiento || "")}" ${saving ? "disabled" : ""}>
+              <option value="">Seleccionar ubicación</option>
+              ${optionListHtml(OPTIONS.ubicaciones, task.ubicacion_seguimiento)}
+            </select>
+          </div>
+
+          <button class="btn ${listo ? "btn-dark" : "btn-green"} js-toggle-listo" data-id="${task.id}" ${saving ? "disabled" : ""}>
+            ${listo ? "✔ LISTO" : "✅ MARCAR LISTO"}
+          </button>
+
+          ${!listo && task._openTrabajadoPor ? `
+            <div class="trabajado-box" id="trabajadoBox_${task.id}">
+              <div class="section-label">Trabajado por</div>
+              <select id="trabajadoPor_${task.id}" ${saving ? "disabled" : ""}>
+                <option value="">Seleccionar</option>
+                ${optionListHtml(OPTIONS.trabajado_por, task.trabajado_por || "")}
+              </select>
+              <div class="trabajado-actions">
+                <button class="btn btn-green js-confirm-trabajado" data-id="${task.id}" ${saving ? "disabled" : ""}>Guardar listo</button>
+                <button class="btn btn-gray js-cancel-trabajado" data-id="${task.id}" ${saving ? "disabled" : ""}>Cancelar</button>
+              </div>
+            </div>
+          ` : ""}
+
+          <button class="btn btn-purple js-completar" data-id="${task.id}" ${saving ? "disabled" : ""}>
+            Completado
+          </button>
+        </div>
+      `;
+    }
+
+    function renderTasks() {
+      const cards = byId("cards");
+      const filtered = filterTasks();
+
+      byId("countBadge").textContent = `${filtered.length} pares`;
+
+      if (!filtered.length) {
+        cards.classList.add("hidden");
+        byId("emptyBox").classList.remove("hidden");
+        return;
+      }
+
+      byId("emptyBox").classList.add("hidden");
+      cards.innerHTML = filtered.map(cardHtml).join("");
+      cards.classList.remove("hidden");
+
+      wireEvents();
+    }
+
+    function wireEvents() {
+      document.querySelectorAll(".js-responsable").forEach(select => {
+        select.addEventListener("change", async function () {
+          const tareaId = this.dataset.id;
+          const prev = this.dataset.prev || "";
+          const value = this.value || "";
+
+          await quickUpdate(tareaId, { x_studio_responsable_r: value || false }, this, prev, value, "Responsable actualizado");
+        });
+      });
+
+      document.querySelectorAll(".js-ubicacion").forEach(select => {
+        select.addEventListener("change", async function () {
+          const tareaId = this.dataset.id;
+          const prev = this.dataset.prev || "";
+          const value = this.value || "";
+
+          await quickUpdate(tareaId, { x_studio_ubicacion_exacta_1: value || false }, this, prev, value, "Ubicación actualizada");
+        });
+      });
+
+      document.querySelectorAll(".js-toggle-listo").forEach(btn => {
+        btn.addEventListener("click", async function () {
+          const tareaId = this.dataset.id;
+          const task = getTask(tareaId);
+          if (!task) return;
+
+          if (isListo(task)) {
+            if (!confirm("Esta tarea ya está en LISTO. ¿Deseas desmarcarla?")) return;
+            await toggleListoRequest(tareaId, null);
+            return;
+          }
+
+          ALL_TASKS = ALL_TASKS.map(t => ({
+            ...t,
+            _openTrabajadoPor: String(t.id) === String(tareaId) ? !t._openTrabajadoPor : false
+          }));
+          renderTasks();
+        });
+      });
+
+      document.querySelectorAll(".js-confirm-trabajado").forEach(btn => {
+        btn.addEventListener("click", async function () {
+          const tareaId = this.dataset.id;
+          const select = byId(`trabajadoPor_${tareaId}`);
+          const trabajadoPor = (select?.value || "").trim();
+
+          if (!trabajadoPor) {
+            showToast("Selecciona “Trabajado por”.", true);
+            return;
+          }
+
+          await toggleListoRequest(tareaId, trabajadoPor);
+        });
+      });
+
+      document.querySelectorAll(".js-cancel-trabajado").forEach(btn => {
+        btn.addEventListener("click", function () {
+          const tareaId = this.dataset.id;
+          const task = getTask(tareaId);
+          if (!task) return;
+          task._openTrabajadoPor = false;
+          renderTasks();
+        });
+      });
+
+      document.querySelectorAll(".js-completar").forEach(btn => {
+        btn.addEventListener("click", async function () {
+          const tareaId = this.dataset.id;
+          if (!confirm("¿Marcar esta tarea como Completado?")) return;
+          await completarRequest(tareaId);
+        });
+      });
+    }
+
+    async function api(path, method = "GET", body = null) {
+      const headers = {};
+
+      if (TOKEN) {
+        headers["X-Encargado-Token"] = TOKEN;
+      }
+
+      if (body !== null) {
+        headers["Content-Type"] = "application/json";
+      }
+
+      const response = await fetch(API_ROOT + path, {
+        method,
+        headers,
+        body: body !== null ? JSON.stringify(body) : undefined,
+        cache: "no-store"
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (response.status === 401) {
+        TOKEN = "";
+        sessionStorage.removeItem("trabajo_general_token");
+        showLogin(true);
+        throw new Error(data.error || "Tu acceso venció. Vuelve a ingresar el código.");
+      }
+
+      if (!response.ok) {
+        throw new Error(data.error || "Ocurrió un error.");
+      }
+
+      return data;
+    }
+
+    async function doLogin() {
+      const codeInput = byId("codeInput");
+      const err = byId("loginError");
+
+      err.textContent = "";
+
+      try {
+        const code = (codeInput.value || "").trim();
+        const data = await fetch(API_ROOT + "/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code })
+        }).then(async r => {
+          const json = await r.json().catch(() => ({}));
+          if (!r.ok) throw new Error(json.error || "Código inválido.");
+          return json;
+        });
+
+        TOKEN = data.token || "";
+        sessionStorage.setItem("trabajo_general_token", TOKEN);
+        showLogin(false);
+        codeInput.value = "";
+
+        await initProtected();
+        showToast("Acceso concedido.");
+      } catch (error) {
+        err.textContent = error.message || "No se pudo ingresar.";
+      }
+    }
+
+    async function quickUpdate(tareaId, payloadData, selectEl, prevValue, newValue, successMsg) {
+      const key = String(tareaId);
+      SAVING_IDS.add(key);
+
+      try {
+        await api(`/task/${tareaId}/update`, "POST", { data: payloadData });
+        if (selectEl) {
+          selectEl.dataset.prev = newValue;
+        }
+        showToast(successMsg);
+        await loadTasks(true);
+      } catch (error) {
+        if (selectEl) {
+          selectEl.value = prevValue || "";
+        }
+        showToast(error.message || "No se pudo guardar.", true);
+      } finally {
+        SAVING_IDS.delete(key);
+      }
+    }
+
+    async function toggleListoRequest(tareaId, trabajadoPor) {
+      const key = String(tareaId);
+      SAVING_IDS.add(key);
+
+      try {
+        const body = trabajadoPor ? { trabajado_por: trabajadoPor } : {};
+        const data = await api(`/task/${tareaId}/toggle_listo`, "POST", body);
+
+        if (data.task) {
+          mergeTask(data.task);
         }
 
-        ok = odoo_execute_kw(
-            "project.task",
-            "write",
-            args=[[tarea_id], data_to_update],
-            kwargs={},
-            req_id=13,
-        )
+        showToast(data.message || "Guardado correctamente.");
+        await loadTasks(true);
+      } catch (error) {
+        showToast(error.message || "No se pudo cambiar el estado.", true);
+      } finally {
+        SAVING_IDS.delete(key);
+      }
+    }
 
-        if ok is not True:
-            return json_error("Odoo no confirmó el completado.", 500)
+    async function completarRequest(tareaId) {
+      const key = String(tareaId);
+      SAVING_IDS.add(key);
 
-        updated = read_task(
-            tarea_id,
-            [
-                "id",
-                FIELD_MODELO,
-                FIELD_DETALLE,
-                FIELD_FECHA_TRABAJADO,
-                FIELD_FECHA_ENTREGA,
-                FIELD_ORDEN,
-                FIELD_PASADORES,
-                FIELD_PLANTILLAS,
-                FIELD_RESPONSABLE,
-                FIELD_UBICACION,
-                FIELD_ESTADO,
-                FIELD_VERIF,
-                FIELD_TRABAJADO_POR,
-                FIELD_ANDAMIO,
-            ],
-        )
+      try {
+        const data = await api(`/task/${tareaId}/complete`, "POST", {});
+        showToast(data.message || "Marcado como completado.");
+        await loadTasks(true);
+      } catch (error) {
+        showToast(error.message || "No se pudo completar.", true);
+      } finally {
+        SAVING_IDS.delete(key);
+      }
+    }
 
-        return jsonify({
-            "ok": True,
-            "message": "Tarea marcada como completado.",
-            "task": task_to_payload(updated),
-        })
+    async function loadTasks(silent = false) {
+      if (!silent) {
+        setLoading(true, "Cargando trabajos...");
+      }
 
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+      try {
+        const data = await api("/tasks", "GET");
+        ALL_TASKS = (data.result || []).map(task => ({
+          ...task,
+          _openTrabajadoPor: false
+        }));
+
+        setLoading(false);
+        renderTasks();
+      } catch (error) {
+        setLoading(true, error.message || "No se pudieron cargar los trabajos.");
+        byId("cards").classList.add("hidden");
+      }
+    }
+
+    async function loadOptions() {
+      const data = await api("/options", "GET");
+      OPTIONS = {
+        responsables: data.responsables || [],
+        ubicaciones: data.ubicaciones || [],
+        trabajado_por: data.trabajado_por || []
+      };
+    }
+
+    function startAutoRefresh() {
+      clearInterval(REFRESH_TIMER);
+      REFRESH_TIMER = setInterval(async () => {
+        if (!TOKEN) return;
+        if (SAVING_IDS.size > 0) return;
+        try {
+          await loadTasks(true);
+        } catch (error) {
+          console.error(error);
+        }
+      }, REFRESH_MS);
+    }
+
+    async function initProtected() {
+      await loadOptions();
+      await loadTasks(false);
+      startAutoRefresh();
+    }
+
+    async function logout() {
+      try {
+        if (TOKEN) {
+          await api("/logout", "POST", {});
+        }
+      } catch (error) {
+        console.warn(error);
+      }
+
+      TOKEN = "";
+      sessionStorage.removeItem("trabajo_general_token");
+      clearInterval(REFRESH_TIMER);
+      ALL_TASKS = [];
+      byId("cards").innerHTML = "";
+      byId("countBadge").textContent = "0 pares";
+      showLogin(true);
+    }
+
+    window.addEventListener("load", async () => {
+      byId("loginBtn").addEventListener("click", doLogin);
+
+      byId("codeInput").addEventListener("keydown", e => {
+        if (e.key === "Enter") doLogin();
+      });
+
+      byId("searchInput").addEventListener("input", () => {
+        renderTasks();
+      });
+
+      byId("refreshBtn").addEventListener("click", async () => {
+        await loadTasks(false);
+      });
+
+      byId("logoutBtn").addEventListener("click", logout);
+
+      if (TOKEN) {
+        try {
+          showLogin(false);
+          await initProtected();
+        } catch (error) {
+          TOKEN = "";
+          sessionStorage.removeItem("trabajo_general_token");
+          showLogin(true);
+        }
+      } else {
+        showLogin(true);
+      }
+    });
+  </script>
+</body>
+</html>
