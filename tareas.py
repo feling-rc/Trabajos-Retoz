@@ -1248,7 +1248,7 @@ def api_vaciar_hechas():
     conn.close()
     backup_db_to_drive_safely(DB_PATH)
 
-      return jsonify({"message": f"{borradas} tareas eliminadas"})
+    return jsonify({"message": f"{borradas} tareas eliminadas"})
 
 
 @tareas_bp.route("/tareas/api/backup_test")
