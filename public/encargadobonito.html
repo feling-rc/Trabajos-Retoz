@@ -217,13 +217,11 @@
       display: grid;
       gap: 10px;
       overflow: visible;
+      isolation: isolate;
     }
 
     .card-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: start;
-      gap: 10px;
+      display: block;
     }
 
     .head-left {
@@ -304,83 +302,32 @@
       white-space: pre-wrap;
     }
 
-    .meta-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
+    .chip-row {
+      display: flex;
       gap: 8px;
+      overflow-x: auto;
+      overflow-y: visible;
+      padding-bottom: 2px;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
     }
 
-    .meta-box {
-      background: var(--surface-2);
-      border: 1px solid var(--stroke);
-      border-radius: 14px;
-      padding: 8px 9px;
-      display: grid;
-      gap: 4px;
-      min-width: 0;
+    .chip-row::-webkit-scrollbar {
+      display: none;
     }
 
-    .meta-value {
-      font-size: 12px;
-      line-height: 1.2;
-      font-weight: 900;
-      color: var(--text);
-      word-break: break-word;
-    }
-
-    .select-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
-
-    .select-box {
-      background: var(--surface-2);
-      border: 1px solid var(--stroke);
-      border-radius: 14px;
-      padding: 8px 9px;
-      display: grid;
-      gap: 5px;
-      min-width: 0;
-    }
-
-    .select-box select {
-      width: 100%;
-      border: 1px solid #d8dee6;
-      background:
-        linear-gradient(45deg, transparent 50%, #667085 50%),
-        linear-gradient(135deg, #667085 50%, transparent 50%),
-        linear-gradient(180deg, #fff 0%, #fbfcfe 100%);
-      background-position:
-        calc(100% - 16px) calc(50% - 3px),
-        calc(100% - 10px) calc(50% - 3px),
-        0 0;
-      background-size:
-        6px 6px,
-        6px 6px,
-        100% 100%;
-      background-repeat: no-repeat;
-      border-radius: 12px;
-      padding: 9px 34px 9px 10px;
-      font-size: 12px;
-      font-weight: 900;
-      color: var(--text);
-      appearance: none;
-      outline: none;
-      min-width: 0;
-    }
-
-    .status-wrap {
+    .menu-wrap {
       position: relative;
-      z-index: 20;
       flex: 0 0 auto;
+      z-index: 15;
     }
 
-    .status-btn {
+    .chip-btn {
       border: 1px solid transparent;
       border-radius: 999px;
       padding: 7px 11px;
       min-height: 34px;
+      max-width: 180px;
       font-size: 12px;
       font-weight: 900;
       line-height: 1;
@@ -390,18 +337,22 @@
       cursor: pointer;
       white-space: nowrap;
       box-shadow: 0 4px 12px rgba(16, 24, 40, 0.08);
+      background: #f2f4f7;
+      color: #667085;
+      border-color: #e5e7eb;
     }
 
-    .status-btn::before {
+    .chip-btn::before {
       content: "";
       width: 8px;
       height: 8px;
       border-radius: 999px;
       background: currentColor;
       opacity: 0.98;
+      flex: 0 0 auto;
     }
 
-    .status-btn::after {
+    .chip-btn::after {
       content: "";
       width: 7px;
       height: 7px;
@@ -410,6 +361,37 @@
       transform: rotate(45deg) translateY(-1px);
       margin-left: 1px;
       opacity: 0.75;
+      flex: 0 0 auto;
+    }
+
+    .chip-text {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .chip-empty {
+      background: #f2f4f7;
+      color: #667085;
+      border-color: #e5e7eb;
+    }
+
+    .chip-responsable {
+      background: #eefaf2;
+      color: #15803d;
+      border-color: #ccead6;
+    }
+
+    .chip-ubicacion {
+      background: #f3f0ff;
+      color: #6d4bd2;
+      border-color: #ddd4ff;
+    }
+
+    .chip-trabajado {
+      background: #edfdfa;
+      color: #0f766e;
+      border-color: #c9f5eb;
     }
 
     .status-default {
@@ -460,24 +442,32 @@
       border-color: #c9f5eb;
     }
 
-    .status-menu {
+    .menu {
       position: absolute;
+      left: 0;
       top: calc(100% + 8px);
-      right: 0;
-      width: 210px;
+      width: min(220px, calc(100vw - 40px));
+      max-height: 250px;
+      overflow-y: auto;
       background: var(--surface);
       border: 1px solid var(--stroke);
       border-radius: 16px;
       box-shadow: 0 18px 40px rgba(15, 23, 42, 0.16);
       padding: 8px;
       display: none;
+      z-index: 40;
     }
 
-    .status-menu.open {
+    .menu.open {
       display: block;
     }
 
-    .status-option {
+    .menu.open-up {
+      top: auto;
+      bottom: calc(100% + 8px);
+    }
+
+    .menu-option {
       width: 100%;
       border: none;
       background: transparent;
@@ -493,24 +483,32 @@
       font-weight: 800;
     }
 
-    .status-option:hover {
+    .menu-option:hover {
       background: #f8fafc;
     }
 
-    .status-option .dot {
+    .menu-option .dot {
       width: 9px;
       height: 9px;
       border-radius: 999px;
       flex: 0 0 auto;
     }
 
-    .status-option .check {
+    .menu-option .label {
+      min-width: 0;
+      flex: 1 1 auto;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .menu-option .check {
       margin-left: auto;
       font-size: 13px;
       opacity: 0;
     }
 
-    .status-option.active .check {
+    .menu-option.active .check {
       opacity: 1;
     }
 
@@ -549,56 +547,6 @@
       color: #fff;
       background: linear-gradient(180deg, #4f5b69 0%, #3e4652 100%);
       box-shadow: 0 8px 20px rgba(57, 65, 76, 0.18);
-    }
-
-    .btn-muted {
-      color: #fff;
-      background: linear-gradient(180deg, #8b95a3 0%, #6b7280 100%);
-    }
-
-    .trabajado-panel {
-      background: linear-gradient(180deg, #fbfcfd 0%, #f8fafc 100%);
-      border: 1px solid var(--stroke);
-      border-radius: 16px;
-      padding: 10px;
-      display: grid;
-      gap: 8px;
-    }
-
-    .trabajado-panel select {
-      width: 100%;
-      border: 1px solid #d8dee6;
-      border-radius: 12px;
-      padding: 9px 34px 9px 10px;
-      font-size: 12px;
-      font-weight: 900;
-      appearance: none;
-      outline: none;
-      background:
-        linear-gradient(45deg, transparent 50%, #667085 50%),
-        linear-gradient(135deg, #667085 50%, transparent 50%),
-        linear-gradient(180deg, #fff 0%, #fbfcfe 100%);
-      background-position:
-        calc(100% - 16px) calc(50% - 3px),
-        calc(100% - 10px) calc(50% - 3px),
-        0 0;
-      background-size:
-        6px 6px,
-        6px 6px,
-        100% 100%;
-      background-repeat: no-repeat;
-    }
-
-    .trabajado-actions {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
-
-    .small-note {
-      font-size: 11px;
-      color: var(--muted);
-      line-height: 1.28;
     }
 
     .toast {
@@ -697,6 +645,10 @@
     @media (min-width: 700px) {
       .cards {
         grid-template-columns: 1fr 1fr;
+      }
+
+      .chip-btn {
+        max-width: 200px;
       }
     }
   </style>
@@ -892,7 +844,7 @@
     let TASKS = [];
     let REFRESH_TIMER = null;
     let SAVING_IDS = new Set();
-    let OPEN_STATUS_ID = null;
+    let OPEN_MENU = { taskId: null, field: null, direction: "down" };
     let LAST_SCROLL_Y = 0;
 
     function byId(id) {
@@ -960,13 +912,22 @@
       restoreScroll();
     }
 
+    function closeMenus() {
+      OPEN_MENU = { taskId: null, field: null, direction: "down" };
+    }
+
     function cleanDigits(value) {
       return String(value || "").replace(/\D+/g, "");
     }
 
-    function dedupeOptions(list, currentValue, currentLabel = null) {
+    function dedupeOptions(list, currentValue, currentLabel = null, includeEmpty = false) {
       const out = [];
       const seen = new Set();
+
+      if (includeEmpty) {
+        out.push({ value: "", label: "-" });
+        seen.add("");
+      }
 
       if (currentValue && !list.some(x => String(x.value) === String(currentValue))) {
         out.push({
@@ -1033,8 +994,7 @@
           typeof raw.plantillas !== "undefined" ? raw.plantillas : !!raw.x_studio_plantillas_1,
         responsable: raw.responsable || raw.x_studio_responsable_r || "",
         ubicacion_seguimiento: raw.ubicacion_seguimiento || raw.x_studio_ubicacion_exacta_1 || "",
-        trabajado_por: raw.trabajado_por || raw.x_studio_trabajado_por || "",
-        _openTrabajadoPor: !!raw._openTrabajadoPor
+        trabajado_por: raw.trabajado_por || raw.x_studio_trabajado_por || ""
       };
     }
 
@@ -1063,8 +1023,7 @@
       if (idx >= 0) {
         TASKS[idx] = {
           ...TASKS[idx],
-          ...normalizeTask(updated),
-          _openTrabajadoPor: false
+          ...normalizeTask(updated)
         };
       }
     }
@@ -1130,6 +1089,7 @@
       try {
         const data = await api("/tasks", "GET");
         TASKS = (Array.isArray(data.result) ? data.result : []).map(normalizeTask);
+        closeMenus();
         safeRender();
       } catch (error) {
         if (!TASKS.length) setError(error.message || "No se pudieron cargar los trabajos.");
@@ -1137,34 +1097,96 @@
       }
     }
 
-    function statusMenuHtml(task, saving) {
-      const currentLabel = task.estado_label || estadoBonitoFromCode(task.estado_code);
-      const list = dedupeOptions(OPTIONS.estados, task.estado_code, currentLabel);
+    function getChipMeta(task, field) {
+      if (field === "estado") {
+        const label = task.estado_label || estadoBonitoFromCode(task.estado_code);
+        return {
+          label,
+          value: task.estado_code || "",
+          className: statusClass(label),
+          dotColor: statusDotColor(label),
+          options: dedupeOptions(OPTIONS.estados, task.estado_code, label, false),
+          includeEmpty: false
+        };
+      }
+
+      if (field === "responsable") {
+        const label = task.responsable || "Responsable";
+        return {
+          label,
+          value: task.responsable || "",
+          className: task.responsable ? "chip-responsable" : "chip-empty",
+          dotColor: task.responsable ? "#16a34a" : "#94a3b8",
+          options: dedupeOptions(OPTIONS.responsables, task.responsable, task.responsable, true),
+          includeEmpty: true
+        };
+      }
+
+      if (field === "ubicacion") {
+        const label = task.ubicacion_seguimiento || "Ubicación";
+        return {
+          label,
+          value: task.ubicacion_seguimiento || "",
+          className: task.ubicacion_seguimiento ? "chip-ubicacion" : "chip-empty",
+          dotColor: task.ubicacion_seguimiento ? "#6d4bd2" : "#94a3b8",
+          options: dedupeOptions(OPTIONS.ubicaciones, task.ubicacion_seguimiento, task.ubicacion_seguimiento, true),
+          includeEmpty: true
+        };
+      }
+
+      const label = task.trabajado_por || "Trabajado por";
+      return {
+        label,
+        value: task.trabajado_por || "",
+        className: task.trabajado_por ? "chip-trabajado" : "chip-empty",
+        dotColor: task.trabajado_por ? "#0f766e" : "#94a3b8",
+        options: dedupeOptions(OPTIONS.trabajado_por, task.trabajado_por, task.trabajado_por, true),
+        includeEmpty: true
+      };
+    }
+
+    function isMenuOpen(taskId, field) {
+      return String(OPEN_MENU.taskId) === String(taskId) && OPEN_MENU.field === field;
+    }
+
+    function chipMenuHtml(task, field, saving) {
+      const meta = getChipMeta(task, field);
+      const open = isMenuOpen(task.id, field);
+      const menuClass = open
+        ? `menu open ${OPEN_MENU.direction === "up" ? "open-up" : ""}`
+        : "menu";
 
       return `
-        <div class="status-wrap">
+        <div class="menu-wrap">
           <button
             type="button"
-            class="status-btn ${statusClass(currentLabel)} js-status-btn"
+            class="chip-btn ${meta.className} js-chip-btn"
             data-id="${task.id}"
+            data-field="${field}"
             ${saving ? "disabled" : ""}
+            title="${escapeHtml(meta.label)}"
           >
-            ${escapeHtml(currentLabel)}
+            <span class="chip-text">${escapeHtml(meta.label)}</span>
           </button>
 
-          <div class="status-menu ${OPEN_STATUS_ID === task.id ? "open" : ""}" id="statusMenu_${task.id}">
-            ${list.map(item => {
-              const label = item.label;
-              const active = String(item.value) === String(task.estado_code || "");
+          <div class="${menuClass}" id="menu_${field}_${task.id}">
+            ${meta.options.map(item => {
+              const active = String(item.value) === String(meta.value || "");
+              const label = item.label || "-";
+              const dotColor = field === "estado"
+                ? statusDotColor(label)
+                : meta.dotColor;
+
               return `
                 <button
                   type="button"
-                  class="status-option ${active ? "active" : ""} js-status-option"
+                  class="menu-option ${active ? "active" : ""} js-menu-option"
                   data-id="${task.id}"
+                  data-field="${field}"
                   data-value="${escapeHtml(item.value)}"
                 >
-                  <span class="dot" style="background:${statusDotColor(label)}"></span>
-                  <span>${escapeHtml(label)}</span>
+                  <span class="dot" style="background:${dotColor}"></span>
+                  <span class="label">${escapeHtml(label)}</span>
                   <span class="check">✓</span>
                 </button>
               `;
@@ -1204,49 +1226,13 @@
                 <div class="k-label">Detalle de trabajo</div>
                 <div class="detail-text">${escapeHtml(task.detalle || "-")}</div>
               </div>
-            </div>
 
-            ${statusMenuHtml(task, saving)}
-          </div>
-
-          <div class="meta-row">
-            <div class="meta-box">
-              <div class="k-label">Resp.</div>
-              <div class="meta-value">${escapeHtml(task.responsable || "-")}</div>
-            </div>
-
-            <div class="meta-box">
-              <div class="k-label">Ubic.</div>
-              <div class="meta-value">${escapeHtml(task.ubicacion_seguimiento || "-")}</div>
-            </div>
-
-            <div class="meta-box">
-              <div class="k-label">Trabajado por</div>
-              <div class="meta-value">${escapeHtml(task.trabajado_por || "-")}</div>
-            </div>
-          </div>
-
-          <div class="select-row">
-            <div class="select-box">
-              <div class="k-label">Cambiar Resp.</div>
-              <select class="js-responsable" data-id="${task.id}" data-prev="${escapeHtml(task.responsable || "")}" ${saving ? "disabled" : ""}>
-                <option value="">Seleccionar</option>
-                ${dedupeOptions(OPTIONS.responsables, task.responsable).map(item => {
-                  const selected = String(item.value) === String(task.responsable || "") ? "selected" : "";
-                  return `<option value="${escapeHtml(item.value)}" ${selected}>${escapeHtml(item.label)}</option>`;
-                }).join("")}
-              </select>
-            </div>
-
-            <div class="select-box">
-              <div class="k-label">Cambiar Ubic.</div>
-              <select class="js-ubicacion" data-id="${task.id}" data-prev="${escapeHtml(task.ubicacion_seguimiento || "")}" ${saving ? "disabled" : ""}>
-                <option value="">Seleccionar</option>
-                ${dedupeOptions(OPTIONS.ubicaciones, task.ubicacion_seguimiento).map(item => {
-                  const selected = String(item.value) === String(task.ubicacion_seguimiento || "") ? "selected" : "";
-                  return `<option value="${escapeHtml(item.value)}" ${selected}>${escapeHtml(item.label)}</option>`;
-                }).join("")}
-              </select>
+              <div class="chip-row">
+                ${chipMenuHtml(task, "estado", saving)}
+                ${chipMenuHtml(task, "responsable", saving)}
+                ${chipMenuHtml(task, "ubicacion", saving)}
+                ${chipMenuHtml(task, "trabajado_por", saving)}
+              </div>
             </div>
           </div>
 
@@ -1254,27 +1240,6 @@
             <button class="btn ${listo ? "btn-dark" : "btn-green"} js-toggle-listo" data-id="${task.id}" ${saving ? "disabled" : ""}>
               ${listo ? "✔ LISTO" : "✅ MARCAR LISTO"}
             </button>
-
-            ${!listo && task._openTrabajadoPor ? `
-              <div class="trabajado-panel">
-                <div class="k-label">Trabajado por</div>
-
-                <select id="trabajadoPor_${task.id}" ${saving ? "disabled" : ""}>
-                  <option value="">Seleccionar</option>
-                  ${dedupeOptions(OPTIONS.trabajado_por, task.trabajado_por).map(item => {
-                    const selected = String(item.value) === String(task.trabajado_por || "") ? "selected" : "";
-                    return `<option value="${escapeHtml(item.value)}" ${selected}>${escapeHtml(item.label)}</option>`;
-                  }).join("")}
-                </select>
-
-                <div class="trabajado-actions">
-                  <button class="btn btn-green js-confirm-trabajado" data-id="${task.id}" ${saving ? "disabled" : ""}>Guardar</button>
-                  <button class="btn btn-muted js-cancel-trabajado" data-id="${task.id}" ${saving ? "disabled" : ""}>Cancelar</button>
-                </div>
-
-                <div class="small-note">Elige quién trabajó la tarea y guarda.</div>
-              </div>
-            ` : ""}
           </div>
         </article>
       `;
@@ -1302,8 +1267,8 @@
       const key = String(tareaId);
       if (SAVING_IDS.has(key)) return;
 
-      saveScroll();
       SAVING_IDS.add(key);
+      closeMenus();
 
       if (patch) {
         patchTask(tareaId, patch);
@@ -1321,6 +1286,7 @@
         showToast(error.message || "No se pudo guardar.", true);
       } finally {
         SAVING_IDS.delete(key);
+        safeRender();
       }
     }
 
@@ -1328,26 +1294,24 @@
       const key = String(tareaId);
       if (SAVING_IDS.has(key)) return;
 
-      saveScroll();
-      SAVING_IDS.add(key);
-
       const current = TASKS.find(x => String(x.id) === String(tareaId));
       if (!current) return;
 
       const estabaListo = isListo(current);
 
+      SAVING_IDS.add(key);
+      closeMenus();
+
       if (!estabaListo) {
         patchTask(tareaId, {
           estado_code: "TRABAJADO",
           estado_label: "Trabajado",
-          trabajado_por: trabajadoPor || current.trabajado_por || "",
-          _openTrabajadoPor: false
+          trabajado_por: trabajadoPor || current.trabajado_por || ""
         });
       } else {
         patchTask(tareaId, {
           estado_code: "03_approved",
-          estado_label: "En proceso",
-          trabajado_por: ""
+          estado_label: "En proceso"
         });
       }
 
@@ -1365,75 +1329,114 @@
         showToast(error.message || "No se pudo cambiar el listo.", true);
       } finally {
         SAVING_IDS.delete(key);
+        safeRender();
       }
     }
 
+    async function handleMenuSelection(tareaId, field, value) {
+      const task = TASKS.find(x => String(x.id) === String(tareaId));
+      if (!task) return;
+
+      if (field === "estado") {
+        const prevCode = task.estado_code;
+        const prevLabel = task.estado_label;
+        const newLabel = estadoBonitoFromCode(value);
+
+        await quickUpdateTask(
+          tareaId,
+          { x_studio_selection_field_3j_1ivn1ho1m: value || false },
+          () => {
+            patchTask(tareaId, { estado_code: prevCode, estado_label: prevLabel });
+          },
+          "Estado actualizado.",
+          { estado_code: value || "", estado_label: newLabel }
+        );
+        return;
+      }
+
+      if (field === "responsable") {
+        const prev = task.responsable || "";
+        await quickUpdateTask(
+          tareaId,
+          { x_studio_responsable_r: value || false },
+          () => {
+            patchTask(tareaId, { responsable: prev });
+          },
+          "Responsable actualizado.",
+          { responsable: value || "" }
+        );
+        return;
+      }
+
+      if (field === "ubicacion") {
+        const prev = task.ubicacion_seguimiento || "";
+        await quickUpdateTask(
+          tareaId,
+          { x_studio_ubicacion_exacta_1: value || false },
+          () => {
+            patchTask(tareaId, { ubicacion_seguimiento: prev });
+          },
+          "Ubicación actualizada.",
+          { ubicacion_seguimiento: value || "" }
+        );
+        return;
+      }
+
+      const prev = task.trabajado_por || "";
+      await quickUpdateTask(
+        tareaId,
+        { x_studio_trabajado_por: value || false },
+        () => {
+          patchTask(tareaId, { trabajado_por: prev });
+        },
+        "Trabajado por actualizado.",
+        { trabajado_por: value || "" }
+      );
+    }
+
     function bindEvents() {
-      document.querySelectorAll(".js-responsable").forEach(select => {
-        select.addEventListener("change", async function () {
-          const tareaId = this.dataset.id;
-          const prev = this.dataset.prev || "";
-          const value = this.value || "";
-
-          await quickUpdateTask(
-            tareaId,
-            { x_studio_responsable_r: value || false },
-            () => { this.value = prev; },
-            "Responsable actualizado.",
-            { responsable: value || "" }
-          );
-        });
-      });
-
-      document.querySelectorAll(".js-ubicacion").forEach(select => {
-        select.addEventListener("change", async function () {
-          const tareaId = this.dataset.id;
-          const prev = this.dataset.prev || "";
-          const value = this.value || "";
-
-          await quickUpdateTask(
-            tareaId,
-            { x_studio_ubicacion_exacta_1: value || false },
-            () => { this.value = prev; },
-            "Ubicación actualizada.",
-            { ubicacion_seguimiento: value || "" }
-          );
-        });
-      });
-
-      document.querySelectorAll(".js-status-btn").forEach(btn => {
+      document.querySelectorAll(".js-chip-btn").forEach(btn => {
         btn.addEventListener("click", function (e) {
           e.stopPropagation();
-          const tareaId = Number(this.dataset.id);
-          OPEN_STATUS_ID = OPEN_STATUS_ID === tareaId ? null : tareaId;
+
+          const tareaId = String(this.dataset.id);
+          const field = this.dataset.field || "";
+
+          if (
+            String(OPEN_MENU.taskId) === tareaId &&
+            OPEN_MENU.field === field
+          ) {
+            closeMenus();
+            safeRender();
+            return;
+          }
+
+          const rect = this.getBoundingClientRect();
+          const estimatedMenuHeight = 260;
+          const spaceBelow = window.innerHeight - rect.bottom;
+          const spaceAbove = rect.top;
+          const direction = (spaceBelow < estimatedMenuHeight && spaceAbove > spaceBelow)
+            ? "up"
+            : "down";
+
+          OPEN_MENU = {
+            taskId: tareaId,
+            field,
+            direction
+          };
+
           safeRender();
         });
       });
 
-      document.querySelectorAll(".js-status-option").forEach(btn => {
+      document.querySelectorAll(".js-menu-option").forEach(btn => {
         btn.addEventListener("click", async function (e) {
           e.stopPropagation();
           const tareaId = this.dataset.id;
+          const field = this.dataset.field || "";
           const value = this.dataset.value || "";
-          const task = TASKS.find(x => String(x.id) === String(tareaId));
-          if (!task) return;
-
-          const prevCode = task.estado_code;
-          const prevLabel = task.estado_label;
-          const newLabel = estadoBonitoFromCode(value);
-
-          OPEN_STATUS_ID = null;
-
-          await quickUpdateTask(
-            tareaId,
-            { x_studio_selection_field_3j_1ivn1ho1m: value || false },
-            () => {
-              patchTask(tareaId, { estado_code: prevCode, estado_label: prevLabel });
-              safeRender();
-            },
-            "Estado actualizado.",
-            { estado_code: value, estado_label: newLabel }
-          );
+          closeMenus();
+          await handleMenuSelection(tareaId, field, value);
         });
       });
 
@@ -1443,6 +1446,13 @@
           const task = TASKS.find(t => String(t.id) === String(tareaId));
           if (!task) return;
 
+          closeMenus();
+
+          if (!isListo(task) && !String(task.trabajado_por || "").trim()) {
+            showToast("Primero debes seleccionar Trabajado por.", true);
+            return;
+          }
+
           if (isListo(task)) {
             const ok = confirm("La tarea ya está en LISTO. ¿Deseas desmarcarla?");
             if (!ok) return;
@@ -1450,36 +1460,7 @@
             return;
           }
 
-          TASKS = TASKS.map(t => ({
-            ...t,
-            _openTrabajadoPor: String(t.id) === String(tareaId) ? !t._openTrabajadoPor : false
-          }));
-          safeRender();
-        });
-      });
-
-      document.querySelectorAll(".js-confirm-trabajado").forEach(btn => {
-        btn.addEventListener("click", async function () {
-          const tareaId = this.dataset.id;
-          const select = byId(`trabajadoPor_${tareaId}`);
-          const trabajadoPor = (select?.value || "").trim();
-
-          if (!trabajadoPor) {
-            showToast("Selecciona “Trabajado por”.", true);
-            return;
-          }
-
-          await doToggleListo(tareaId, trabajadoPor);
-        });
-      });
-
-      document.querySelectorAll(".js-cancel-trabajado").forEach(btn => {
-        btn.addEventListener("click", function () {
-          TASKS = TASKS.map(t => ({
-            ...t,
-            _openTrabajadoPor: false
-          }));
-          safeRender();
+          await doToggleListo(tareaId, task.trabajado_por || null);
         });
       });
     }
@@ -1528,17 +1509,27 @@
       REFRESH_TIMER = setInterval(async () => {
         if (!TOKEN) return;
         if (SAVING_IDS.size > 0) return;
-        const currentSearch = byId("searchInput").value;
-        saveScroll();
         await loadTasks(true);
-        byId("searchInput").value = currentSearch;
-        safeRender();
       }, REFRESH_MS);
     }
 
     window.addEventListener("click", function () {
-      if (OPEN_STATUS_ID !== null) {
-        OPEN_STATUS_ID = null;
+      if (OPEN_MENU.taskId !== null || OPEN_MENU.field !== null) {
+        closeMenus();
+        safeRender();
+      }
+    });
+
+    window.addEventListener("scroll", function () {
+      if (OPEN_MENU.taskId !== null || OPEN_MENU.field !== null) {
+        closeMenus();
+        safeRender();
+      }
+    }, true);
+
+    window.addEventListener("resize", function () {
+      if (OPEN_MENU.taskId !== null || OPEN_MENU.field !== null) {
+        closeMenus();
         safeRender();
       }
     });
@@ -1555,11 +1546,7 @@
       });
 
       byId("refreshBtn").addEventListener("click", async () => {
-        const currentSearch = byId("searchInput").value;
-        saveScroll();
         await loadTasks(true);
-        byId("searchInput").value = currentSearch;
-        safeRender();
       });
 
       if (TOKEN) {

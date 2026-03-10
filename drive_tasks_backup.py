@@ -4,7 +4,8 @@ import base64
 import sqlite3
 import tempfile
 
-from google.oauth2 import service_account
+from google.oauth2.credentials import Credentials
+from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
 
@@ -12,22 +13,49 @@ SCOPES = ["https://www.googleapis.com/auth/drive"]
 FILE_NAME = os.environ.get("TAREAS_DRIVE_FILENAME", "tareas_simple.db")
 
 
-def _load_service_account_info():
-    raw_json = (os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON") or "").strip()
-    raw_b64 = (os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON_B64") or "").strip()
+def _load_json_from_b64(env_name):
+    raw_b64 = (os.environ.get(env_name) or "").strip()
+    if not raw_b64:
+        raise RuntimeError(f"Falta {env_name}")
 
-    if raw_b64:
-        raw_json = base64.b64decode(raw_b64).decode("utf-8")
-
-    if not raw_json:
-        raise RuntimeError("Falta GOOGLE_SERVICE_ACCOUNT_JSON o GOOGLE_SERVICE_ACCOUNT_JSON_B64")
-
+    raw_json = base64.b64decode(raw_b64).decode("utf-8")
     return json.loads(raw_json)
 
 
+def _get_oauth_token_info():
+    token_info = _load_json_from_b64("GOOGLE_OAUTH_TOKEN_JSON_B64")
+
+    if token_info.get("client_id") and token_info.get("client_secret"):
+        return token_info
+
+    client_info = _load_json_from_b64("GOOGLE_OAUTH_CLIENT_SECRET_JSON_B64")
+
+    oauth_client = (
+        client_info.get("installed")
+        or client_info.get("web")
+        or client_info
+    )
+
+    if not token_info.get("client_id"):
+        token_info["client_id"] = oauth_client.get("client_id")
+
+    if not token_info.get("client_secret"):
+        token_info["client_secret"] = oauth_client.get("client_secret")
+
+    if not token_info.get("token_uri"):
+        token_info["token_uri"] = oauth_client.get("token_uri", "https://oauth2.googleapis.com/token")
+
+    return token_info
+
+
 def _get_drive_service():
-    info = _load_service_account_info()
-    creds = service_account.Credentials.from_service_account_info(info, scopes=SCOPES)
+    token_info = _get_oauth_token_info()
+
+    creds = Credentials.from_authorized_user_info(token_info, scopes=SCOPES)
+
+    if creds.expired and creds.refresh_token:
+        creds.refresh(Request())
+
     return build("drive", "v3", credentials=creds, cache_discovery=False)
 
 
@@ -39,13 +67,17 @@ def _get_folder_id():
 
 
 def _find_file(service, folder_id, file_name):
-    q = f"name = '{file_name}' and '{folder_id}' in parents and trashed = false"
+    safe_file_name = file_name.replace("'", "\\'")
+    q = f"name = '{safe_file_name}' and '{folder_id}' in parents and trashed = false"
+
     result = service.files().list(
         q=q,
         spaces="drive",
         fields="files(id, name, modifiedTime)",
         orderBy="modifiedTime desc",
-        pageSize=10
+        pageSize=10,
+        supportsAllDrives=True,
+        includeItemsFromAllDrives=True
     ).execute()
 
     files = result.get("files", [])
@@ -58,6 +90,7 @@ def _make_sqlite_snapshot(db_path):
 
     src = None
     dst = None
+
     try:
         src = sqlite3.connect(db_path, timeout=30, check_same_thread=False)
         dst = sqlite3.connect(temp_path, timeout=30, check_same_thread=False)
@@ -70,6 +103,7 @@ def _make_sqlite_snapshot(db_path):
                 dst.close()
         except:
             pass
+
         try:
             if src:
                 src.close()
@@ -87,12 +121,17 @@ def backup_db_to_drive(db_path):
 
     try:
         existing = _find_file(service, folder_id, FILE_NAME)
-        media = MediaFileUpload(snapshot_path, mimetype="application/octet-stream", resumable=False)
+        media = MediaFileUpload(
+            snapshot_path,
+            mimetype="application/octet-stream",
+            resumable=False
+        )
 
         if existing:
             service.files().update(
                 fileId=existing["id"],
-                media_body=media
+                media_body=media,
+                supportsAllDrives=True
             ).execute()
         else:
             service.files().create(
@@ -101,7 +140,8 @@ def backup_db_to_drive(db_path):
                     "parents": [folder_id]
                 },
                 media_body=media,
-                fields="id"
+                fields="id",
+                supportsAllDrives=True
             ).execute()
 
         return True
@@ -123,13 +163,19 @@ def restore_db_from_drive_if_missing(db_path):
     if not existing:
         return False
 
-    os.makedirs(os.path.dirname(db_path), exist_ok=True)
+    db_dir = os.path.dirname(db_path)
+    if db_dir:
+        os.makedirs(db_dir, exist_ok=True)
 
     fd, temp_path = tempfile.mkstemp(suffix=".db")
     os.close(fd)
 
     try:
-        request = service.files().get_media(fileId=existing["id"])
+        request = service.files().get_media(
+            fileId=existing["id"],
+            supportsAllDrives=True
+        )
+
         with open(temp_path, "wb") as fh:
             downloader = MediaIoBaseDownload(fh, request)
             done = False
