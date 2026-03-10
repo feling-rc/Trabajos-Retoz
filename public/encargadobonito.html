@@ -1,255 +1,1518 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trabajo general</title>
 
-<title>Mesa de Trabajo</title>
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --surface: #ffffff;
+      --surface-2: #f8fafc;
+      --stroke: #e7ebf0;
+      --text: #18212b;
+      --muted: #6a7583;
+      --green: #0b9e32;
+      --green-dark: #3a4350;
+      --purple: #7b5b86;
+      --blue-soft: #eef5ff;
+      --shadow: 0 10px 30px rgba(16, 24, 40, 0.08);
+      --radius-xl: 22px;
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --radius-sm: 10px;
+      --header-h: 82px;
+    }
 
-<style>
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
 
-body{
-    font-family: system-ui;
-    background:#f4f6f8;
-    margin:0;
-    padding:10px;
-}
+    html {
+      scroll-behavior: smooth;
+    }
 
-.container{
-    max-width:600px;
-    margin:auto;
-}
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      background:
+        radial-gradient(circle at top right, rgba(123, 91, 134, 0.07), transparent 28%),
+        radial-gradient(circle at top left, rgba(11, 158, 50, 0.06), transparent 24%),
+        var(--bg);
+      color: var(--text);
+    }
 
-.card{
-    background:white;
-    border-radius:16px;
-    padding:14px;
-    margin-bottom:14px;
-    box-shadow:0 4px 10px rgba(0,0,0,0.08);
-}
+    .page {
+      min-height: 100vh;
+      padding-bottom: 90px;
+    }
 
-.title{
-    font-size:18px;
-    font-weight:700;
-    margin-bottom:6px;
-}
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      backdrop-filter: blur(14px);
+      background: rgba(244, 246, 248, 0.88);
+      border-bottom: 1px solid rgba(231, 235, 240, 0.75);
+    }
 
-.estado{
-    font-size:12px;
-    background:#eef1f4;
-    padding:4px 10px;
-    border-radius:8px;
-    display:inline-block;
-    margin-bottom:10px;
-}
+    .topbar-inner {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 12px 14px 14px;
+      display: grid;
+      gap: 10px;
+    }
 
-.detalle{
-    font-size:13px;
-    color:#555;
-    margin-bottom:10px;
-}
+    .hero {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
 
-.grid{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:8px;
-}
+    .hero-left {
+      min-width: 0;
+    }
 
-.field{
-    background:#f2f4f7;
-    padding:8px;
-    border-radius:8px;
-}
+    .title {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+    }
 
-.label{
-    font-size:11px;
-    color:#666;
-}
+    .subtitle {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.3;
+    }
 
-.value{
-    font-size:13px;
-    font-weight:600;
-}
+    .pill {
+      flex: 0 0 auto;
+      background: var(--surface);
+      border: 1px solid var(--stroke);
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 800;
+      box-shadow: var(--shadow);
+      white-space: nowrap;
+    }
 
-select{
-    width:100%;
-    padding:8px;
-    border-radius:8px;
-    border:none;
-    margin-top:4px;
-}
+    .toolbar {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 10px;
+      align-items: center;
+    }
 
-button{
-    width:100%;
-    padding:12px;
-    border:none;
-    border-radius:10px;
-    font-weight:700;
-    margin-top:8px;
-}
+    .search {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--surface);
+      border: 1px solid var(--stroke);
+      border-radius: 999px;
+      padding: 12px 14px;
+      box-shadow: var(--shadow);
+      min-width: 0;
+    }
 
-.btn-listo{
-    background:#10a600;
-    color:white;
-}
+    .search svg {
+      width: 18px;
+      height: 18px;
+      color: var(--muted);
+      flex: 0 0 auto;
+    }
 
-.btn-completo{
-    background:#7c5a84;
-    color:white;
-}
+    .search input {
+      width: 100%;
+      min-width: 0;
+      border: none;
+      outline: none;
+      background: transparent;
+      font-size: 14px;
+      color: var(--text);
+    }
 
-.fecha{
-    background:#dfefff;
-}
+    .search input::placeholder {
+      color: #98a2b3;
+    }
 
-</style>
+    .icon-btn,
+    .ghost-btn {
+      border: 1px solid var(--stroke);
+      background: var(--surface);
+      color: var(--text);
+      border-radius: 999px;
+      height: 46px;
+      min-width: 46px;
+      padding: 0 14px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: var(--shadow);
+    }
+
+    .icon-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+
+    .icon-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 14px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .info-strip {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      background: rgba(255, 255, 255, 0.6);
+      border: 1px dashed rgba(152, 162, 179, 0.5);
+      color: var(--muted);
+      border-radius: 16px;
+      padding: 10px 12px;
+      font-size: 12px;
+    }
+
+    .notice {
+      background: #fff6ea;
+      border: 1px solid #f4d9ae;
+      color: #7a4a11;
+      border-radius: 14px;
+      padding: 10px 12px;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .loading-box,
+    .empty-box,
+    .error-box {
+      background: var(--surface);
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow);
+      padding: 18px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .cards {
+      display: grid;
+      gap: 14px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid rgba(231, 235, 240, 0.95);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow);
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .card-head {
+      display: grid;
+      gap: 10px;
+    }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      gap: 10px;
+    }
+
+    .model {
+      min-width: 0;
+      font-size: 21px;
+      font-weight: 900;
+      line-height: 1.02;
+      letter-spacing: -0.03em;
+      text-transform: uppercase;
+      word-break: break-word;
+    }
+
+    .status-chip {
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 999px;
+      padding: 8px 10px;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+      border: 1px solid transparent;
+    }
+
+    .status-chip::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: currentColor;
+      opacity: 0.95;
+    }
+
+    .status-default {
+      background: #f2f4f7;
+      color: #5c6674;
+      border-color: #e5e7eb;
+    }
+
+    .status-agendado {
+      background: #eef5ff;
+      color: #265ba7;
+      border-color: #cfe0ff;
+    }
+
+    .status-proceso {
+      background: #f8f1ff;
+      color: #7b4bb2;
+      border-color: #e5d5ff;
+    }
+
+    .status-sinmaterial {
+      background: #fff7ed;
+      color: #b45309;
+      border-color: #fed7aa;
+    }
+
+    .status-atrasado {
+      background: #fef2f2;
+      color: #c2410c;
+      border-color: #fecaca;
+    }
+
+    .status-trabajado {
+      background: #ecfdf3;
+      color: #15803d;
+      border-color: #bbf7d0;
+    }
+
+    .status-completado {
+      background: #f3f0ff;
+      color: #6941c6;
+      border-color: #d9d6fe;
+    }
+
+    .status-entregado {
+      background: #effcf6;
+      color: #047857;
+      border-color: #a7f3d0;
+    }
+
+    .detail-box {
+      background: linear-gradient(180deg, #fbfcfd 0%, #f8fafc 100%);
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius-lg);
+      padding: 12px;
+      display: grid;
+      gap: 6px;
+    }
+
+    .k-label {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      color: var(--muted);
+      line-height: 1.2;
+    }
+
+    .detail-text {
+      font-size: 14px;
+      line-height: 1.4;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: var(--text);
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .mini-card {
+      background: var(--surface-2);
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius-lg);
+      padding: 11px 12px;
+      min-width: 0;
+      display: grid;
+      gap: 4px;
+    }
+
+    .mini-value {
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.35;
+      min-width: 0;
+      word-break: break-word;
+      color: var(--text);
+    }
+
+    .select-block {
+      background: var(--surface-2);
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius-lg);
+      padding: 11px 12px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .select-block select {
+      width: 100%;
+      appearance: none;
+      border: 1px solid #d8dee6;
+      background:
+        linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%);
+      border-radius: 12px;
+      padding: 11px 40px 11px 12px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      outline: none;
+      cursor: pointer;
+      background-image:
+        linear-gradient(45deg, transparent 50%, #667085 50%),
+        linear-gradient(135deg, #667085 50%, transparent 50%),
+        linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%);
+      background-position:
+        calc(100% - 18px) calc(50% - 3px),
+        calc(100% - 12px) calc(50% - 3px),
+        0 0;
+      background-size:
+        6px 6px,
+        6px 6px,
+        100% 100%;
+      background-repeat: no-repeat;
+    }
+
+    .select-block select:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .actions {
+      display: grid;
+      gap: 10px;
+    }
+
+    .btn {
+      width: 100%;
+      border: none;
+      border-radius: 14px;
+      padding: 13px 14px;
+      font-size: 15px;
+      font-weight: 900;
+      cursor: pointer;
+      transition: transform .12s ease, opacity .12s ease, filter .12s ease;
+      letter-spacing: -0.01em;
+    }
+
+    .btn:active {
+      transform: scale(.992);
+    }
+
+    .btn:disabled {
+      opacity: 0.72;
+      cursor: not-allowed;
+    }
+
+    .btn-green {
+      color: #fff;
+      background: linear-gradient(180deg, #10b437 0%, #0b9e32 100%);
+      box-shadow: 0 8px 20px rgba(11, 158, 50, 0.22);
+    }
+
+    .btn-dark {
+      color: #fff;
+      background: linear-gradient(180deg, #505c6d 0%, #39414c 100%);
+      box-shadow: 0 8px 20px rgba(57, 65, 76, 0.18);
+    }
+
+    .btn-purple {
+      color: #fff;
+      background: linear-gradient(180deg, #8a68a0 0%, #7b5b86 100%);
+      box-shadow: 0 8px 20px rgba(123, 91, 134, 0.22);
+    }
+
+    .btn-muted {
+      color: #fff;
+      background: linear-gradient(180deg, #8b95a3 0%, #6b7280 100%);
+    }
+
+    .trabajado-panel {
+      background: linear-gradient(180deg, #fbfcfd 0%, #f8fafc 100%);
+      border: 1px solid var(--stroke);
+      border-radius: 18px;
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .trabajado-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .small-note {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%) translateY(14px);
+      z-index: 60;
+      min-width: min(92vw, 360px);
+      max-width: min(92vw, 460px);
+      background: #111827;
+      color: #fff;
+      padding: 12px 14px;
+      border-radius: 14px;
+      box-shadow: 0 14px 34px rgba(0, 0, 0, 0.24);
+      opacity: 0;
+      pointer-events: none;
+      transition: .22s ease;
+      font-size: 13px;
+      line-height: 1.35;
+      text-align: center;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .toast.error {
+      background: #b42318;
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      background: rgba(15, 23, 42, 0.58);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 380px;
+      background: var(--surface);
+      border: 1px solid rgba(255,255,255,0.5);
+      border-radius: 24px;
+      padding: 22px 18px 18px;
+      box-shadow: 0 20px 54px rgba(15, 23, 42, 0.24);
+      display: grid;
+      gap: 14px;
+    }
+
+    .login-title {
+      margin: 0;
+      font-size: 26px;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+    }
+
+    .login-sub {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .login-card input {
+      width: 100%;
+      border: 1px solid #d8dee6;
+      border-radius: 14px;
+      padding: 14px 16px;
+      font-size: 20px;
+      font-weight: 800;
+      outline: none;
+      text-align: center;
+      letter-spacing: 4px;
+      color: var(--text);
+      background: #fbfcfe;
+    }
+
+    .login-error {
+      min-height: 18px;
+      color: #b42318;
+      font-size: 12px;
+      text-align: center;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (min-width: 640px) {
+      .cards {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .toolbar {
+        grid-template-columns: 1fr auto auto;
+      }
+    }
+
+    @media (max-width: 639px) {
+      .title {
+        font-size: 20px;
+      }
+
+      .model {
+        font-size: 19px;
+      }
+
+      .toolbar {
+        grid-template-columns: 1fr auto;
+      }
+
+      .ghost-btn {
+        display: none;
+      }
+
+      .info-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .card {
+        padding: 13px;
+      }
+    }
+  </style>
 </head>
-
 <body>
+  <div class="page">
+    <div id="loginOverlay" class="overlay">
+      <div class="login-card">
+        <div>
+          <h1 class="login-title">Trabajo general</h1>
+          <p class="login-sub">Ingresa el código para abrir el panel del supervisor.</p>
+        </div>
 
-<div class="container" id="tasks"></div>
+        <input
+          id="codeInput"
+          type="password"
+          maxlength="6"
+          inputmode="numeric"
+          placeholder="••••••"
+          autocomplete="off"
+        />
 
-<script>
+        <button id="loginBtn" class="btn btn-green" type="button">Entrar</button>
+        <div id="loginError" class="login-error"></div>
+      </div>
+    </div>
 
-async function cargar(){
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="hero">
+          <div class="hero-left">
+            <h1 class="title">Trabajo general</h1>
+            <div class="subtitle">Panel compacto para supervisor</div>
+          </div>
 
-const res = await fetch("/tareas");
-const data = await res.json();
+          <div id="countBadge" class="pill">0 pares</div>
+        </div>
 
-const cont = document.getElementById("tasks");
-cont.innerHTML="";
+        <div class="toolbar">
+          <div class="search">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M21 21l-4.35-4.35M10.8 18a7.2 7.2 0 1 0 0-14.4 7.2 7.2 0 0 0 0 14.4Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <input
+              id="searchInput"
+              type="text"
+              placeholder="Buscar por orden, modelo, detalle, estado, responsable o ubicación"
+              autocomplete="off"
+            />
+          </div>
 
-data.forEach(t=>{
+          <button id="refreshBtn" class="icon-btn" type="button" title="Actualizar">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M21 12a9 9 0 1 1-2.64-6.36M21 4v6h-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
 
-cont.innerHTML+=`
-<div class="card">
+          <button id="logoutBtn" class="ghost-btn" type="button">Salir</button>
+        </div>
+      </div>
+    </header>
 
-<div class="title">${t.nombre}</div>
+    <main class="container">
+      <div class="info-strip">
+        <span>Vista optimizada para celular</span>
+        <span id="syncText">Sincronización lista</span>
+      </div>
 
-<div class="estado">
-Estado:
-<select onchange="cambiarEstado(${t.id},this.value)">
-<option ${t.estado=="Agendado"?"selected":""}>Agendado</option>
-<option ${t.estado=="En Proceso"?"selected":""}>En Proceso</option>
-<option ${t.estado=="Terminado"?"selected":""}>Terminado</option>
-</select>
-</div>
+      <div id="demoNotice" class="notice hidden">
+        No se pudieron cargar las opciones desde el backend. Se están usando opciones por defecto del frontend.
+      </div>
 
-<div class="detalle">
-${t.detalle}
-</div>
+      <div id="loadingBox" class="loading-box">Cargando trabajos...</div>
+      <div id="errorBox" class="error-box hidden"></div>
+      <div id="emptyBox" class="empty-box hidden">No hay trabajos para mostrar.</div>
+      <div id="cards" class="cards hidden"></div>
+    </main>
+  </div>
 
-<div class="grid">
+  <div id="toast" class="toast"></div>
 
-<div class="field fecha">
-<div class="label">Fecha a trabajarlo</div>
-<div class="value">${t.fecha_trabajo || "-"}</div>
-</div>
+  <script>
+    const API_ROOT = "/trabajo-general/api";
+    const STORAGE_TOKEN_KEY = "trabajo_general_token";
+    const REFRESH_MS = 8000;
 
-<div class="field">
-<div class="label">Fecha entrega</div>
-<div class="value">${t.fecha_entrega || "-"}</div>
-</div>
+    const DEFAULT_OPTIONS = {
+      responsables: [
+        { value: "PEDRO", label: "PEDRO" },
+        { value: "FELING", label: "FELING" },
+        { value: "YULI", label: "YULI" },
+        { value: "JORGE", label: "JORGE" },
+        { value: "EZER", label: "EZER" },
+        { value: "ALEX", label: "ALEX" },
+        { value: "SR COCO", label: "SR COCO" },
+        { value: "KEVIN", label: "KEVIN" },
+        { value: "SHINA", label: "SHINA" }
+      ],
+      ubicaciones: [
+        { value: "DEFINIDO", label: "DEFINIDO" },
+        { value: "A-1", label: "A-1" },
+        { value: "A-2", label: "A-2" },
+        { value: "A-3", label: "A-3" },
+        { value: "A-4", label: "A-4" },
+        { value: "F-1", label: "F-1" },
+        { value: "F-2", label: "F-2" },
+        { value: "F-3", label: "F-3" },
+        { value: "F-4", label: "F-4" },
+        { value: "F-5", label: "F-5" },
+        { value: "P-1", label: "P-1" },
+        { value: "P-2", label: "P-2" },
+        { value: "P-3", label: "P-3" },
+        { value: "P-4", label: "P-4" },
+        { value: "P-5", label: "P-5" },
+        { value: "EN ANCHADORA", label: "EN ANCHADORA" },
+        { value: "ABANDONADO 1", label: "ABANDONADO 1" },
+        { value: "ABANDONADO 2", label: "ABANDONADO 2" },
+        { value: "ENTREGADO", label: "ENTREGADO" },
+        { value: "COMPLETADO", label: "COMPLETADO" },
+        { value: "A", label: "A" },
+        { value: "B", label: "B" },
+        { value: "C", label: "C" },
+        { value: "D", label: "D" },
+        { value: "E", label: "E" },
+        { value: "F", label: "F" },
+        { value: "G", label: "G" },
+        { value: "H", label: "H" },
+        { value: "I", label: "I" },
+        { value: "P-6", label: "P-6" },
+        { value: "F-7", label: "F-7" }
+      ],
+      trabajado_por: [
+        { value: "Pedro", label: "Pedro" },
+        { value: "Feling", label: "Feling" },
+        { value: "Yuli", label: "Yuli" },
+        { value: "Jorge", label: "Jorge" },
+        { value: "Even Ezer", label: "Even Ezer" },
+        { value: "Alex", label: "Alex" },
+        { value: "Sr Juan", label: "Sr Juan" },
+        { value: "Sr Coco", label: "Sr Coco" },
+        { value: "Kevin", label: "Kevin" },
+        { value: "Shina", label: "Shina" }
+      ],
+      estados: [
+        { value: "01_in_progress", label: "Agendado" },
+        { value: "En Ruta", label: "En ruta" },
+        { value: "02_changes_requested", label: "Sin material" },
+        { value: "03_approved", label: "En proceso" },
+        { value: "04_waiting_normal", label: "Atrasado" },
+        { value: "1_cancelled", label: "Cancelado" },
+        { value: "1_done", label: "Completado" },
+        { value: "Entregado", label: "Entregado" },
+        { value: "Ya no Quiere", label: "Ya no quiere" },
+        { value: "Agendar Con Bot", label: "Agendar con bot" },
+        { value: "TRABAJADO", label: "Trabajado" },
+        { value: "Empaquetado", label: "Empaquetado" },
+        { value: "Agendado con Courier", label: "Agendado con courier" }
+      ]
+    };
 
-<div class="field">
-<div class="label">Orden</div>
-<div class="value">${t.orden}</div>
-</div>
+    const STATUS_CLASS_MAP = {
+      "Agendado": "status-agendado",
+      "En ruta": "status-proceso",
+      "Sin material": "status-sinmaterial",
+      "En proceso": "status-proceso",
+      "Atrasado": "status-atrasado",
+      "Trabajado": "status-trabajado",
+      "Completado": "status-completado",
+      "Entregado": "status-entregado",
+      "Agendar con bot": "status-default",
+      "Empaquetado": "status-default",
+      "Agendado con courier": "status-default",
+      "Cancelado": "status-default",
+      "Ya no quiere": "status-default"
+    };
 
-<div class="field">
-<div class="label">Pasadores</div>
-<div class="value">${t.pasadores}</div>
-</div>
+    let TOKEN = sessionStorage.getItem(STORAGE_TOKEN_KEY) || "";
+    let OPTIONS = JSON.parse(JSON.stringify(DEFAULT_OPTIONS));
+    let TASKS = [];
+    let REFRESH_TIMER = null;
+    let SAVING_IDS = new Set();
 
-<div class="field">
-<div class="label">Plantillas</div>
-<div class="value">${t.plantillas}</div>
-</div>
+    function byId(id) {
+      return document.getElementById(id);
+    }
 
-<div class="field">
-<div class="label">Responsable</div>
-<select onchange="cambiarResponsable(${t.id},this.value)">
-<option>Seleccionar</option>
-<option ${t.responsable=="Pedro"?"selected":""}>Pedro</option>
-<option ${t.responsable=="Jorge"?"selected":""}>Jorge</option>
-<option ${t.responsable=="Yuli"?"selected":""}>Yuli</option>
-</select>
-</div>
+    function showToast(message, isError = false) {
+      const toast = byId("toast");
+      toast.textContent = message || "";
+      toast.className = "toast show" + (isError ? " error" : "");
+      clearTimeout(showToast._timer);
+      showToast._timer = setTimeout(() => {
+        toast.className = "toast";
+      }, 2600);
+    }
 
-<div class="field">
-<div class="label">Ubicación</div>
-<select onchange="cambiarUbicacion(${t.id},this.value)">
-<option>Seleccionar</option>
-<option ${t.ubicacion=="Mesa"?"selected":""}>Mesa</option>
-<option ${t.ubicacion=="Anchadora"?"selected":""}>Anchadora</option>
-<option ${t.ubicacion=="Lavado"?"selected":""}>Lavado</option>
-</select>
-</div>
+    function showLogin(show = true) {
+      byId("loginOverlay").classList.toggle("hidden", !show);
+    }
 
-</div>
+    function setSyncText(text) {
+      byId("syncText").textContent = text || "Sincronización lista";
+    }
 
-<button class="btn-listo" onclick="marcarListo(${t.id})">
-✔ Marcar listo
-</button>
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
 
-<button class="btn-completo" onclick="completar(${t.id})">
-Completar
-</button>
+    function cleanDigits(value) {
+      return String(value || "").replace(/\D+/g, "");
+    }
 
-</div>
-`;
+    function boolText(value) {
+      return value ? "Sí" : "No";
+    }
 
-})
+    function prettyDate(value) {
+      if (!value) return "-";
 
-}
+      let s = String(value).trim();
+      if (!s) return "-";
 
-async function cambiarResponsable(id,val){
+      if (s.includes(" ") && !s.includes("T")) {
+        s = s.replace(" ", "T");
+      }
 
-await fetch("/task/"+id+"/responsable",{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({responsable:val})
-})
+      const d = new Date(s);
+      if (isNaN(d)) return String(value);
 
-}
+      return d.toLocaleString("es-PE", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    }
 
-async function cambiarUbicacion(id,val){
+    function prettyDateOnly(value) {
+      if (!value) return "-";
 
-await fetch("/task/"+id+"/ubicacion",{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({ubicacion:val})
-})
+      let s = String(value).trim();
+      if (!s) return "-";
 
-}
+      if (s.includes(" ") && !s.includes("T")) {
+        s = s.replace(" ", "T");
+      }
 
-async function cambiarEstado(id,val){
+      const d = new Date(s);
+      if (isNaN(d)) return String(value);
 
-await fetch("/task/"+id+"/estado",{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({estado:val})
-})
+      return d.toLocaleDateString("es-PE", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+      });
+    }
 
-}
+    function estadoBonitoFromCode(code) {
+      const key = String(code || "").trim();
+      const match = OPTIONS.estados.find(x => String(x.value) === key);
+      return match ? match.label : (key || "-");
+    }
 
-async function marcarListo(id){
+    function isListo(task) {
+      return String(task.estado_code || "").trim() === "TRABAJADO";
+    }
 
-await fetch("/task/"+id+"/listo",{method:"POST"})
-cargar()
+    function statusClass(label) {
+      return STATUS_CLASS_MAP[label] || "status-default";
+    }
 
-}
+    function dedupeOptions(list, currentValue, currentLabel = null) {
+      const out = [];
+      const seen = new Set();
 
-async function completar(id){
+      if (currentValue && !list.some(x => String(x.value) === String(currentValue))) {
+        out.push({
+          value: currentValue,
+          label: currentLabel || currentValue
+        });
+        seen.add(String(currentValue));
+      }
 
-await fetch("/task/"+id+"/completar",{method:"POST"})
-cargar()
+      for (const item of list) {
+        const key = String(item.value);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push(item);
+      }
 
-}
+      return out;
+    }
 
-cargar()
+    function optionHtml(items, currentValue, currentLabel = null) {
+      const safeItems = dedupeOptions(items || [], currentValue, currentLabel);
+      return safeItems.map(item => {
+        const selected = String(item.value) === String(currentValue || "") ? "selected" : "";
+        return `<option value="${escapeHtml(item.value)}" ${selected}>${escapeHtml(item.label)}</option>`;
+      }).join("");
+    }
 
-</script>
+    function normalizeTask(raw) {
+      const ordenTexto =
+        raw.orden_texto ||
+        (Array.isArray(raw.x_studio_orden_de_venta_1) ? raw.x_studio_orden_de_venta_1[1] : "") ||
+        "";
 
+      const estadoCode =
+        raw.estado_code ||
+        raw.x_studio_selection_field_3j_1ivn1ho1m ||
+        "";
+
+      const estadoLabel =
+        raw.estado_label ||
+        estadoBonitoFromCode(estadoCode);
+
+      return {
+        id: raw.id,
+        modelo:
+          raw.modelo ||
+          raw.x_studio_modelo_de_par_1 ||
+          "Sin modelo",
+        detalle:
+          raw.detalle ||
+          raw.x_studio_detalles_del_trabajo_1 ||
+          "",
+        estado_code: estadoCode,
+        estado_label: estadoLabel,
+        fecha_a_trabajarlo:
+          raw.fecha_a_trabajarlo ||
+          raw.fecha_trabajarlo ||
+          raw.x_studio_fecha_a_trabajarlo_2 ||
+          "",
+        fecha_entrega:
+          raw.fecha_entrega ||
+          raw.x_studio_fecha_de_entrega ||
+          "",
+        orden_texto: ordenTexto,
+        orden_numero:
+          raw.orden_numero ||
+          cleanDigits(ordenTexto),
+        pasadores:
+          typeof raw.pasadores !== "undefined"
+            ? raw.pasadores
+            : !!raw.x_studio_pasadores_1,
+        plantillas:
+          typeof raw.plantillas !== "undefined"
+            ? raw.plantillas
+            : !!raw.x_studio_plantillas_1,
+        responsable:
+          raw.responsable ||
+          raw.x_studio_responsable_r ||
+          "",
+        ubicacion_seguimiento:
+          raw.ubicacion_seguimiento ||
+          raw.x_studio_ubicacion_exacta_1 ||
+          "",
+        trabajado_por:
+          raw.trabajado_por ||
+          raw.x_studio_trabajado_por ||
+          "",
+        _openTrabajadoPor: !!raw._openTrabajadoPor
+      };
+    }
+
+    function filterTasks() {
+      const q = (byId("searchInput").value || "").trim().toLowerCase();
+      if (!q) return TASKS;
+
+      return TASKS.filter(task => {
+        const blob = [
+          task.modelo,
+          task.detalle,
+          task.estado_label,
+          task.fecha_a_trabajarlo,
+          task.fecha_entrega,
+          task.orden_texto,
+          task.orden_numero,
+          task.responsable,
+          task.ubicacion_seguimiento,
+          task.trabajado_por
+        ].join(" ").toLowerCase();
+
+        return blob.includes(q);
+      });
+    }
+
+    function setLoading(message = "Cargando trabajos...") {
+      byId("loadingBox").textContent = message;
+      byId("loadingBox").classList.remove("hidden");
+      byId("errorBox").classList.add("hidden");
+      byId("emptyBox").classList.add("hidden");
+      byId("cards").classList.add("hidden");
+    }
+
+    function clearMessages() {
+      byId("loadingBox").classList.add("hidden");
+      byId("errorBox").classList.add("hidden");
+      byId("emptyBox").classList.add("hidden");
+    }
+
+    function setError(message) {
+      byId("loadingBox").classList.add("hidden");
+      byId("cards").classList.add("hidden");
+      byId("emptyBox").classList.add("hidden");
+      byId("errorBox").textContent = message || "Ocurrió un error.";
+      byId("errorBox").classList.remove("hidden");
+    }
+
+    function mergeTask(updated) {
+      const idx = TASKS.findIndex(x => String(x.id) === String(updated.id));
+      if (idx >= 0) {
+        TASKS[idx] = {
+          ...TASKS[idx],
+          ...normalizeTask(updated),
+          _openTrabajadoPor: false
+        };
+      }
+    }
+
+    async function api(path, method = "GET", body = null) {
+      const headers = {};
+
+      if (TOKEN) {
+        headers["X-Encargado-Token"] = TOKEN;
+      }
+
+      if (body !== null) {
+        headers["Content-Type"] = "application/json";
+      }
+
+      const response = await fetch(API_ROOT + path, {
+        method,
+        headers,
+        body: body !== null ? JSON.stringify(body) : undefined,
+        cache: "no-store"
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (response.status === 401) {
+        TOKEN = "";
+        sessionStorage.removeItem(STORAGE_TOKEN_KEY);
+        showLogin(true);
+        throw new Error(data.error || "Tu sesión venció. Vuelve a ingresar el código.");
+      }
+
+      if (!response.ok) {
+        throw new Error(data.error || "No se pudo completar la operación.");
+      }
+
+      return data;
+    }
+
+    async function loadOptions() {
+      byId("demoNotice").classList.add("hidden");
+      try {
+        const data = await api("/options", "GET");
+        OPTIONS = {
+          responsables: Array.isArray(data.responsables) && data.responsables.length ? data.responsables : DEFAULT_OPTIONS.responsables,
+          ubicaciones: Array.isArray(data.ubicaciones) && data.ubicaciones.length ? data.ubicaciones : DEFAULT_OPTIONS.ubicaciones,
+          trabajado_por: Array.isArray(data.trabajado_por) && data.trabajado_por.length ? data.trabajado_por : DEFAULT_OPTIONS.trabajado_por,
+          estados: Array.isArray(data.estados) && data.estados.length ? data.estados : DEFAULT_OPTIONS.estados
+        };
+      } catch (error) {
+        OPTIONS = JSON.parse(JSON.stringify(DEFAULT_OPTIONS));
+        byId("demoNotice").classList.remove("hidden");
+      }
+    }
+
+    async function loadTasks(silent = false) {
+      if (!silent) {
+        setLoading("Cargando trabajos...");
+      }
+      setSyncText(silent ? "Sincronizando..." : "Cargando...");
+
+      try {
+        const data = await api("/tasks", "GET");
+        const result = Array.isArray(data.result) ? data.result : [];
+        TASKS = result.map(normalizeTask);
+
+        renderTasks();
+        setSyncText("Sincronización lista");
+      } catch (error) {
+        if (!TASKS.length) {
+          setError(error.message || "No se pudieron cargar los trabajos.");
+        } else {
+          showToast(error.message || "No se pudo actualizar.", true);
+        }
+        setSyncText("Error de sincronización");
+      }
+    }
+
+    function cardHtml(task) {
+      const listo = isListo(task);
+      const saving = SAVING_IDS.has(String(task.id));
+      const estadoLabel = task.estado_label || estadoBonitoFromCode(task.estado_code);
+      const estadoClass = statusClass(estadoLabel);
+
+      return `
+        <article class="card" data-id="${task.id}">
+          <div class="card-head">
+            <div class="card-top">
+              <div class="model">${escapeHtml(task.modelo)}</div>
+              <div class="status-chip ${estadoClass}">${escapeHtml(estadoLabel)}</div>
+            </div>
+
+            <div class="detail-box">
+              <div class="k-label">Detalle de trabajo</div>
+              <div class="detail-text">${escapeHtml(task.detalle || "-")}</div>
+            </div>
+          </div>
+
+          <div class="info-grid">
+            <div class="mini-card">
+              <div class="k-label">Fecha de trabajarlo</div>
+              <div class="mini-value">${escapeHtml(prettyDateOnly(task.fecha_a_trabajarlo))}</div>
+            </div>
+
+            <div class="mini-card">
+              <div class="k-label">Fecha de entrega</div>
+              <div class="mini-value">${escapeHtml(prettyDate(task.fecha_entrega))}</div>
+            </div>
+
+            <div class="mini-card">
+              <div class="k-label">Orden</div>
+              <div class="mini-value">${escapeHtml(task.orden_texto || "-")}</div>
+            </div>
+
+            <div class="mini-card">
+              <div class="k-label">Pasadores</div>
+              <div class="mini-value">${escapeHtml(boolText(task.pasadores))}</div>
+            </div>
+
+            <div class="mini-card">
+              <div class="k-label">Plantillas</div>
+              <div class="mini-value">${escapeHtml(boolText(task.plantillas))}</div>
+            </div>
+
+            <div class="mini-card">
+              <div class="k-label">Trabajado por</div>
+              <div class="mini-value">${escapeHtml(task.trabajado_por || "-")}</div>
+            </div>
+          </div>
+
+          <div class="select-block">
+            <div class="k-label">Estado</div>
+            <select class="js-estado" data-id="${task.id}" data-prev="${escapeHtml(task.estado_code || "")}" ${saving ? "disabled" : ""}>
+              ${optionHtml(OPTIONS.estados, task.estado_code, estadoLabel)}
+            </select>
+          </div>
+
+          <div class="select-block">
+            <div class="k-label">Responsable</div>
+            <select class="js-responsable" data-id="${task.id}" data-prev="${escapeHtml(task.responsable || "")}" ${saving ? "disabled" : ""}>
+              <option value="">Seleccionar responsable</option>
+              ${optionHtml(OPTIONS.responsables, task.responsable)}
+            </select>
+          </div>
+
+          <div class="select-block">
+            <div class="k-label">Ubicación de seguimiento</div>
+            <select class="js-ubicacion" data-id="${task.id}" data-prev="${escapeHtml(task.ubicacion_seguimiento || "")}" ${saving ? "disabled" : ""}>
+              <option value="">Seleccionar ubicación</option>
+              ${optionHtml(OPTIONS.ubicaciones, task.ubicacion_seguimiento)}
+            </select>
+          </div>
+
+          <div class="actions">
+            <button class="btn ${listo ? "btn-dark" : "btn-green"} js-toggle-listo" data-id="${task.id}" ${saving ? "disabled" : ""}>
+              ${listo ? "✔ LISTO" : "✅ MARCAR LISTO"}
+            </button>
+
+            ${!listo && task._openTrabajadoPor ? `
+              <div class="trabajado-panel">
+                <div class="k-label">Trabajado por</div>
+
+                <select id="trabajadoPor_${task.id}" ${saving ? "disabled" : ""}>
+                  <option value="">Seleccionar</option>
+                  ${optionHtml(OPTIONS.trabajado_por, task.trabajado_por)}
+                </select>
+
+                <div class="trabajado-actions">
+                  <button class="btn btn-green js-confirm-trabajado" data-id="${task.id}" ${saving ? "disabled" : ""}>Guardar listo</button>
+                  <button class="btn btn-muted js-cancel-trabajado" data-id="${task.id}" ${saving ? "disabled" : ""}>Cancelar</button>
+                </div>
+
+                <div class="small-note">Primero elige quién trabajó la tarea y luego guarda.</div>
+              </div>
+            ` : ""}
+
+            <button class="btn btn-purple js-complete" data-id="${task.id}" ${saving ? "disabled" : ""}>
+              Completado
+            </button>
+          </div>
+        </article>
+      `;
+    }
+
+    function renderTasks() {
+      clearMessages();
+
+      const filtered = filterTasks();
+      byId("countBadge").textContent = `${filtered.length} pares`;
+
+      if (!filtered.length) {
+        byId("cards").classList.add("hidden");
+        byId("emptyBox").classList.remove("hidden");
+        return;
+      }
+
+      byId("emptyBox").classList.add("hidden");
+      byId("cards").innerHTML = filtered.map(cardHtml).join("");
+      byId("cards").classList.remove("hidden");
+      bindCardEvents();
+    }
+
+    async function quickUpdateTask(tareaId, payloadData, onRollback, successMsg) {
+      const key = String(tareaId);
+      if (SAVING_IDS.has(key)) return;
+
+      SAVING_IDS.add(key);
+      setSyncText("Guardando...");
+
+      try {
+        const data = await api(`/task/${tareaId}/update`, "POST", { data: payloadData });
+
+        if (data.task) {
+          mergeTask(data.task);
+        }
+
+        showToast(successMsg || data.message || "Actualizado.");
+        await loadTasks(true);
+      } catch (error) {
+        if (typeof onRollback === "function") {
+          onRollback();
+        }
+        showToast(error.message || "No se pudo guardar.", true);
+      } finally {
+        SAVING_IDS.delete(key);
+        setSyncText("Sincronización lista");
+      }
+    }
+
+    async function doToggleListo(tareaId, trabajadoPor = null) {
+      const key = String(tareaId);
+      if (SAVING_IDS.has(key)) return;
+
+      SAVING_IDS.add(key);
+      setSyncText("Guardando...");
+
+      try {
+        const body = trabajadoPor ? { trabajado_por: trabajadoPor } : {};
+        const data = await api(`/task/${tareaId}/toggle_listo`, "POST", body);
+
+        if (data.task) {
+          mergeTask(data.task);
+        }
+
+        showToast(data.message || "Listo actualizado.");
+        await loadTasks(true);
+      } catch (error) {
+        showToast(error.message || "No se pudo cambiar el listo.", true);
+      } finally {
+        SAVING_IDS.delete(key);
+        setSyncText("Sincronización lista");
+      }
+    }
+
+    async function doComplete(tareaId) {
+      const key = String(tareaId);
+      if (SAVING_IDS.has(key)) return;
+
+      SAVING_IDS.add(key);
+      setSyncText("Guardando...");
+
+      try {
+        const data = await api(`/task/${tareaId}/complete`, "POST", {});
+        if (data.task) {
+          mergeTask(data.task);
+        }
+
+        showToast(data.message || "Marcado como completado.");
+        await loadTasks(true);
+      } catch (error) {
+        showToast(error.message || "No se pudo completar.", true);
+      } finally {
+        SAVING_IDS.delete(key);
+        setSyncText("Sincronización lista");
+      }
+    }
+
+    function bindCardEvents() {
+      document.querySelectorAll(".js-responsable").forEach(select => {
+        select.addEventListener("change", async function () {
+          const tareaId = this.dataset.id;
+          const prev = this.dataset.prev || "";
+          const value = this.value || "";
+
+          await quickUpdateTask(
+            tareaId,
+            { x_studio_responsable_r: value || false },
+            () => { this.value = prev; },
+            "Responsable actualizado."
+          );
+        });
+      });
+
+      document.querySelectorAll(".js-ubicacion").forEach(select => {
+        select.addEventListener("change", async function () {
+          const tareaId = this.dataset.id;
+          const prev = this.dataset.prev || "";
+          const value = this.value || "";
+
+          await quickUpdateTask(
+            tareaId,
+            { x_studio_ubicacion_exacta_1: value || false },
+            () => { this.value = prev; },
+            "Ubicación actualizada."
+          );
+        });
+      });
+
+      document.querySelectorAll(".js-estado").forEach(select => {
+        select.addEventListener("change", async function () {
+          const tareaId = this.dataset.id;
+          const prev = this.dataset.prev || "";
+          const value = this.value || "";
+
+          await quickUpdateTask(
+            tareaId,
+            { x_studio_selection_field_3j_1ivn1ho1m: value || false },
+            () => { this.value = prev; },
+            "Estado actualizado."
+          );
+        });
+      });
+
+      document.querySelectorAll(".js-toggle-listo").forEach(btn => {
+        btn.addEventListener("click", async function () {
+          const tareaId = this.dataset.id;
+          const task = TASKS.find(t => String(t.id) === String(tareaId));
+          if (!task) return;
+
+          if (isListo(task)) {
+            const ok = confirm("La tarea ya está en LISTO. ¿Deseas desmarcarla?");
+            if (!ok) return;
+            await doToggleListo(tareaId, null);
+            return;
+          }
+
+          TASKS = TASKS.map(t => ({
+            ...t,
+            _openTrabajadoPor: String(t.id) === String(tareaId) ? !t._openTrabajadoPor : false
+          }));
+          renderTasks();
+        });
+      });
+
+      document.querySelectorAll(".js-confirm-trabajado").forEach(btn => {
+        btn.addEventListener("click", async function () {
+          const tareaId = this.dataset.id;
+          const select = byId(`trabajadoPor_${tareaId}`);
+          const trabajadoPor = (select?.value || "").trim();
+
+          if (!trabajadoPor) {
+            showToast("Selecciona “Trabajado por”.", true);
+            return;
+          }
+
+          await doToggleListo(tareaId, trabajadoPor);
+        });
+      });
+
+      document.querySelectorAll(".js-cancel-trabajado").forEach(btn => {
+        btn.addEventListener("click", function () {
+          const tareaId = this.dataset.id;
+          TASKS = TASKS.map(t => ({
+            ...t,
+            _openTrabajadoPor: false
+          }));
+          renderTasks();
+        });
+      });
+
+      document.querySelectorAll(".js-complete").forEach(btn => {
+        btn.addEventListener("click", async function () {
+          const tareaId = this.dataset.id;
+          const ok = confirm("¿Marcar esta tarea como completado?");
+          if (!ok) return;
+          await doComplete(tareaId);
+        });
+      });
+    }
+
+    function startAutoRefresh() {
+      clearInterval(REFRESH_TIMER);
+      REFRESH_TIMER = setInterval(async () => {
+        if (!TOKEN) return;
+        if (SAVING_IDS.size > 0) return;
+        await loadTasks(true);
+      }, REFRESH_MS);
+    }
+
+    async function doLogin() {
+      const input = byId("codeInput");
+      const err = byId("loginError");
+      err.textContent = "";
+
+      try {
+        const code = (input.value || "").trim();
+        if (!code) {
+          err.textContent = "Ingresa el código.";
+          return;
+        }
+
+        const response = await fetch(API_ROOT + "/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code })
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(data.error || "Código inválido.");
+        }
+
+        TOKEN = data.token || "";
+        sessionStorage.setItem(STORAGE_TOKEN_KEY, TOKEN);
+        input.value = "";
+
+        showLogin(false);
+        await initProtected();
+        showToast("Acceso concedido.");
+      } catch (error) {
+        err.textContent = error.message || "No se pudo ingresar.";
+      }
+    }
+
+    async function logout() {
+      try {
+        if (TOKEN) {
+          await api("/logout", "POST", {});
+        }
+      } catch (error) {}
+
+      TOKEN = "";
+      sessionStorage.removeItem(STORAGE_TOKEN_KEY);
+      clearInterval(REFRESH_TIMER);
+      TASKS = [];
+      showLogin(true);
+      byId("cards").innerHTML = "";
+      byId("countBadge").textContent = "0 pares";
+      byId("searchInput").value = "";
+      setLoading("Cargando trabajos...");
+    }
+
+    async function initProtected() {
+      await loadOptions();
+      await loadTasks(false);
+      startAutoRefresh();
+    }
+
+    window.addEventListener("load", async () => {
+      byId("loginBtn").addEventListener("click", doLogin);
+
+      byId("codeInput").addEventListener("keydown", e => {
+        if (e.key === "Enter") doLogin();
+      });
+
+      byId("searchInput").addEventListener("input", () => {
+        renderTasks();
+      });
+
+      byId("refreshBtn").addEventListener("click", async () => {
+        await loadTasks(false);
+      });
+
+      byId("logoutBtn").addEventListener("click", logout);
+
+      if (TOKEN) {
+        try {
+          showLogin(false);
+          await initProtected();
+        } catch (error) {
+          TOKEN = "";
+          sessionStorage.removeItem(STORAGE_TOKEN_KEY);
+          showLogin(true);
+          setLoading("Cargando trabajos...");
+        }
+      } else {
+        showLogin(true);
+        setLoading("Cargando trabajos...");
+      }
+    });
+  </script>
 </body>
 </html>
