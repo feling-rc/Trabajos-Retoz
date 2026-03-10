@@ -1,931 +1,255 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Trabajo general</title>
-  <style>
-    * { box-sizing: border-box; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f2f2f2;
-      color: #222;
-    }
+<title>Mesa de Trabajo</title>
 
-    .topbar {
-      position: sticky;
-      top: 0;
-      z-index: 20;
-      background: #ffffff;
-      box-shadow: 0 4px 14px rgba(0,0,0,.08);
-      padding: 14px 18px;
-    }
+<style>
 
-    .topbar-inner {
-      max-width: 1400px;
-      margin: 0 auto;
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
+body{
+    font-family: system-ui;
+    background:#f4f6f8;
+    margin:0;
+    padding:10px;
+}
 
-    .title-pill {
-      background: #fff;
-      border-radius: 999px;
-      padding: 12px 18px;
-      font-size: 24px;
-      font-weight: 700;
-      box-shadow: 0 4px 14px rgba(0,0,0,.10);
-    }
+.container{
+    max-width:600px;
+    margin:auto;
+}
 
-    .count-pill {
-      background: #fff;
-      border-radius: 999px;
-      padding: 10px 14px;
-      font-weight: 700;
-      box-shadow: 0 4px 14px rgba(0,0,0,.10);
-    }
+.card{
+    background:white;
+    border-radius:16px;
+    padding:14px;
+    margin-bottom:14px;
+    box-shadow:0 4px 10px rgba(0,0,0,0.08);
+}
 
-    .search-wrap {
-      flex: 1 1 360px;
-      min-width: 260px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: #f7f7f7;
-      border-radius: 999px;
-      padding: 10px 14px;
-      box-shadow: inset 0 1px 2px rgba(0,0,0,.04);
-    }
+.title{
+    font-size:18px;
+    font-weight:700;
+    margin-bottom:6px;
+}
 
-    .search-wrap input {
-      width: 100%;
-      border: none;
-      outline: none;
-      background: transparent;
-      font-size: 15px;
-    }
+.estado{
+    font-size:12px;
+    background:#eef1f4;
+    padding:4px 10px;
+    border-radius:8px;
+    display:inline-block;
+    margin-bottom:10px;
+}
 
-    .ghost-btn {
-      border: none;
-      background: #fff;
-      border-radius: 999px;
-      padding: 10px 14px;
-      font-weight: 700;
-      cursor: pointer;
-      box-shadow: 0 4px 14px rgba(0,0,0,.10);
-    }
+.detalle{
+    font-size:13px;
+    color:#555;
+    margin-bottom:10px;
+}
 
-    .ghost-btn:hover { transform: translateY(-1px); }
+.grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+}
 
-    .container {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 18px;
-    }
+.field{
+    background:#f2f4f7;
+    padding:8px;
+    border-radius:8px;
+}
 
-    .loading,
-    .empty {
-      background: #fff;
-      border-radius: 18px;
-      padding: 20px;
-      text-align: center;
-      box-shadow: 0 4px 14px rgba(0,0,0,.08);
-    }
+.label{
+    font-size:11px;
+    color:#666;
+}
 
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-      gap: 16px;
-    }
+.value{
+    font-size:13px;
+    font-weight:600;
+}
 
-    .card {
-      background: #fff;
-      border-radius: 18px;
-      padding: 16px;
-      box-shadow: 0 4px 14px rgba(0,0,0,.08);
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
+select{
+    width:100%;
+    padding:8px;
+    border-radius:8px;
+    border:none;
+    margin-top:4px;
+}
 
-    .card-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: start;
-      gap: 12px;
-    }
+button{
+    width:100%;
+    padding:12px;
+    border:none;
+    border-radius:10px;
+    font-weight:700;
+    margin-top:8px;
+}
 
-    .model-title {
-      font-size: 26px;
-      font-weight: 800;
-      line-height: 1.05;
-      word-break: break-word;
-      text-transform: uppercase;
-    }
+.btn-listo{
+    background:#10a600;
+    color:white;
+}
 
-    .state-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: #efefef;
-      border-radius: 999px;
-      padding: 8px 12px;
-      font-size: 13px;
-      font-weight: 700;
-      white-space: nowrap;
-    }
+.btn-completo{
+    background:#7c5a84;
+    color:white;
+}
 
-    .detail-box {
-      background: #fafafa;
-      border: 1px solid #ececec;
-      border-radius: 14px;
-      padding: 12px;
-    }
+.fecha{
+    background:#dfefff;
+}
 
-    .section-label {
-      font-size: 12px;
-      color: #666;
-      margin-bottom: 6px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .2px;
-    }
-
-    .detail-text {
-      font-size: 15px;
-      line-height: 1.35;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-
-    .meta-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-    }
-
-    .meta-item {
-      background: #fafafa;
-      border: 1px solid #ececec;
-      border-radius: 14px;
-      padding: 10px 12px;
-    }
-
-    .meta-label {
-      display: block;
-      font-size: 12px;
-      color: #666;
-      margin-bottom: 4px;
-      font-weight: 700;
-      text-transform: uppercase;
-    }
-
-    .meta-value {
-      display: block;
-      font-size: 15px;
-      word-break: break-word;
-      line-height: 1.3;
-    }
-
-    .select-box {
-      background: #fafafa;
-      border: 1px solid #ececec;
-      border-radius: 14px;
-      padding: 10px 12px;
-    }
-
-    .select-box label {
-      display: block;
-      font-size: 12px;
-      color: #666;
-      margin-bottom: 6px;
-      font-weight: 700;
-      text-transform: uppercase;
-    }
-
-    .select-box select {
-      width: 100%;
-      border: 1px solid #ddd;
-      background: #fff;
-      border-radius: 10px;
-      padding: 10px;
-      font-size: 14px;
-      outline: none;
-    }
-
-    .btn {
-      width: 100%;
-      border: none;
-      border-radius: 12px;
-      padding: 13px 14px;
-      font-size: 16px;
-      font-weight: 800;
-      cursor: pointer;
-      color: #fff;
-    }
-
-    .btn:disabled {
-      opacity: .65;
-      cursor: not-allowed;
-    }
-
-    .btn-green { background: #008a00; }
-    .btn-dark { background: #444; }
-    .btn-purple { background: #7c5a86; }
-    .btn-gray { background: #7c7c7c; }
-
-    .trabajado-box {
-      background: #fafafa;
-      border: 1px solid #ececec;
-      border-radius: 14px;
-      padding: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .trabajado-actions {
-      display: flex;
-      gap: 8px;
-    }
-
-    .trabajado-actions .btn {
-      width: 100%;
-      padding: 11px 12px;
-      font-size: 14px;
-    }
-
-    .small-note {
-      font-size: 12px;
-      color: #666;
-    }
-
-    .toast {
-      position: fixed;
-      right: 18px;
-      bottom: 18px;
-      z-index: 60;
-      background: #111;
-      color: #fff;
-      padding: 12px 14px;
-      border-radius: 12px;
-      box-shadow: 0 8px 24px rgba(0,0,0,.18);
-      opacity: 0;
-      pointer-events: none;
-      transition: .25s;
-      max-width: 360px;
-      font-size: 14px;
-    }
-
-    .toast.show {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    .toast.error {
-      background: #b3261e;
-    }
-
-    .overlay {
-      position: fixed;
-      inset: 0;
-      z-index: 80;
-      background: rgba(0,0,0,.55);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 18px;
-    }
-
-    .login-card {
-      width: 100%;
-      max-width: 420px;
-      background: #fff;
-      border-radius: 18px;
-      padding: 22px;
-      box-shadow: 0 14px 40px rgba(0,0,0,.25);
-    }
-
-    .login-title {
-      margin: 0 0 8px;
-      font-size: 28px;
-      font-weight: 800;
-    }
-
-    .login-sub {
-      margin: 0 0 18px;
-      color: #666;
-      line-height: 1.4;
-    }
-
-    .login-card input {
-      width: 100%;
-      border: 1px solid #ddd;
-      border-radius: 12px;
-      padding: 14px;
-      font-size: 18px;
-      margin-bottom: 12px;
-      outline: none;
-      text-align: center;
-      letter-spacing: 3px;
-    }
-
-    .hidden { display: none !important; }
-
-    @media (max-width: 768px) {
-      .model-title { font-size: 22px; }
-      .meta-grid { grid-template-columns: 1fr; }
-      .grid { grid-template-columns: 1fr; }
-      .topbar-inner { align-items: stretch; }
-      .title-pill { font-size: 22px; }
-    }
-  </style>
+</style>
 </head>
+
 <body>
 
-  <div id="loginOverlay" class="overlay">
-    <div class="login-card">
-      <h1 class="login-title">Trabajo general</h1>
-      <p class="login-sub">Ingresa el código de 6 dígitos para entrar al panel del supervisor.</p>
-      <input
-        id="codeInput"
-        type="password"
-        inputmode="numeric"
-        maxlength="6"
-        placeholder="210720"
-        autocomplete="off"
-      />
-      <button id="loginBtn" class="btn btn-green">Entrar</button>
-      <p id="loginError" class="small-note" style="color:#b3261e;margin-top:10px;"></p>
-    </div>
-  </div>
-
-  <div class="topbar">
-    <div class="topbar-inner">
-      <div class="title-pill">Trabajo general</div>
-
-      <div class="count-pill" id="countBadge">0 pares</div>
-
-      <div class="search-wrap">
-        <span>🔎</span>
-        <input
-          id="searchInput"
-          type="text"
-          placeholder="Buscar por orden, modelo, detalle, responsable o ubicación"
-          autocomplete="off"
-        />
-      </div>
-
-      <button id="refreshBtn" class="ghost-btn">Actualizar</button>
-      <button id="logoutBtn" class="ghost-btn">Salir</button>
-    </div>
-  </div>
-
-  <div class="container">
-    <div id="loadingBox" class="loading">Cargando trabajos...</div>
-    <div id="emptyBox" class="empty hidden">No hay trabajos para mostrar.</div>
-    <div id="cards" class="grid hidden"></div>
-  </div>
-
-  <div id="toast" class="toast"></div>
-
-  <script>
-    const API_ROOT = "/trabajo-general/api";
-    const REFRESH_MS = 8000;
-
-    let TOKEN = sessionStorage.getItem("trabajo_general_token") || "";
-    let OPTIONS = {
-      responsables: [],
-      ubicaciones: [],
-      trabajado_por: []
-    };
-    let ALL_TASKS = [];
-    let REFRESH_TIMER = null;
-    let SAVING_IDS = new Set();
-
-    function byId(id) {
-      return document.getElementById(id);
-    }
-
-    function escapeHtml(text) {
-      return String(text ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-    }
-
-    function showToast(message, isError = false) {
-      const toast = byId("toast");
-      toast.textContent = message || "";
-      toast.className = "toast show" + (isError ? " error" : "");
-      clearTimeout(showToast._timer);
-      showToast._timer = setTimeout(() => {
-        toast.className = "toast";
-      }, 2600);
-    }
-
-    function showLogin(show = true) {
-      byId("loginOverlay").classList.toggle("hidden", !show);
-    }
-
-    function setLoading(show, text = "Cargando trabajos...") {
-      byId("loadingBox").textContent = text;
-      byId("loadingBox").classList.toggle("hidden", !show);
-      if (show) {
-        byId("cards").classList.add("hidden");
-        byId("emptyBox").classList.add("hidden");
-      }
-    }
-
-    function formatDate(value) {
-      if (!value) return "-";
-
-      let s = String(value).trim();
-      if (!s) return "-";
-
-      if (s.includes(" ") && !s.includes("T")) {
-        s = s.replace(" ", "T");
-      }
-
-      const d = new Date(s);
-      if (isNaN(d)) return value;
-
-      return d.toLocaleString("es-PE", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit"
-      });
-    }
-
-    function boolText(v) {
-      return v ? "Sí" : "No";
-    }
-
-    function isListo(task) {
-      return String(task.estado_code || "").trim() === "TRABAJADO";
-    }
-
-    function getTask(id) {
-      return ALL_TASKS.find(t => String(t.id) === String(id));
-    }
-
-    function mergeTask(updatedTask) {
-      const idx = ALL_TASKS.findIndex(t => String(t.id) === String(updatedTask.id));
-      if (idx >= 0) {
-        ALL_TASKS[idx] = { ...ALL_TASKS[idx], ...updatedTask, _openTrabajadoPor: false };
-      }
-    }
-
-    function optionListHtml(items, currentValue) {
-      const seen = new Set();
-      const finalItems = [];
-
-      if (currentValue && !items.some(i => i.value === currentValue)) {
-        finalItems.push({ value: currentValue, label: currentValue });
-        seen.add(currentValue);
-      }
-
-      for (const item of items) {
-        if (seen.has(item.value)) continue;
-        seen.add(item.value);
-        finalItems.push(item);
-      }
-
-      return finalItems.map(item => {
-        const selected = String(item.value) === String(currentValue || "") ? "selected" : "";
-        return `<option value="${escapeHtml(item.value)}" ${selected}>${escapeHtml(item.label)}</option>`;
-      }).join("");
-    }
-
-    function filterTasks() {
-      const q = (byId("searchInput").value || "").trim().toLowerCase();
-      if (!q) return ALL_TASKS;
-
-      return ALL_TASKS.filter(task => {
-        const blob = [
-          task.modelo,
-          task.detalle,
-          task.estado_label,
-          task.fecha_trabajado,
-          task.fecha_entrega,
-          task.orden_texto,
-          task.orden_numero,
-          task.responsable,
-          task.ubicacion_seguimiento
-        ].join(" ").toLowerCase();
-
-        return blob.includes(q);
-      });
-    }
-
-    function cardHtml(task) {
-      const listo = isListo(task);
-      const saving = SAVING_IDS.has(String(task.id));
-
-      return `
-        <div class="card" data-id="${task.id}">
-          <div class="card-head">
-            <div class="model-title">${escapeHtml(task.modelo || "Sin modelo")}</div>
-            <div class="state-badge">Estado: ${escapeHtml(task.estado_label || "-")}</div>
-          </div>
-
-          <div class="detail-box">
-            <div class="section-label">Detalle de Trabajo</div>
-            <div class="detail-text">${escapeHtml(task.detalle || "-")}</div>
-          </div>
-
-          <div class="meta-grid">
-            <div class="meta-item">
-              <span class="meta-label">Fecha de Trabajarlo</span>
-              <span class="meta-value">${escapeHtml(formatDate(task.fecha_trabajado))}</span>
-            </div>
-
-            <div class="meta-item">
-              <span class="meta-label">Fecha de Entrega</span>
-              <span class="meta-value">${escapeHtml(formatDate(task.fecha_entrega))}</span>
-            </div>
-
-            <div class="meta-item">
-              <span class="meta-label">Orden</span>
-              <span class="meta-value">${escapeHtml(task.orden_texto || "-")}</span>
-            </div>
-
-            <div class="meta-item">
-              <span class="meta-label">Pasadores</span>
-              <span class="meta-value">${boolText(task.pasadores)}</span>
-            </div>
-
-            <div class="meta-item">
-              <span class="meta-label">Plantillas</span>
-              <span class="meta-value">${boolText(task.plantillas)}</span>
-            </div>
-
-            <div class="meta-item">
-              <span class="meta-label">ID</span>
-              <span class="meta-value">${escapeHtml(task.id)}</span>
-            </div>
-          </div>
-
-          <div class="select-box">
-            <label>Responsable</label>
-            <select class="js-responsable" data-id="${task.id}" data-prev="${escapeHtml(task.responsable || "")}" ${saving ? "disabled" : ""}>
-              <option value="">Seleccionar responsable</option>
-              ${optionListHtml(OPTIONS.responsables, task.responsable)}
-            </select>
-          </div>
-
-          <div class="select-box">
-            <label>Ubicación de Seguimiento</label>
-            <select class="js-ubicacion" data-id="${task.id}" data-prev="${escapeHtml(task.ubicacion_seguimiento || "")}" ${saving ? "disabled" : ""}>
-              <option value="">Seleccionar ubicación</option>
-              ${optionListHtml(OPTIONS.ubicaciones, task.ubicacion_seguimiento)}
-            </select>
-          </div>
-
-          <button class="btn ${listo ? "btn-dark" : "btn-green"} js-toggle-listo" data-id="${task.id}" ${saving ? "disabled" : ""}>
-            ${listo ? "✔ LISTO" : "✅ MARCAR LISTO"}
-          </button>
-
-          ${!listo && task._openTrabajadoPor ? `
-            <div class="trabajado-box" id="trabajadoBox_${task.id}">
-              <div class="section-label">Trabajado por</div>
-              <select id="trabajadoPor_${task.id}" ${saving ? "disabled" : ""}>
-                <option value="">Seleccionar</option>
-                ${optionListHtml(OPTIONS.trabajado_por, task.trabajado_por || "")}
-              </select>
-              <div class="trabajado-actions">
-                <button class="btn btn-green js-confirm-trabajado" data-id="${task.id}" ${saving ? "disabled" : ""}>Guardar listo</button>
-                <button class="btn btn-gray js-cancel-trabajado" data-id="${task.id}" ${saving ? "disabled" : ""}>Cancelar</button>
-              </div>
-            </div>
-          ` : ""}
-
-          <button class="btn btn-purple js-completar" data-id="${task.id}" ${saving ? "disabled" : ""}>
-            Completado
-          </button>
-        </div>
-      `;
-    }
-
-    function renderTasks() {
-      const cards = byId("cards");
-      const filtered = filterTasks();
-
-      byId("countBadge").textContent = `${filtered.length} pares`;
-
-      if (!filtered.length) {
-        cards.classList.add("hidden");
-        byId("emptyBox").classList.remove("hidden");
-        return;
-      }
-
-      byId("emptyBox").classList.add("hidden");
-      cards.innerHTML = filtered.map(cardHtml).join("");
-      cards.classList.remove("hidden");
-
-      wireEvents();
-    }
-
-    function wireEvents() {
-      document.querySelectorAll(".js-responsable").forEach(select => {
-        select.addEventListener("change", async function () {
-          const tareaId = this.dataset.id;
-          const prev = this.dataset.prev || "";
-          const value = this.value || "";
-
-          await quickUpdate(tareaId, { x_studio_responsable_r: value || false }, this, prev, value, "Responsable actualizado");
-        });
-      });
-
-      document.querySelectorAll(".js-ubicacion").forEach(select => {
-        select.addEventListener("change", async function () {
-          const tareaId = this.dataset.id;
-          const prev = this.dataset.prev || "";
-          const value = this.value || "";
-
-          await quickUpdate(tareaId, { x_studio_ubicacion_exacta_1: value || false }, this, prev, value, "Ubicación actualizada");
-        });
-      });
-
-      document.querySelectorAll(".js-toggle-listo").forEach(btn => {
-        btn.addEventListener("click", async function () {
-          const tareaId = this.dataset.id;
-          const task = getTask(tareaId);
-          if (!task) return;
-
-          if (isListo(task)) {
-            if (!confirm("Esta tarea ya está en LISTO. ¿Deseas desmarcarla?")) return;
-            await toggleListoRequest(tareaId, null);
-            return;
-          }
-
-          ALL_TASKS = ALL_TASKS.map(t => ({
-            ...t,
-            _openTrabajadoPor: String(t.id) === String(tareaId) ? !t._openTrabajadoPor : false
-          }));
-          renderTasks();
-        });
-      });
-
-      document.querySelectorAll(".js-confirm-trabajado").forEach(btn => {
-        btn.addEventListener("click", async function () {
-          const tareaId = this.dataset.id;
-          const select = byId(`trabajadoPor_${tareaId}`);
-          const trabajadoPor = (select?.value || "").trim();
-
-          if (!trabajadoPor) {
-            showToast("Selecciona “Trabajado por”.", true);
-            return;
-          }
-
-          await toggleListoRequest(tareaId, trabajadoPor);
-        });
-      });
-
-      document.querySelectorAll(".js-cancel-trabajado").forEach(btn => {
-        btn.addEventListener("click", function () {
-          const tareaId = this.dataset.id;
-          const task = getTask(tareaId);
-          if (!task) return;
-          task._openTrabajadoPor = false;
-          renderTasks();
-        });
-      });
-
-      document.querySelectorAll(".js-completar").forEach(btn => {
-        btn.addEventListener("click", async function () {
-          const tareaId = this.dataset.id;
-          if (!confirm("¿Marcar esta tarea como Completado?")) return;
-          await completarRequest(tareaId);
-        });
-      });
-    }
-
-    async function api(path, method = "GET", body = null) {
-      const headers = {};
-
-      if (TOKEN) {
-        headers["X-Encargado-Token"] = TOKEN;
-      }
-
-      if (body !== null) {
-        headers["Content-Type"] = "application/json";
-      }
-
-      const response = await fetch(API_ROOT + path, {
-        method,
-        headers,
-        body: body !== null ? JSON.stringify(body) : undefined,
-        cache: "no-store"
-      });
-
-      const data = await response.json().catch(() => ({}));
-
-      if (response.status === 401) {
-        TOKEN = "";
-        sessionStorage.removeItem("trabajo_general_token");
-        showLogin(true);
-        throw new Error(data.error || "Tu acceso venció. Vuelve a ingresar el código.");
-      }
-
-      if (!response.ok) {
-        throw new Error(data.error || "Ocurrió un error.");
-      }
-
-      return data;
-    }
-
-    async function doLogin() {
-      const codeInput = byId("codeInput");
-      const err = byId("loginError");
-
-      err.textContent = "";
-
-      try {
-        const code = (codeInput.value || "").trim();
-        const data = await fetch(API_ROOT + "/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ code })
-        }).then(async r => {
-          const json = await r.json().catch(() => ({}));
-          if (!r.ok) throw new Error(json.error || "Código inválido.");
-          return json;
-        });
-
-        TOKEN = data.token || "";
-        sessionStorage.setItem("trabajo_general_token", TOKEN);
-        showLogin(false);
-        codeInput.value = "";
-
-        await initProtected();
-        showToast("Acceso concedido.");
-      } catch (error) {
-        err.textContent = error.message || "No se pudo ingresar.";
-      }
-    }
-
-    async function quickUpdate(tareaId, payloadData, selectEl, prevValue, newValue, successMsg) {
-      const key = String(tareaId);
-      SAVING_IDS.add(key);
-
-      try {
-        await api(`/task/${tareaId}/update`, "POST", { data: payloadData });
-        if (selectEl) {
-          selectEl.dataset.prev = newValue;
-        }
-        showToast(successMsg);
-        await loadTasks(true);
-      } catch (error) {
-        if (selectEl) {
-          selectEl.value = prevValue || "";
-        }
-        showToast(error.message || "No se pudo guardar.", true);
-      } finally {
-        SAVING_IDS.delete(key);
-      }
-    }
-
-    async function toggleListoRequest(tareaId, trabajadoPor) {
-      const key = String(tareaId);
-      SAVING_IDS.add(key);
-
-      try {
-        const body = trabajadoPor ? { trabajado_por: trabajadoPor } : {};
-        const data = await api(`/task/${tareaId}/toggle_listo`, "POST", body);
-
-        if (data.task) {
-          mergeTask(data.task);
-        }
-
-        showToast(data.message || "Guardado correctamente.");
-        await loadTasks(true);
-      } catch (error) {
-        showToast(error.message || "No se pudo cambiar el estado.", true);
-      } finally {
-        SAVING_IDS.delete(key);
-      }
-    }
-
-    async function completarRequest(tareaId) {
-      const key = String(tareaId);
-      SAVING_IDS.add(key);
-
-      try {
-        const data = await api(`/task/${tareaId}/complete`, "POST", {});
-        showToast(data.message || "Marcado como completado.");
-        await loadTasks(true);
-      } catch (error) {
-        showToast(error.message || "No se pudo completar.", true);
-      } finally {
-        SAVING_IDS.delete(key);
-      }
-    }
-
-    async function loadTasks(silent = false) {
-      if (!silent) {
-        setLoading(true, "Cargando trabajos...");
-      }
-
-      try {
-        const data = await api("/tasks", "GET");
-        ALL_TASKS = (data.result || []).map(task => ({
-          ...task,
-          _openTrabajadoPor: false
-        }));
-
-        setLoading(false);
-        renderTasks();
-      } catch (error) {
-        setLoading(true, error.message || "No se pudieron cargar los trabajos.");
-        byId("cards").classList.add("hidden");
-      }
-    }
-
-    async function loadOptions() {
-      const data = await api("/options", "GET");
-      OPTIONS = {
-        responsables: data.responsables || [],
-        ubicaciones: data.ubicaciones || [],
-        trabajado_por: data.trabajado_por || []
-      };
-    }
-
-    function startAutoRefresh() {
-      clearInterval(REFRESH_TIMER);
-      REFRESH_TIMER = setInterval(async () => {
-        if (!TOKEN) return;
-        if (SAVING_IDS.size > 0) return;
-        try {
-          await loadTasks(true);
-        } catch (error) {
-          console.error(error);
-        }
-      }, REFRESH_MS);
-    }
-
-    async function initProtected() {
-      await loadOptions();
-      await loadTasks(false);
-      startAutoRefresh();
-    }
-
-    async function logout() {
-      try {
-        if (TOKEN) {
-          await api("/logout", "POST", {});
-        }
-      } catch (error) {
-        console.warn(error);
-      }
-
-      TOKEN = "";
-      sessionStorage.removeItem("trabajo_general_token");
-      clearInterval(REFRESH_TIMER);
-      ALL_TASKS = [];
-      byId("cards").innerHTML = "";
-      byId("countBadge").textContent = "0 pares";
-      showLogin(true);
-    }
-
-    window.addEventListener("load", async () => {
-      byId("loginBtn").addEventListener("click", doLogin);
-
-      byId("codeInput").addEventListener("keydown", e => {
-        if (e.key === "Enter") doLogin();
-      });
-
-      byId("searchInput").addEventListener("input", () => {
-        renderTasks();
-      });
-
-      byId("refreshBtn").addEventListener("click", async () => {
-        await loadTasks(false);
-      });
-
-      byId("logoutBtn").addEventListener("click", logout);
-
-      if (TOKEN) {
-        try {
-          showLogin(false);
-          await initProtected();
-        } catch (error) {
-          TOKEN = "";
-          sessionStorage.removeItem("trabajo_general_token");
-          showLogin(true);
-        }
-      } else {
-        showLogin(true);
-      }
-    });
-  </script>
+<div class="container" id="tasks"></div>
+
+<script>
+
+async function cargar(){
+
+const res = await fetch("/tareas");
+const data = await res.json();
+
+const cont = document.getElementById("tasks");
+cont.innerHTML="";
+
+data.forEach(t=>{
+
+cont.innerHTML+=`
+<div class="card">
+
+<div class="title">${t.nombre}</div>
+
+<div class="estado">
+Estado:
+<select onchange="cambiarEstado(${t.id},this.value)">
+<option ${t.estado=="Agendado"?"selected":""}>Agendado</option>
+<option ${t.estado=="En Proceso"?"selected":""}>En Proceso</option>
+<option ${t.estado=="Terminado"?"selected":""}>Terminado</option>
+</select>
+</div>
+
+<div class="detalle">
+${t.detalle}
+</div>
+
+<div class="grid">
+
+<div class="field fecha">
+<div class="label">Fecha a trabajarlo</div>
+<div class="value">${t.fecha_trabajo || "-"}</div>
+</div>
+
+<div class="field">
+<div class="label">Fecha entrega</div>
+<div class="value">${t.fecha_entrega || "-"}</div>
+</div>
+
+<div class="field">
+<div class="label">Orden</div>
+<div class="value">${t.orden}</div>
+</div>
+
+<div class="field">
+<div class="label">Pasadores</div>
+<div class="value">${t.pasadores}</div>
+</div>
+
+<div class="field">
+<div class="label">Plantillas</div>
+<div class="value">${t.plantillas}</div>
+</div>
+
+<div class="field">
+<div class="label">Responsable</div>
+<select onchange="cambiarResponsable(${t.id},this.value)">
+<option>Seleccionar</option>
+<option ${t.responsable=="Pedro"?"selected":""}>Pedro</option>
+<option ${t.responsable=="Jorge"?"selected":""}>Jorge</option>
+<option ${t.responsable=="Yuli"?"selected":""}>Yuli</option>
+</select>
+</div>
+
+<div class="field">
+<div class="label">Ubicación</div>
+<select onchange="cambiarUbicacion(${t.id},this.value)">
+<option>Seleccionar</option>
+<option ${t.ubicacion=="Mesa"?"selected":""}>Mesa</option>
+<option ${t.ubicacion=="Anchadora"?"selected":""}>Anchadora</option>
+<option ${t.ubicacion=="Lavado"?"selected":""}>Lavado</option>
+</select>
+</div>
+
+</div>
+
+<button class="btn-listo" onclick="marcarListo(${t.id})">
+✔ Marcar listo
+</button>
+
+<button class="btn-completo" onclick="completar(${t.id})">
+Completar
+</button>
+
+</div>
+`;
+
+})
+
+}
+
+async function cambiarResponsable(id,val){
+
+await fetch("/task/"+id+"/responsable",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({responsable:val})
+})
+
+}
+
+async function cambiarUbicacion(id,val){
+
+await fetch("/task/"+id+"/ubicacion",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({ubicacion:val})
+})
+
+}
+
+async function cambiarEstado(id,val){
+
+await fetch("/task/"+id+"/estado",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({estado:val})
+})
+
+}
+
+async function marcarListo(id){
+
+await fetch("/task/"+id+"/listo",{method:"POST"})
+cargar()
+
+}
+
+async function completar(id){
+
+await fetch("/task/"+id+"/completar",{method:"POST"})
+cargar()
+
+}
+
+cargar()
+
+</script>
+
 </body>
 </html>
