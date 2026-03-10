@@ -2,43 +2,36 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+  />
   <title>Trabajo general</title>
 
   <style>
     :root {
-      --bg: #f3f5f8;
+      --bg: #f4f6f8;
       --surface: #ffffff;
       --surface-2: #f8fafc;
-      --stroke: #e7ebf0;
-      --text: #1c2430;
-      --muted: #7a8594;
-      --shadow: 0 10px 28px rgba(16, 24, 40, 0.08);
+      --stroke: #e5eaf0;
+      --text: #1b2430;
+      --muted: #7b8794;
+      --shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
 
-      --green: #13a538;
-      --green-dark: #404854;
-      --purple: #8b63aa;
-
-      --chip-ag: #eaf4ff;
-      --chip-ag-text: #245ea8;
-
-      --chip-pr: #f3ecff;
-      --chip-pr-text: #7b4db2;
-
-      --chip-sm: #fff7e8;
-      --chip-sm-text: #ca8a04;
-
-      --chip-at: #fff1f0;
-      --chip-at-text: #d94841;
-
-      --chip-tr: #ecfdf3;
-      --chip-tr-text: #15803d;
-
-      --chip-co: #eef2ff;
-      --chip-co-text: #6941c6;
-
-      --chip-de: #ecfdf5;
-      --chip-de-text: #047857;
+      --green: #11b436;
+      --green-dark: #424b57;
+      --blue: #eaf3ff;
+      --blue-text: #2b67b2;
+      --purple: #f1e9ff;
+      --purple-text: #7b4db2;
+      --orange: #fff4df;
+      --orange-text: #c98300;
+      --red: #fff0ef;
+      --red-text: #d94841;
+      --soft-green: #ecfdf3;
+      --soft-green-text: #15803d;
+      --soft-teal: #eafcf7;
+      --soft-teal-text: #0f766e;
 
       --radius-xl: 22px;
       --radius-lg: 16px;
@@ -59,28 +52,28 @@
       margin: 0;
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
       background:
-        radial-gradient(circle at top right, rgba(139, 99, 170, 0.06), transparent 28%),
-        radial-gradient(circle at top left, rgba(19, 165, 56, 0.05), transparent 24%),
+        radial-gradient(circle at top right, rgba(123, 77, 178, 0.05), transparent 28%),
+        radial-gradient(circle at top left, rgba(17, 180, 54, 0.04), transparent 22%),
         var(--bg);
       color: var(--text);
     }
 
     .page {
       min-height: 100vh;
-      padding-bottom: 32px;
+      padding-bottom: 28px;
     }
 
     .topbar {
       position: sticky;
       top: 0;
-      z-index: 50;
+      z-index: 60;
       backdrop-filter: blur(12px);
-      background: rgba(243, 245, 248, 0.92);
-      border-bottom: 1px solid rgba(231, 235, 240, 0.75);
+      background: rgba(244, 246, 248, 0.9);
+      border-bottom: 1px solid rgba(229, 234, 240, 0.85);
     }
 
     .topbar-inner {
-      max-width: 720px;
+      max-width: 760px;
       margin: 0 auto;
       padding: 12px 12px 14px;
       display: grid;
@@ -90,14 +83,14 @@
     .hero {
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
+      align-items: start;
       gap: 10px;
     }
 
     .title {
       margin: 0;
       font-size: 19px;
-      line-height: 1.1;
+      line-height: 1.08;
       font-weight: 900;
       letter-spacing: -0.03em;
     }
@@ -112,8 +105,8 @@
     .count-pill {
       background: var(--surface);
       border: 1px solid var(--stroke);
-      box-shadow: var(--shadow);
       border-radius: 999px;
+      box-shadow: var(--shadow);
       padding: 10px 14px;
       font-size: 13px;
       font-weight: 900;
@@ -133,9 +126,9 @@
       align-items: center;
       gap: 10px;
       min-width: 0;
-      border-radius: 999px;
-      border: 1px solid var(--stroke);
       background: var(--surface);
+      border: 1px solid var(--stroke);
+      border-radius: 999px;
       box-shadow: var(--shadow);
       padding: 12px 14px;
     }
@@ -158,7 +151,7 @@
     }
 
     .search input::placeholder {
-      color: #9aa4b2;
+      color: #9ba5b3;
     }
 
     .icon-btn {
@@ -181,7 +174,7 @@
     }
 
     .container {
-      max-width: 720px;
+      max-width: 760px;
       margin: 0 auto;
       padding: 12px;
       display: grid;
@@ -216,8 +209,8 @@
 
     .card {
       position: relative;
-      background: rgba(255,255,255,0.95);
-      border: 1px solid rgba(231, 235, 240, 0.92);
+      background: rgba(255,255,255,0.97);
+      border: 1px solid rgba(229, 234, 240, 0.95);
       border-radius: var(--radius-xl);
       box-shadow: var(--shadow);
       padding: 12px;
@@ -226,27 +219,63 @@
       overflow: visible;
     }
 
-    .head {
+    .card-head {
       display: flex;
-      align-items: flex-start;
       justify-content: space-between;
+      align-items: start;
       gap: 10px;
     }
 
-    .title-line {
+    .head-left {
+      min-width: 0;
+      display: grid;
+      gap: 8px;
+      flex: 1 1 auto;
+    }
+
+    .title-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .title-main {
       min-width: 0;
       font-size: 16px;
       line-height: 1.05;
       font-weight: 900;
-      letter-spacing: -0.025em;
+      letter-spacing: -0.02em;
       word-break: break-word;
       text-transform: uppercase;
     }
 
-    .title-line .orden-inline {
-      color: #5b6472;
-      font-weight: 800;
-      margin-right: 4px;
+    .pspl-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 7px;
+      border-radius: 999px;
+      background: #f8fafc;
+      border: 1px solid var(--stroke);
+      font-size: 10px;
+      font-weight: 900;
+      color: #64748b;
+      white-space: nowrap;
+    }
+
+    .pspl-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #d0d5dd;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.03);
+    }
+
+    .pspl-dot.on {
+      background: #16a34a;
+      box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.10);
     }
 
     .detail-box {
@@ -275,78 +304,47 @@
       white-space: pre-wrap;
     }
 
-    .mini-grid {
+    .meta-row {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr 1fr 1fr;
       gap: 8px;
     }
 
-    .mini-card {
+    .meta-box {
       background: var(--surface-2);
       border: 1px solid var(--stroke);
       border-radius: 14px;
       padding: 8px 9px;
       display: grid;
-      gap: 3px;
+      gap: 4px;
       min-width: 0;
     }
 
-    .mini-value {
+    .meta-value {
       font-size: 12px;
       line-height: 1.2;
-      font-weight: 800;
-      word-break: break-word;
+      font-weight: 900;
       color: var(--text);
+      word-break: break-word;
     }
 
-    .tiny-grid {
+    .select-row {
       display: grid;
-      grid-template-columns: 62px 62px 1fr 1fr;
+      grid-template-columns: 1fr 1fr;
       gap: 8px;
-      align-items: stretch;
     }
 
-    .tiny-box {
+    .select-box {
       background: var(--surface-2);
       border: 1px solid var(--stroke);
       border-radius: 14px;
-      padding: 7px 8px;
-      display: grid;
-      place-items: center;
-      gap: 3px;
-      min-height: 58px;
-    }
-
-    .tiny-box .k-label {
-      font-size: 9px;
-      letter-spacing: .08em;
-    }
-
-    .tiny-dot {
-      width: 9px;
-      height: 9px;
-      border-radius: 999px;
-      background: #d0d5dd;
-      box-shadow: inset 0 0 0 1px rgba(0,0,0,.03);
-    }
-
-    .tiny-dot.on {
-      background: #16a34a;
-      box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.10);
-    }
-
-    .compact-select {
-      background: var(--surface-2);
-      border: 1px solid var(--stroke);
-      border-radius: 14px;
-      padding: 7px 8px;
+      padding: 8px 9px;
       display: grid;
       gap: 5px;
-      min-height: 58px;
       min-width: 0;
     }
 
-    .compact-select select {
+    .select-box select {
       width: 100%;
       border: 1px solid #d8dee6;
       background:
@@ -362,10 +360,10 @@
         6px 6px,
         100% 100%;
       background-repeat: no-repeat;
-      border-radius: 11px;
-      padding: 8px 32px 8px 9px;
+      border-radius: 12px;
+      padding: 9px 34px 9px 10px;
       font-size: 12px;
-      font-weight: 800;
+      font-weight: 900;
       color: var(--text);
       appearance: none;
       outline: none;
@@ -374,8 +372,8 @@
 
     .status-wrap {
       position: relative;
-      flex: 0 0 auto;
       z-index: 20;
+      flex: 0 0 auto;
     }
 
     .status-btn {
@@ -410,7 +408,7 @@
       border-right: 2px solid currentColor;
       border-bottom: 2px solid currentColor;
       transform: rotate(45deg) translateY(-1px);
-      margin-left: 2px;
+      margin-left: 1px;
       opacity: 0.75;
     }
 
@@ -421,45 +419,45 @@
     }
 
     .status-agendado {
-      background: var(--chip-ag);
-      color: var(--chip-ag-text);
-      border-color: #d7e8ff;
+      background: var(--blue);
+      color: var(--blue-text);
+      border-color: #d8e8ff;
     }
 
     .status-proceso {
-      background: var(--chip-pr);
-      color: var(--chip-pr-text);
-      border-color: #eadbff;
+      background: var(--purple);
+      color: var(--purple-text);
+      border-color: #e7d7ff;
     }
 
     .status-sinmaterial {
-      background: var(--chip-sm);
-      color: var(--chip-sm-text);
+      background: var(--orange);
+      color: var(--orange-text);
       border-color: #fde7b2;
     }
 
     .status-atrasado {
-      background: var(--chip-at);
-      color: var(--chip-at-text);
+      background: var(--red);
+      color: var(--red-text);
       border-color: #ffd7d4;
     }
 
     .status-trabajado {
-      background: var(--chip-tr);
-      color: var(--chip-tr-text);
+      background: var(--soft-green);
+      color: var(--soft-green-text);
       border-color: #cbf7d8;
     }
 
     .status-completado {
-      background: var(--chip-co);
-      color: var(--chip-co-text);
+      background: #eef2ff;
+      color: #6941c6;
       border-color: #ddd6fe;
     }
 
     .status-entregado {
-      background: var(--chip-de);
-      color: var(--chip-de-text);
-      border-color: #bbf7d0;
+      background: var(--soft-teal);
+      color: var(--soft-teal-text);
+      border-color: #c9f5eb;
     }
 
     .status-menu {
@@ -492,7 +490,7 @@
       text-align: left;
       color: var(--text);
       font-size: 12px;
-      font-weight: 700;
+      font-weight: 800;
     }
 
     .status-option:hover {
@@ -573,7 +571,7 @@
       border-radius: 12px;
       padding: 9px 34px 9px 10px;
       font-size: 12px;
-      font-weight: 800;
+      font-weight: 900;
       appearance: none;
       outline: none;
       background:
@@ -608,7 +606,7 @@
       left: 50%;
       bottom: 16px;
       transform: translateX(-50%) translateY(16px);
-      z-index: 80;
+      z-index: 90;
       min-width: min(92vw, 280px);
       max-width: min(92vw, 420px);
       background: #111827;
@@ -874,14 +872,14 @@
     };
 
     const STATUS_DOT_MAP = {
-      "Agendado": "#bfc5cd",
+      "Agendado": "#2b67b2",
       "En ruta": "#7b4db2",
       "En proceso": "#7b4db2",
-      "Sin material": "#f59e0b",
+      "Sin material": "#c98300",
       "Atrasado": "#d94841",
       "Trabajado": "#16a34a",
       "Completado": "#6941c6",
-      "Entregado": "#047857",
+      "Entregado": "#0f766e",
       "Cancelado": "#ef4444",
       "Ya no quiere": "#ef4444",
       "Agendar con bot": "#667085",
@@ -966,48 +964,6 @@
       return String(value || "").replace(/\D+/g, "");
     }
 
-    function boolText(value) {
-      return value ? "Sí" : "No";
-    }
-
-    function prettyDateOnly(value) {
-      if (!value) return "-";
-      let s = String(value).trim();
-      if (!s) return "-";
-      if (s.includes(" ") && !s.includes("T")) s = s.replace(" ", "T");
-      const d = new Date(s);
-      if (isNaN(d)) return String(value);
-      return d.toLocaleDateString("es-PE", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit"
-      });
-    }
-
-    function prettyDateCompact(value) {
-      if (!value) return "-";
-      let s = String(value).trim();
-      if (!s) return "-";
-      if (s.includes(" ") && !s.includes("T")) s = s.replace(" ", "T");
-      const d = new Date(s);
-      if (isNaN(d)) return String(value);
-      return d.toLocaleString("es-PE", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit"
-      }).replace(",", "");
-    }
-
-    function statusClass(label) {
-      return STATUS_CLASS_MAP[label] || "status-default";
-    }
-
-    function statusDotColor(label) {
-      return STATUS_DOT_MAP[label] || "#667085";
-    }
-
     function dedupeOptions(list, currentValue, currentLabel = null) {
       const out = [];
       const seen = new Set();
@@ -1036,6 +992,14 @@
       return match ? match.label : (key || "-");
     }
 
+    function statusClass(label) {
+      return STATUS_CLASS_MAP[label] || "status-default";
+    }
+
+    function statusDotColor(label) {
+      return STATUS_DOT_MAP[label] || "#667085";
+    }
+
     function isListo(task) {
       return String(task.estado_code || "").trim() === "TRABAJADO";
     }
@@ -1061,16 +1025,6 @@
         detalle: raw.detalle || raw.x_studio_detalles_del_trabajo_1 || "",
         estado_code: estadoCode,
         estado_label: estadoLabel,
-        fecha_a_trabajarlo:
-          raw.fecha_a_trabajarlo ||
-          raw.x_studio_fecha_a_trabajarlo_2 ||
-          raw.fecha_trabajarlo ||
-          "",
-        fecha_entrega:
-          raw.fecha_entrega ||
-          raw.x_studio_fecha_de_entrega_1_1 ||
-          raw.x_studio_fecha_de_entrega ||
-          "",
         orden_texto: ordenTexto,
         orden_numero: raw.orden_numero || cleanDigits(ordenTexto),
         pasadores:
@@ -1187,23 +1141,6 @@
       const currentLabel = task.estado_label || estadoBonitoFromCode(task.estado_code);
       const list = dedupeOptions(OPTIONS.estados, task.estado_code, currentLabel);
 
-      const items = list.map(item => {
-        const label = item.label;
-        const active = String(item.value) === String(task.estado_code || "");
-        return `
-          <button
-            type="button"
-            class="status-option ${active ? "active" : ""} js-status-option"
-            data-id="${task.id}"
-            data-value="${escapeHtml(item.value)}"
-          >
-            <span class="dot" style="background:${statusDotColor(label)}"></span>
-            <span>${escapeHtml(label)}</span>
-            <span class="check">✓</span>
-          </button>
-        `;
-      }).join("");
-
       return `
         <div class="status-wrap">
           <button
@@ -1216,7 +1153,22 @@
           </button>
 
           <div class="status-menu ${OPEN_STATUS_ID === task.id ? "open" : ""}" id="statusMenu_${task.id}">
-            ${items}
+            ${list.map(item => {
+              const label = item.label;
+              const active = String(item.value) === String(task.estado_code || "");
+              return `
+                <button
+                  type="button"
+                  class="status-option ${active ? "active" : ""} js-status-option"
+                  data-id="${task.id}"
+                  data-value="${escapeHtml(item.value)}"
+                >
+                  <span class="dot" style="background:${statusDotColor(label)}"></span>
+                  <span>${escapeHtml(label)}</span>
+                  <span class="check">✓</span>
+                </button>
+              `;
+            }).join("")}
           </div>
         </div>
       `;
@@ -1225,48 +1177,58 @@
     function cardHtml(task) {
       const saving = SAVING_IDS.has(String(task.id));
       const listo = isListo(task);
-      const title = `${task.orden_numero || task.orden_texto || "-"} - ${task.modelo}`;
 
       return `
         <article class="card" data-id="${task.id}">
-          <div class="head">
-            <div class="title-line">
-              <span class="orden-inline">${escapeHtml(task.orden_numero || task.orden_texto || "-")}</span>
-              <span>${escapeHtml(task.modelo)}</span>
+          <div class="card-head">
+            <div class="head-left">
+              <div class="title-row">
+                <div class="title-main">
+                  <span>${escapeHtml(task.orden_numero || task.orden_texto || "-")}</span>
+                  <span> - </span>
+                  <span>${escapeHtml(task.modelo)}</span>
+                </div>
+
+                <span class="pspl-chip">
+                  <span>PS</span>
+                  <span class="pspl-dot ${task.pasadores ? "on" : ""}"></span>
+                </span>
+
+                <span class="pspl-chip">
+                  <span>PL</span>
+                  <span class="pspl-dot ${task.plantillas ? "on" : ""}"></span>
+                </span>
+              </div>
+
+              <div class="detail-box">
+                <div class="k-label">Detalle de trabajo</div>
+                <div class="detail-text">${escapeHtml(task.detalle || "-")}</div>
+              </div>
             </div>
+
             ${statusMenuHtml(task, saving)}
           </div>
 
-          <div class="detail-box">
-            <div class="k-label">Detalle de trabajo</div>
-            <div class="detail-text">${escapeHtml(task.detalle || "-")}</div>
-          </div>
-
-          <div class="mini-grid">
-            <div class="mini-card">
-              <div class="k-label">Trabajarlo</div>
-              <div class="mini-value">${escapeHtml(prettyDateOnly(task.fecha_a_trabajarlo))}</div>
-            </div>
-
-            <div class="mini-card">
-              <div class="k-label">Entrega</div>
-              <div class="mini-value">${escapeHtml(prettyDateCompact(task.fecha_entrega))}</div>
-            </div>
-          </div>
-
-          <div class="tiny-grid">
-            <div class="tiny-box">
-              <div class="k-label">PS</div>
-              <div class="tiny-dot ${task.pasadores ? "on" : ""}"></div>
-            </div>
-
-            <div class="tiny-box">
-              <div class="k-label">PL</div>
-              <div class="tiny-dot ${task.plantillas ? "on" : ""}"></div>
-            </div>
-
-            <div class="compact-select">
+          <div class="meta-row">
+            <div class="meta-box">
               <div class="k-label">Resp.</div>
+              <div class="meta-value">${escapeHtml(task.responsable || "-")}</div>
+            </div>
+
+            <div class="meta-box">
+              <div class="k-label">Ubic.</div>
+              <div class="meta-value">${escapeHtml(task.ubicacion_seguimiento || "-")}</div>
+            </div>
+
+            <div class="meta-box">
+              <div class="k-label">Trabajado por</div>
+              <div class="meta-value">${escapeHtml(task.trabajado_por || "-")}</div>
+            </div>
+          </div>
+
+          <div class="select-row">
+            <div class="select-box">
+              <div class="k-label">Cambiar Resp.</div>
               <select class="js-responsable" data-id="${task.id}" data-prev="${escapeHtml(task.responsable || "")}" ${saving ? "disabled" : ""}>
                 <option value="">Seleccionar</option>
                 ${dedupeOptions(OPTIONS.responsables, task.responsable).map(item => {
@@ -1276,8 +1238,8 @@
               </select>
             </div>
 
-            <div class="compact-select">
-              <div class="k-label">Ubic.</div>
+            <div class="select-box">
+              <div class="k-label">Cambiar Ubic.</div>
               <select class="js-ubicacion" data-id="${task.id}" data-prev="${escapeHtml(task.ubicacion_seguimiento || "")}" ${saving ? "disabled" : ""}>
                 <option value="">Seleccionar</option>
                 ${dedupeOptions(OPTIONS.ubicaciones, task.ubicacion_seguimiento).map(item => {
@@ -1285,18 +1247,6 @@
                   return `<option value="${escapeHtml(item.value)}" ${selected}>${escapeHtml(item.label)}</option>`;
                 }).join("")}
               </select>
-            </div>
-          </div>
-
-          <div class="mini-grid">
-            <div class="mini-card">
-              <div class="k-label">Trabajado por</div>
-              <div class="mini-value">${escapeHtml(task.trabajado_por || "-")}</div>
-            </div>
-
-            <div class="mini-card">
-              <div class="k-label">Orden</div>
-              <div class="mini-value">${escapeHtml(task.orden_texto || task.orden_numero || "-")}</div>
             </div>
           </div>
 
@@ -1348,11 +1298,6 @@
       bindEvents();
     }
 
-    function closeAllStatusMenus() {
-      OPEN_STATUS_ID = null;
-      document.querySelectorAll(".status-menu.open").forEach(el => el.classList.remove("open"));
-    }
-
     async function quickUpdateTask(tareaId, payloadData, onRollback, successMsg, patch = null) {
       const key = String(tareaId);
       if (SAVING_IDS.has(key)) return;
@@ -1367,13 +1312,12 @@
 
       try {
         const data = await api(`/task/${tareaId}/update`, "POST", { data: payloadData });
-
         if (data.task) mergeTask(data.task);
         safeRender();
         showToast(successMsg || data.message || "Actualizado.");
       } catch (error) {
         if (typeof onRollback === "function") onRollback();
-        if (!patch) safeRender();
+        await loadTasks(true);
         showToast(error.message || "No se pudo guardar.", true);
       } finally {
         SAVING_IDS.delete(key);
@@ -1484,17 +1428,11 @@
             tareaId,
             { x_studio_selection_field_3j_1ivn1ho1m: value || false },
             () => {
-              patchTask(tareaId, {
-                estado_code: prevCode,
-                estado_label: prevLabel
-              });
+              patchTask(tareaId, { estado_code: prevCode, estado_label: prevLabel });
               safeRender();
             },
             "Estado actualizado.",
-            {
-              estado_code: value,
-              estado_label: newLabel
-            }
+            { estado_code: value, estado_label: newLabel }
           );
         });
       });
@@ -1579,14 +1517,10 @@
       }
     }
 
-    async function loadTasksInitial() {
+    async function initProtected() {
       await loadOptions();
       await loadTasks(false);
       startAutoRefresh();
-    }
-
-    async function initProtected() {
-      await loadTasksInitial();
     }
 
     function startAutoRefresh() {
