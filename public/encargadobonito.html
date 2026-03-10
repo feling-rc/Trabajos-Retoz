@@ -13,23 +13,29 @@
       --bg: #f4f6f8;
       --surface: #ffffff;
       --surface-2: #f8fafc;
-      --stroke: #e5eaf0;
-      --text: #1b2430;
+      --stroke: #e6ebf1;
+      --text: #1c2430;
       --muted: #7b8794;
       --shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
 
       --green: #11b436;
-      --green-dark: #424b57;
-      --blue: #eaf3ff;
+      --green-dark: #414b56;
+
+      --blue: #eaf4ff;
       --blue-text: #2b67b2;
-      --purple: #f1e9ff;
+
+      --purple: #f2e9ff;
       --purple-text: #7b4db2;
-      --orange: #fff4df;
+
+      --orange: #fff5e2;
       --orange-text: #c98300;
+
       --red: #fff0ef;
       --red-text: #d94841;
+
       --soft-green: #ecfdf3;
       --soft-green-text: #15803d;
+
       --soft-teal: #eafcf7;
       --soft-teal-text: #0f766e;
 
@@ -66,14 +72,14 @@
     .topbar {
       position: sticky;
       top: 0;
-      z-index: 60;
+      z-index: 80;
       backdrop-filter: blur(12px);
       background: rgba(244, 246, 248, 0.9);
-      border-bottom: 1px solid rgba(229, 234, 240, 0.85);
+      border-bottom: 1px solid rgba(230, 235, 241, 0.88);
     }
 
     .topbar-inner {
-      max-width: 760px;
+      max-width: 820px;
       margin: 0 auto;
       padding: 12px 12px 14px;
       display: grid;
@@ -174,7 +180,7 @@
     }
 
     .container {
-      max-width: 760px;
+      max-width: 820px;
       margin: 0 auto;
       padding: 12px;
       display: grid;
@@ -209,26 +215,31 @@
 
     .card {
       position: relative;
-      background: rgba(255,255,255,0.97);
-      border: 1px solid rgba(229, 234, 240, 0.95);
+      background: rgba(255, 255, 255, 0.98);
+      border: 1px solid rgba(230, 235, 241, 0.98);
       border-radius: var(--radius-xl);
       box-shadow: var(--shadow);
       padding: 12px;
       display: grid;
       gap: 10px;
       overflow: visible;
-      isolation: isolate;
     }
 
-    .card-head {
-      display: block;
+    .card.menu-open {
+      z-index: 20;
     }
 
-    .head-left {
+    .card-top {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 136px;
+      gap: 10px;
+      align-items: start;
+    }
+
+    .card-left {
       min-width: 0;
       display: grid;
       gap: 8px;
-      flex: 1 1 auto;
     }
 
     .title-row {
@@ -247,13 +258,14 @@
       letter-spacing: -0.02em;
       word-break: break-word;
       text-transform: uppercase;
+      flex: 1 1 auto;
     }
 
-    .pspl-chip {
+    .mini-pill {
       display: inline-flex;
       align-items: center;
       gap: 5px;
-      padding: 3px 7px;
+      padding: 3px 8px;
       border-radius: 999px;
       background: #f8fafc;
       border: 1px solid var(--stroke);
@@ -261,19 +273,20 @@
       font-weight: 900;
       color: #64748b;
       white-space: nowrap;
+      flex: 0 0 auto;
     }
 
-    .pspl-dot {
+    .mini-dot {
       width: 8px;
       height: 8px;
       border-radius: 999px;
       background: #d0d5dd;
-      box-shadow: inset 0 0 0 1px rgba(0,0,0,.03);
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.03);
     }
 
-    .pspl-dot.on {
+    .mini-dot.on {
       background: #16a34a;
-      box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.10);
+      box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
     }
 
     .detail-box {
@@ -283,13 +296,14 @@
       padding: 10px 11px;
       display: grid;
       gap: 5px;
+      min-height: 78px;
     }
 
     .k-label {
       font-size: 10px;
       font-weight: 900;
       color: var(--muted);
-      letter-spacing: .07em;
+      letter-spacing: 0.07em;
       text-transform: uppercase;
       line-height: 1.15;
     }
@@ -302,152 +316,138 @@
       white-space: pre-wrap;
     }
 
-    .chip-row {
-      display: flex;
-      gap: 8px;
-      overflow-x: auto;
-      overflow-y: visible;
-      padding-bottom: 2px;
-      scrollbar-width: none;
-      -ms-overflow-style: none;
+    .card-right {
+      display: grid;
+      gap: 6px;
+      align-content: start;
+      min-width: 0;
     }
 
-    .chip-row::-webkit-scrollbar {
-      display: none;
-    }
-
-    .menu-wrap {
+    .chip-wrap {
       position: relative;
-      flex: 0 0 auto;
-      z-index: 15;
+      min-width: 0;
     }
 
     .chip-btn {
+      width: 100%;
+      min-height: 38px;
       border: 1px solid transparent;
       border-radius: 999px;
-      padding: 7px 11px;
-      min-height: 34px;
-      max-width: 180px;
-      font-size: 12px;
-      font-weight: 900;
-      line-height: 1;
-      display: inline-flex;
+      padding: 7px 12px;
+      display: flex;
       align-items: center;
-      gap: 7px;
+      gap: 8px;
       cursor: pointer;
-      white-space: nowrap;
       box-shadow: 0 4px 12px rgba(16, 24, 40, 0.08);
-      background: #f2f4f7;
-      color: #667085;
-      border-color: #e5e7eb;
+      text-align: left;
     }
 
-    .chip-btn::before {
-      content: "";
+    .chip-btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .chip-dot {
       width: 8px;
       height: 8px;
       border-radius: 999px;
+      flex: 0 0 auto;
       background: currentColor;
-      opacity: 0.98;
-      flex: 0 0 auto;
-    }
-
-    .chip-btn::after {
-      content: "";
-      width: 7px;
-      height: 7px;
-      border-right: 2px solid currentColor;
-      border-bottom: 2px solid currentColor;
-      transform: rotate(45deg) translateY(-1px);
-      margin-left: 1px;
-      opacity: 0.75;
-      flex: 0 0 auto;
+      opacity: 0.95;
     }
 
     .chip-text {
       min-width: 0;
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    .chip-caption {
+      font-size: 9px;
+      line-height: 1;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      opacity: 0.72;
+    }
+
+    .chip-value {
+      min-width: 0;
+      font-size: 12px;
+      line-height: 1.1;
+      font-weight: 900;
+      white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
-    .chip-empty {
+    .chip-arrow {
+      width: 8px;
+      height: 8px;
+      border-right: 2px solid currentColor;
+      border-bottom: 2px solid currentColor;
+      transform: rotate(45deg) translateY(-1px);
+      opacity: 0.75;
+      flex: 0 0 auto;
+      margin-left: 2px;
+    }
+
+    .chip-default {
       background: #f2f4f7;
       color: #667085;
       border-color: #e5e7eb;
     }
 
-    .chip-responsable {
-      background: #eefaf2;
-      color: #15803d;
-      border-color: #ccead6;
-    }
-
-    .chip-ubicacion {
-      background: #f3f0ff;
-      color: #6d4bd2;
-      border-color: #ddd4ff;
-    }
-
-    .chip-trabajado {
-      background: #edfdfa;
-      color: #0f766e;
-      border-color: #c9f5eb;
-    }
-
-    .status-default {
-      background: #f2f4f7;
-      color: #667085;
-      border-color: #e5e7eb;
-    }
-
-    .status-agendado {
+    .chip-agendado {
       background: var(--blue);
       color: var(--blue-text);
       border-color: #d8e8ff;
     }
 
-    .status-proceso {
+    .chip-proceso {
       background: var(--purple);
       color: var(--purple-text);
       border-color: #e7d7ff;
     }
 
-    .status-sinmaterial {
+    .chip-sinmaterial {
       background: var(--orange);
       color: var(--orange-text);
       border-color: #fde7b2;
     }
 
-    .status-atrasado {
+    .chip-atrasado {
       background: var(--red);
       color: var(--red-text);
       border-color: #ffd7d4;
     }
 
-    .status-trabajado {
+    .chip-trabajado {
       background: var(--soft-green);
       color: var(--soft-green-text);
       border-color: #cbf7d8;
     }
 
-    .status-completado {
+    .chip-completado {
       background: #eef2ff;
       color: #6941c6;
       border-color: #ddd6fe;
     }
 
-    .status-entregado {
+    .chip-entregado {
       background: var(--soft-teal);
       color: var(--soft-teal-text);
       border-color: #c9f5eb;
     }
 
-    .menu {
+    .dropdown-menu {
       position: absolute;
-      left: 0;
-      top: calc(100% + 8px);
-      width: min(220px, calc(100vw - 40px));
-      max-height: 250px;
+      right: 0;
+      top: calc(100% + 6px);
+      width: 220px;
+      max-height: 240px;
       overflow-y: auto;
       background: var(--surface);
       border: 1px solid var(--stroke);
@@ -455,16 +455,16 @@
       box-shadow: 0 18px 40px rgba(15, 23, 42, 0.16);
       padding: 8px;
       display: none;
-      z-index: 40;
+      z-index: 120;
     }
 
-    .menu.open {
+    .dropdown-menu.open {
       display: block;
     }
 
-    .menu.open-up {
+    .dropdown-menu.up {
       top: auto;
-      bottom: calc(100% + 8px);
+      bottom: calc(100% + 6px);
     }
 
     .menu-option {
@@ -487,19 +487,12 @@
       background: #f8fafc;
     }
 
-    .menu-option .dot {
+    .menu-option .opt-dot {
       width: 9px;
       height: 9px;
       border-radius: 999px;
       flex: 0 0 auto;
-    }
-
-    .menu-option .label {
-      min-width: 0;
-      flex: 1 1 auto;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      background: #c4c9d1;
     }
 
     .menu-option .check {
@@ -525,11 +518,11 @@
       font-size: 14px;
       font-weight: 900;
       cursor: pointer;
-      transition: transform .1s ease, opacity .1s ease;
+      transition: transform 0.1s ease, opacity 0.1s ease;
     }
 
     .btn:active {
-      transform: scale(.992);
+      transform: scale(0.992);
     }
 
     .btn:disabled {
@@ -540,7 +533,7 @@
     .btn-green {
       color: #fff;
       background: linear-gradient(180deg, #11b53a 0%, #0b9e32 100%);
-      box-shadow: 0 8px 20px rgba(11, 158, 50, 0.20);
+      box-shadow: 0 8px 20px rgba(11, 158, 50, 0.2);
     }
 
     .btn-dark {
@@ -554,7 +547,7 @@
       left: 50%;
       bottom: 16px;
       transform: translateX(-50%) translateY(16px);
-      z-index: 90;
+      z-index: 160;
       min-width: min(92vw, 280px);
       max-width: min(92vw, 420px);
       background: #111827;
@@ -564,7 +557,7 @@
       box-shadow: 0 16px 34px rgba(0, 0, 0, 0.24);
       opacity: 0;
       pointer-events: none;
-      transition: .22s ease;
+      transition: 0.22s ease;
       font-size: 12px;
       line-height: 1.35;
       text-align: center;
@@ -582,7 +575,7 @@
     .overlay {
       position: fixed;
       inset: 0;
-      z-index: 100;
+      z-index: 200;
       background: rgba(15, 23, 42, 0.58);
       backdrop-filter: blur(8px);
       display: flex;
@@ -595,7 +588,7 @@
       width: 100%;
       max-width: 360px;
       background: var(--surface);
-      border: 1px solid rgba(255,255,255,.5);
+      border: 1px solid rgba(255, 255, 255, 0.5);
       border-radius: 24px;
       box-shadow: 0 20px 54px rgba(15, 23, 42, 0.24);
       padding: 20px 16px 16px;
@@ -642,13 +635,23 @@
       display: none !important;
     }
 
-    @media (min-width: 700px) {
+    @media (min-width: 760px) {
       .cards {
         grid-template-columns: 1fr 1fr;
       }
+    }
 
-      .chip-btn {
-        max-width: 200px;
+    @media (max-width: 420px) {
+      .card-top {
+        grid-template-columns: minmax(0, 1fr) 126px;
+      }
+
+      .title-main {
+        font-size: 15px;
+      }
+
+      .dropdown-menu {
+        width: 204px;
       }
     }
   </style>
@@ -808,19 +811,19 @@
     };
 
     const STATUS_CLASS_MAP = {
-      "Agendado": "status-agendado",
-      "En ruta": "status-proceso",
-      "En proceso": "status-proceso",
-      "Sin material": "status-sinmaterial",
-      "Atrasado": "status-atrasado",
-      "Trabajado": "status-trabajado",
-      "Completado": "status-completado",
-      "Entregado": "status-entregado",
-      "Cancelado": "status-default",
-      "Ya no quiere": "status-default",
-      "Agendar con bot": "status-default",
-      "Empaquetado": "status-default",
-      "Agendado con courier": "status-default"
+      "Agendado": "chip-agendado",
+      "En ruta": "chip-proceso",
+      "En proceso": "chip-proceso",
+      "Sin material": "chip-sinmaterial",
+      "Atrasado": "chip-atrasado",
+      "Trabajado": "chip-trabajado",
+      "Completado": "chip-completado",
+      "Entregado": "chip-entregado",
+      "Cancelado": "chip-default",
+      "Ya no quiere": "chip-default",
+      "Agendar con bot": "chip-default",
+      "Empaquetado": "chip-default",
+      "Agendado con courier": "chip-default"
     };
 
     const STATUS_DOT_MAP = {
@@ -844,7 +847,7 @@
     let TASKS = [];
     let REFRESH_TIMER = null;
     let SAVING_IDS = new Set();
-    let OPEN_MENU = { taskId: null, field: null, direction: "down" };
+    let OPEN_DROPDOWN = null;
     let LAST_SCROLL_Y = 0;
 
     function byId(id) {
@@ -906,28 +909,13 @@
       });
     }
 
-    function safeRender() {
-      saveScroll();
-      renderTasks();
-      restoreScroll();
-    }
-
-    function closeMenus() {
-      OPEN_MENU = { taskId: null, field: null, direction: "down" };
-    }
-
     function cleanDigits(value) {
       return String(value || "").replace(/\D+/g, "");
     }
 
-    function dedupeOptions(list, currentValue, currentLabel = null, includeEmpty = false) {
+    function dedupeOptions(list, currentValue, currentLabel = null) {
       const out = [];
       const seen = new Set();
-
-      if (includeEmpty) {
-        out.push({ value: "", label: "-" });
-        seen.add("");
-      }
 
       if (currentValue && !list.some(x => String(x.value) === String(currentValue))) {
         out.push({
@@ -954,7 +942,7 @@
     }
 
     function statusClass(label) {
-      return STATUS_CLASS_MAP[label] || "status-default";
+      return STATUS_CLASS_MAP[label] || "chip-default";
     }
 
     function statusDotColor(label) {
@@ -1089,104 +1077,166 @@
       try {
         const data = await api("/tasks", "GET");
         TASKS = (Array.isArray(data.result) ? data.result : []).map(normalizeTask);
-        closeMenus();
-        safeRender();
+        renderTasks();
       } catch (error) {
         if (!TASKS.length) setError(error.message || "No se pudieron cargar los trabajos.");
         else showToast(error.message || "No se pudo actualizar.", true);
       }
     }
 
-    function getChipMeta(task, field) {
-      if (field === "estado") {
+    function chipHtml(task, type, saving) {
+      if (type === "estado") {
         const label = task.estado_label || estadoBonitoFromCode(task.estado_code);
-        return {
-          label,
-          value: task.estado_code || "",
-          className: statusClass(label),
-          dotColor: statusDotColor(label),
-          options: dedupeOptions(OPTIONS.estados, task.estado_code, label, false),
-          includeEmpty: false
-        };
+        return `
+          <div class="chip-wrap" data-dropdown-wrap="${task.id}_estado">
+            <button
+              type="button"
+              class="chip-btn ${statusClass(label)} js-chip-btn"
+              data-id="${task.id}"
+              data-type="estado"
+              ${saving ? "disabled" : ""}
+            >
+              <span class="chip-dot" style="background:${statusDotColor(label)}"></span>
+              <span class="chip-text">
+                <span class="chip-caption">Estado</span>
+                <span class="chip-value">${escapeHtml(label)}</span>
+              </span>
+              <span class="chip-arrow"></span>
+            </button>
+
+            <div class="dropdown-menu js-dropdown-menu" data-dropdown-menu="${task.id}_estado">
+              ${dedupeOptions(OPTIONS.estados, task.estado_code, label).map(item => {
+                const itemLabel = item.label;
+                const active = String(item.value) === String(task.estado_code || "");
+                return `
+                  <button
+                    type="button"
+                    class="menu-option js-menu-option ${active ? "active" : ""}"
+                    data-id="${task.id}"
+                    data-type="estado"
+                    data-value="${escapeHtml(item.value)}"
+                  >
+                    <span class="opt-dot" style="background:${statusDotColor(itemLabel)}"></span>
+                    <span>${escapeHtml(itemLabel)}</span>
+                    <span class="check">✓</span>
+                  </button>
+                `;
+              }).join("")}
+            </div>
+          </div>
+        `;
       }
 
-      if (field === "responsable") {
-        const label = task.responsable || "Responsable";
-        return {
-          label,
-          value: task.responsable || "",
-          className: task.responsable ? "chip-responsable" : "chip-empty",
-          dotColor: task.responsable ? "#16a34a" : "#94a3b8",
-          options: dedupeOptions(OPTIONS.responsables, task.responsable, task.responsable, true),
-          includeEmpty: true
-        };
+      if (type === "responsable") {
+        return `
+          <div class="chip-wrap" data-dropdown-wrap="${task.id}_responsable">
+            <button
+              type="button"
+              class="chip-btn chip-default js-chip-btn"
+              data-id="${task.id}"
+              data-type="responsable"
+              ${saving ? "disabled" : ""}
+            >
+              <span class="chip-dot" style="background:${task.responsable ? "#2b67b2" : "#98a2b3"}"></span>
+              <span class="chip-text">
+                <span class="chip-caption">Responsable</span>
+                <span class="chip-value">${escapeHtml(task.responsable || "Seleccionar")}</span>
+              </span>
+              <span class="chip-arrow"></span>
+            </button>
+
+            <div class="dropdown-menu js-dropdown-menu" data-dropdown-menu="${task.id}_responsable">
+              ${dedupeOptions(OPTIONS.responsables, task.responsable).map(item => {
+                const active = String(item.value) === String(task.responsable || "");
+                return `
+                  <button
+                    type="button"
+                    class="menu-option js-menu-option ${active ? "active" : ""}"
+                    data-id="${task.id}"
+                    data-type="responsable"
+                    data-value="${escapeHtml(item.value)}"
+                  >
+                    <span class="opt-dot" style="background:${active ? "#2b67b2" : "#c4c9d1"}"></span>
+                    <span>${escapeHtml(item.label)}</span>
+                    <span class="check">✓</span>
+                  </button>
+                `;
+              }).join("")}
+            </div>
+          </div>
+        `;
       }
 
-      if (field === "ubicacion") {
-        const label = task.ubicacion_seguimiento || "Ubicación";
-        return {
-          label,
-          value: task.ubicacion_seguimiento || "",
-          className: task.ubicacion_seguimiento ? "chip-ubicacion" : "chip-empty",
-          dotColor: task.ubicacion_seguimiento ? "#6d4bd2" : "#94a3b8",
-          options: dedupeOptions(OPTIONS.ubicaciones, task.ubicacion_seguimiento, task.ubicacion_seguimiento, true),
-          includeEmpty: true
-        };
+      if (type === "ubicacion") {
+        return `
+          <div class="chip-wrap" data-dropdown-wrap="${task.id}_ubicacion">
+            <button
+              type="button"
+              class="chip-btn chip-default js-chip-btn"
+              data-id="${task.id}"
+              data-type="ubicacion"
+              ${saving ? "disabled" : ""}
+            >
+              <span class="chip-dot" style="background:${task.ubicacion_seguimiento ? "#7b4db2" : "#98a2b3"}"></span>
+              <span class="chip-text">
+                <span class="chip-caption">Ubicación</span>
+                <span class="chip-value">${escapeHtml(task.ubicacion_seguimiento || "Seleccionar")}</span>
+              </span>
+              <span class="chip-arrow"></span>
+            </button>
+
+            <div class="dropdown-menu js-dropdown-menu" data-dropdown-menu="${task.id}_ubicacion">
+              ${dedupeOptions(OPTIONS.ubicaciones, task.ubicacion_seguimiento).map(item => {
+                const active = String(item.value) === String(task.ubicacion_seguimiento || "");
+                return `
+                  <button
+                    type="button"
+                    class="menu-option js-menu-option ${active ? "active" : ""}"
+                    data-id="${task.id}"
+                    data-type="ubicacion"
+                    data-value="${escapeHtml(item.value)}"
+                  >
+                    <span class="opt-dot" style="background:${active ? "#7b4db2" : "#c4c9d1"}"></span>
+                    <span>${escapeHtml(item.label)}</span>
+                    <span class="check">✓</span>
+                  </button>
+                `;
+              }).join("")}
+            </div>
+          </div>
+        `;
       }
-
-      const label = task.trabajado_por || "Trabajado por";
-      return {
-        label,
-        value: task.trabajado_por || "",
-        className: task.trabajado_por ? "chip-trabajado" : "chip-empty",
-        dotColor: task.trabajado_por ? "#0f766e" : "#94a3b8",
-        options: dedupeOptions(OPTIONS.trabajado_por, task.trabajado_por, task.trabajado_por, true),
-        includeEmpty: true
-      };
-    }
-
-    function isMenuOpen(taskId, field) {
-      return String(OPEN_MENU.taskId) === String(taskId) && OPEN_MENU.field === field;
-    }
-
-    function chipMenuHtml(task, field, saving) {
-      const meta = getChipMeta(task, field);
-      const open = isMenuOpen(task.id, field);
-      const menuClass = open
-        ? `menu open ${OPEN_MENU.direction === "up" ? "open-up" : ""}`
-        : "menu";
 
       return `
-        <div class="menu-wrap">
+        <div class="chip-wrap" data-dropdown-wrap="${task.id}_trabajado_por">
           <button
             type="button"
-            class="chip-btn ${meta.className} js-chip-btn"
+            class="chip-btn chip-default js-chip-btn"
             data-id="${task.id}"
-            data-field="${field}"
+            data-type="trabajado_por"
             ${saving ? "disabled" : ""}
-            title="${escapeHtml(meta.label)}"
           >
-            <span class="chip-text">${escapeHtml(meta.label)}</span>
+            <span class="chip-dot" style="background:${task.trabajado_por ? "#16a34a" : "#98a2b3"}"></span>
+            <span class="chip-text">
+              <span class="chip-caption">Trabajado por</span>
+              <span class="chip-value">${escapeHtml(task.trabajado_por || "Seleccionar")}</span>
+            </span>
+            <span class="chip-arrow"></span>
           </button>
 
-          <div class="${menuClass}" id="menu_${field}_${task.id}">
-            ${meta.options.map(item => {
-              const active = String(item.value) === String(meta.value || "");
-              const label = item.label || "-";
-              const dotColor = field === "estado"
-                ? statusDotColor(label)
-                : meta.dotColor;
-
+          <div class="dropdown-menu js-dropdown-menu" data-dropdown-menu="${task.id}_trabajado_por">
+            ${dedupeOptions(OPTIONS.trabajado_por, task.trabajado_por).map(item => {
+              const active = String(item.value) === String(task.trabajado_por || "");
               return `
                 <button
                   type="button"
-                  class="menu-option ${active ? "active" : ""} js-menu-option"
+                  class="menu-option js-menu-option ${active ? "active" : ""}"
                   data-id="${task.id}"
-                  data-field="${field}"
+                  data-type="trabajado_por"
                   data-value="${escapeHtml(item.value)}"
                 >
-                  <span class="dot" style="background:${dotColor}"></span>
-                  <span class="label">${escapeHtml(label)}</span>
+                  <span class="opt-dot" style="background:${active ? "#16a34a" : "#c4c9d1"}"></span>
+                  <span>${escapeHtml(item.label)}</span>
                   <span class="check">✓</span>
                 </button>
               `;
@@ -1202,23 +1252,21 @@
 
       return `
         <article class="card" data-id="${task.id}">
-          <div class="card-head">
-            <div class="head-left">
+          <div class="card-top">
+            <div class="card-left">
               <div class="title-row">
                 <div class="title-main">
-                  <span>${escapeHtml(task.orden_numero || task.orden_texto || "-")}</span>
-                  <span> - </span>
-                  <span>${escapeHtml(task.modelo)}</span>
+                  ${escapeHtml(task.orden_numero || task.orden_texto || "-")} - ${escapeHtml(task.modelo)}
                 </div>
 
-                <span class="pspl-chip">
+                <span class="mini-pill">
                   <span>PS</span>
-                  <span class="pspl-dot ${task.pasadores ? "on" : ""}"></span>
+                  <span class="mini-dot ${task.pasadores ? "on" : ""}"></span>
                 </span>
 
-                <span class="pspl-chip">
+                <span class="mini-pill">
                   <span>PL</span>
-                  <span class="pspl-dot ${task.plantillas ? "on" : ""}"></span>
+                  <span class="mini-dot ${task.plantillas ? "on" : ""}"></span>
                 </span>
               </div>
 
@@ -1226,18 +1274,22 @@
                 <div class="k-label">Detalle de trabajo</div>
                 <div class="detail-text">${escapeHtml(task.detalle || "-")}</div>
               </div>
+            </div>
 
-              <div class="chip-row">
-                ${chipMenuHtml(task, "estado", saving)}
-                ${chipMenuHtml(task, "responsable", saving)}
-                ${chipMenuHtml(task, "ubicacion", saving)}
-                ${chipMenuHtml(task, "trabajado_por", saving)}
-              </div>
+            <div class="card-right">
+              ${chipHtml(task, "estado", saving)}
+              ${chipHtml(task, "responsable", saving)}
+              ${chipHtml(task, "ubicacion", saving)}
+              ${chipHtml(task, "trabajado_por", saving)}
             </div>
           </div>
 
           <div class="actions">
-            <button class="btn ${listo ? "btn-dark" : "btn-green"} js-toggle-listo" data-id="${task.id}" ${saving ? "disabled" : ""}>
+            <button
+              class="btn ${listo ? "btn-dark" : "btn-green"} js-toggle-listo"
+              data-id="${task.id}"
+              ${saving ? "disabled" : ""}
+            >
               ${listo ? "✔ LISTO" : "✅ MARCAR LISTO"}
             </button>
           </div>
@@ -1247,6 +1299,7 @@
 
     function renderTasks() {
       clearMessages();
+      closeAllDropdowns(true);
 
       const filtered = filterTasks();
       byId("countBadge").textContent = `${filtered.length} pares`;
@@ -1263,180 +1316,216 @@
       bindEvents();
     }
 
+    function closeAllDropdowns(skipStateReset = false) {
+      document.querySelectorAll(".dropdown-menu.open").forEach(el => {
+        el.classList.remove("open", "up");
+      });
+      document.querySelectorAll(".card.menu-open").forEach(el => {
+        el.classList.remove("menu-open");
+      });
+      if (!skipStateReset) OPEN_DROPDOWN = null;
+    }
+
+    function openDropdown(taskId, type) {
+      const key = `${taskId}_${type}`;
+      const menu = document.querySelector(`[data-dropdown-menu="${key}"]`);
+      const card = document.querySelector(`.card[data-id="${taskId}"]`);
+      if (!menu || !card) return;
+
+      closeAllDropdowns();
+
+      OPEN_DROPDOWN = { taskId, type };
+      card.classList.add("menu-open");
+      menu.classList.add("open");
+
+      const rect = menu.getBoundingClientRect();
+      const overBottom = rect.bottom > window.innerHeight - 10;
+      const hasMoreTop = rect.top > (window.innerHeight - rect.bottom);
+
+      if (overBottom && hasMoreTop) {
+        menu.classList.add("up");
+      } else {
+        menu.classList.remove("up");
+      }
+    }
+
     async function quickUpdateTask(tareaId, payloadData, onRollback, successMsg, patch = null) {
       const key = String(tareaId);
       if (SAVING_IDS.has(key)) return;
 
+      saveScroll();
       SAVING_IDS.add(key);
-      closeMenus();
 
       if (patch) {
         patchTask(tareaId, patch);
-        safeRender();
+        renderTasks();
+        restoreScroll();
       }
 
       try {
         const data = await api(`/task/${tareaId}/update`, "POST", { data: payloadData });
         if (data.task) mergeTask(data.task);
-        safeRender();
+        renderTasks();
+        restoreScroll();
         showToast(successMsg || data.message || "Actualizado.");
       } catch (error) {
         if (typeof onRollback === "function") onRollback();
         await loadTasks(true);
+        restoreScroll();
         showToast(error.message || "No se pudo guardar.", true);
       } finally {
         SAVING_IDS.delete(key);
-        safeRender();
       }
     }
 
-    async function doToggleListo(tareaId, trabajadoPor = null) {
+    async function doToggleListo(tareaId) {
       const key = String(tareaId);
       if (SAVING_IDS.has(key)) return;
 
       const current = TASKS.find(x => String(x.id) === String(tareaId));
       if (!current) return;
 
-      const estabaListo = isListo(current);
+      if (!isListo(current) && !String(current.trabajado_por || "").trim()) {
+        showToast("Primero debes seleccionar Trabajado por", true);
+        return;
+      }
 
+      saveScroll();
       SAVING_IDS.add(key);
-      closeMenus();
+
+      const estabaListo = isListo(current);
 
       if (!estabaListo) {
         patchTask(tareaId, {
           estado_code: "TRABAJADO",
-          estado_label: "Trabajado",
-          trabajado_por: trabajadoPor || current.trabajado_por || ""
+          estado_label: "Trabajado"
         });
       } else {
         patchTask(tareaId, {
           estado_code: "03_approved",
-          estado_label: "En proceso"
+          estado_label: "En proceso",
+          trabajado_por: ""
         });
       }
 
-      safeRender();
+      renderTasks();
+      restoreScroll();
 
       try {
-        const body = trabajadoPor ? { trabajado_por: trabajadoPor } : {};
+        const body = !estabaListo ? { trabajado_por: current.trabajado_por } : {};
         const data = await api(`/task/${tareaId}/toggle_listo`, "POST", body);
-
         if (data.task) mergeTask(data.task);
-        safeRender();
+        renderTasks();
+        restoreScroll();
         showToast(data.message || "Actualizado.");
       } catch (error) {
         await loadTasks(true);
+        restoreScroll();
         showToast(error.message || "No se pudo cambiar el listo.", true);
       } finally {
         SAVING_IDS.delete(key);
-        safeRender();
       }
-    }
-
-    async function handleMenuSelection(tareaId, field, value) {
-      const task = TASKS.find(x => String(x.id) === String(tareaId));
-      if (!task) return;
-
-      if (field === "estado") {
-        const prevCode = task.estado_code;
-        const prevLabel = task.estado_label;
-        const newLabel = estadoBonitoFromCode(value);
-
-        await quickUpdateTask(
-          tareaId,
-          { x_studio_selection_field_3j_1ivn1ho1m: value || false },
-          () => {
-            patchTask(tareaId, { estado_code: prevCode, estado_label: prevLabel });
-          },
-          "Estado actualizado.",
-          { estado_code: value || "", estado_label: newLabel }
-        );
-        return;
-      }
-
-      if (field === "responsable") {
-        const prev = task.responsable || "";
-        await quickUpdateTask(
-          tareaId,
-          { x_studio_responsable_r: value || false },
-          () => {
-            patchTask(tareaId, { responsable: prev });
-          },
-          "Responsable actualizado.",
-          { responsable: value || "" }
-        );
-        return;
-      }
-
-      if (field === "ubicacion") {
-        const prev = task.ubicacion_seguimiento || "";
-        await quickUpdateTask(
-          tareaId,
-          { x_studio_ubicacion_exacta_1: value || false },
-          () => {
-            patchTask(tareaId, { ubicacion_seguimiento: prev });
-          },
-          "Ubicación actualizada.",
-          { ubicacion_seguimiento: value || "" }
-        );
-        return;
-      }
-
-      const prev = task.trabajado_por || "";
-      await quickUpdateTask(
-        tareaId,
-        { x_studio_trabajado_por: value || false },
-        () => {
-          patchTask(tareaId, { trabajado_por: prev });
-        },
-        "Trabajado por actualizado.",
-        { trabajado_por: value || "" }
-      );
     }
 
     function bindEvents() {
       document.querySelectorAll(".js-chip-btn").forEach(btn => {
         btn.addEventListener("click", function (e) {
           e.stopPropagation();
+          const taskId = this.dataset.id;
+          const type = this.dataset.type;
+          const sameOpen =
+            OPEN_DROPDOWN &&
+            String(OPEN_DROPDOWN.taskId) === String(taskId) &&
+            OPEN_DROPDOWN.type === type;
 
-          const tareaId = String(this.dataset.id);
-          const field = this.dataset.field || "";
-
-          if (
-            String(OPEN_MENU.taskId) === tareaId &&
-            OPEN_MENU.field === field
-          ) {
-            closeMenus();
-            safeRender();
+          if (sameOpen) {
+            closeAllDropdowns();
             return;
           }
 
-          const rect = this.getBoundingClientRect();
-          const estimatedMenuHeight = 260;
-          const spaceBelow = window.innerHeight - rect.bottom;
-          const spaceAbove = rect.top;
-          const direction = (spaceBelow < estimatedMenuHeight && spaceAbove > spaceBelow)
-            ? "up"
-            : "down";
-
-          OPEN_MENU = {
-            taskId: tareaId,
-            field,
-            direction
-          };
-
-          safeRender();
+          openDropdown(taskId, type);
         });
       });
 
       document.querySelectorAll(".js-menu-option").forEach(btn => {
         btn.addEventListener("click", async function (e) {
           e.stopPropagation();
+
           const tareaId = this.dataset.id;
-          const field = this.dataset.field || "";
+          const type = this.dataset.type;
           const value = this.dataset.value || "";
-          closeMenus();
-          await handleMenuSelection(tareaId, field, value);
+          const task = TASKS.find(x => String(x.id) === String(tareaId));
+          if (!task) return;
+
+          closeAllDropdowns();
+
+          if (type === "estado") {
+            const prevCode = task.estado_code;
+            const prevLabel = task.estado_label;
+            const newLabel = estadoBonitoFromCode(value);
+
+            await quickUpdateTask(
+              tareaId,
+              { x_studio_selection_field_3j_1ivn1ho1m: value || false },
+              () => {
+                patchTask(tareaId, {
+                  estado_code: prevCode,
+                  estado_label: prevLabel
+                });
+              },
+              "Estado actualizado.",
+              {
+                estado_code: value,
+                estado_label: newLabel
+              }
+            );
+            return;
+          }
+
+          if (type === "responsable") {
+            const prev = task.responsable || "";
+            await quickUpdateTask(
+              tareaId,
+              { x_studio_responsable_r: value || false },
+              () => {
+                patchTask(tareaId, { responsable: prev });
+              },
+              "Responsable actualizado.",
+              {
+                responsable: value || ""
+              }
+            );
+            return;
+          }
+
+          if (type === "ubicacion") {
+            const prev = task.ubicacion_seguimiento || "";
+            await quickUpdateTask(
+              tareaId,
+              { x_studio_ubicacion_exacta_1: value || false },
+              () => {
+                patchTask(tareaId, { ubicacion_seguimiento: prev });
+              },
+              "Ubicación actualizada.",
+              {
+                ubicacion_seguimiento: value || ""
+              }
+            );
+            return;
+          }
+
+          const prevTrab = task.trabajado_por || "";
+          await quickUpdateTask(
+            tareaId,
+            { x_studio_trabajado_por: value || false },
+            () => {
+              patchTask(tareaId, { trabajado_por: prevTrab });
+            },
+            "Trabajado por actualizado.",
+            {
+              trabajado_por: value || ""
+            }
+          );
         });
       });
 
@@ -1446,21 +1535,12 @@
           const task = TASKS.find(t => String(t.id) === String(tareaId));
           if (!task) return;
 
-          closeMenus();
-
-          if (!isListo(task) && !String(task.trabajado_por || "").trim()) {
-            showToast("Primero debes seleccionar Trabajado por.", true);
-            return;
-          }
-
           if (isListo(task)) {
             const ok = confirm("La tarea ya está en LISTO. ¿Deseas desmarcarla?");
             if (!ok) return;
-            await doToggleListo(tareaId, null);
-            return;
           }
 
-          await doToggleListo(tareaId, task.trabajado_por || null);
+          await doToggleListo(tareaId);
         });
       });
     }
@@ -1509,30 +1589,34 @@
       REFRESH_TIMER = setInterval(async () => {
         if (!TOKEN) return;
         if (SAVING_IDS.size > 0) return;
+        if (OPEN_DROPDOWN) return;
+
+        const currentSearch = byId("searchInput").value;
+        saveScroll();
         await loadTasks(true);
+        byId("searchInput").value = currentSearch;
+        renderTasks();
+        restoreScroll();
       }, REFRESH_MS);
     }
 
     window.addEventListener("click", function () {
-      if (OPEN_MENU.taskId !== null || OPEN_MENU.field !== null) {
-        closeMenus();
-        safeRender();
+      if (OPEN_DROPDOWN) {
+        closeAllDropdowns();
+      }
+    });
+
+    window.addEventListener("resize", function () {
+      if (OPEN_DROPDOWN) {
+        closeAllDropdowns();
       }
     });
 
     window.addEventListener("scroll", function () {
-      if (OPEN_MENU.taskId !== null || OPEN_MENU.field !== null) {
-        closeMenus();
-        safeRender();
+      if (OPEN_DROPDOWN) {
+        closeAllDropdowns();
       }
-    }, true);
-
-    window.addEventListener("resize", function () {
-      if (OPEN_MENU.taskId !== null || OPEN_MENU.field !== null) {
-        closeMenus();
-        safeRender();
-      }
-    });
+    }, { passive: true });
 
     window.addEventListener("load", async () => {
       byId("loginBtn").addEventListener("click", doLogin);
@@ -1542,11 +1626,18 @@
       });
 
       byId("searchInput").addEventListener("input", () => {
-        safeRender();
+        saveScroll();
+        renderTasks();
+        restoreScroll();
       });
 
       byId("refreshBtn").addEventListener("click", async () => {
+        const currentSearch = byId("searchInput").value;
+        saveScroll();
         await loadTasks(true);
+        byId("searchInput").value = currentSearch;
+        renderTasks();
+        restoreScroll();
       });
 
       if (TOKEN) {
