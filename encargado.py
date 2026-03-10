@@ -24,21 +24,17 @@ DB = os.getenv("ODOO_DB", "retoz")
 USERNAME = os.getenv("ODOO_USERNAME", "retoz2023@gmail.com")
 API_KEY = os.getenv("ODOO_API_KEY")
 
-# código supervisor
 ACCESS_CODE = os.getenv("ENCARGADO_ACCESS_CODE", "210720").strip()
 
-# archivo HTML
 HTML_CANDIDATES = [
     os.path.join(PUBLIC_DIR, "encargadobonito.html"),
     os.path.join(BASE_DIR, "encargadobonito.html"),
 ]
 
-# requests session
 SESSION = requests.Session()
 _UID = None
 _UID_LOCK = Lock()
 
-# tokens simples en memoria
 TOKENS = {}
 TOKENS_LOCK = Lock()
 TOKEN_TTL_SECONDS = 60 * 60 * 12  # 12 horas
@@ -49,6 +45,7 @@ TOKEN_TTL_SECONDS = 60 * 60 * 12  # 12 horas
 FIELD_MODELO = "x_studio_modelo_de_par_1"
 FIELD_DETALLE = "x_studio_detalles_del_trabajo_1"
 FIELD_FECHA_TRABAJADO = "x_studio_fecha_de_trabajado"
+FIELD_FECHA_A_TRABAJAR = os.getenv("ODOO_FIELD_FECHA_A_TRABAJAR", "x_studio_fecha_a_trabajarlo_2")
 FIELD_FECHA_ENTREGA = os.getenv("ODOO_FIELD_FECHA_ENTREGA", "x_studio_fecha_de_entrega_1_1")
 FIELD_ORDEN = "x_studio_orden_de_venta_1"
 FIELD_PASADORES = "x_studio_pasadores_1"
@@ -61,7 +58,29 @@ FIELD_TRABAJADO_POR = "x_studio_trabajado_por"
 FIELD_ANDAMIO = "x_studio_andamio"
 FIELD_CREATE_DATE = "create_date"
 
-OPTIONAL_FIELDS = {FIELD_FECHA_ENTREGA}
+OPTIONAL_FIELDS = {
+    FIELD_FECHA_A_TRABAJAR,
+    FIELD_FECHA_ENTREGA,
+}
+
+COMMON_TASK_FIELDS = [
+    "id",
+    FIELD_MODELO,
+    FIELD_DETALLE,
+    FIELD_FECHA_TRABAJADO,
+    FIELD_FECHA_A_TRABAJAR,
+    FIELD_FECHA_ENTREGA,
+    FIELD_ORDEN,
+    FIELD_PASADORES,
+    FIELD_PLANTILLAS,
+    FIELD_RESPONSABLE,
+    FIELD_UBICACION,
+    FIELD_ESTADO,
+    FIELD_VERIF,
+    FIELD_TRABAJADO_POR,
+    FIELD_ANDAMIO,
+    FIELD_CREATE_DATE,
+]
 
 # =========================
 # OPCIONES
@@ -94,7 +113,7 @@ UBICACION_OPTIONS = [
     "P-3",
     "P-4",
     "P-5",
-    "EN ANCHEADORA",
+    "EN ANCHADORA",
     "ABANDONADO 1",
     "ABANDONADO 2",
     "ENTREGADO",
@@ -138,34 +157,56 @@ TRABAJADO_POR_TO_ANDAMIO = {
     "Shina": "SHINA",
 }
 
-ESTADO_LABELS = {
-    "TRABAJADO": "Trabajado",
-    "03_approved": "En proceso",
-    "02_changes_requested": "Sin material",
-    "04_waiting_material": "Atrasado",
-    "04_waiting_normal": "Atrasado",
-    "1_done": "Completado",
-    "1_cancelled": "Cancelado",
-    "1_canceled": "Cancelado",
-    "Entregado": "Entregado",
-    "En el Courier": "En el courier",
-    "Ya no quiere": "Ya no quiere",
-    "Ya no Quiere": "Ya no quiere",
-    "Agendar Con Bot": "Agendar con bot",
-    "En progreso": "Agendado",
-    "in_progress": "Agendado",
-    "01_in_progress": "Agendado",
-    "in_process": "En proceso",
-    "En Ruta": "En ruta",
-    "Empaquetado": "Empaquetado",
-    "Agendado con Courier": "Agendado con courier",
-}
+ESTADO_OPTIONS = [
+    {"value": "01_in_progress", "label": "Agendado"},
+    {"value": "En Ruta", "label": "En ruta"},
+    {"value": "02_changes_requested", "label": "Sin material"},
+    {"value": "03_approved", "label": "En proceso"},
+    {"value": "04_waiting_material", "label": "Atrasado"},
+    {"value": "04_waiting_normal", "label": "Atrasado"},
+    {"value": "1_cancelled", "label": "Cancelado"},
+    {"value": "1_canceled", "label": "Cancelado"},
+    {"value": "1_done", "label": "Completado"},
+    {"value": "Entregado", "label": "Entregado"},
+    {"value": "Ya no Quiere", "label": "Ya no quiere"},
+    {"value": "Ya no quiere", "label": "Ya no quiere"},
+    {"value": "Agendar Con Bot", "label": "Agendar con bot"},
+    {"value": "TRABAJADO", "label": "Trabajado"},
+    {"value": "Empaquetado", "label": "Empaquetado"},
+    {"value": "Agendado con Courier", "label": "Agendado con courier"},
+    {"value": "En progreso", "label": "Agendado"},
+    {"value": "in_progress", "label": "Agendado"},
+    {"value": "in_process", "label": "En proceso"},
+]
+
+ESTADO_LABELS = {item["value"]: item["label"] for item in ESTADO_OPTIONS}
+VALID_ESTADO_VALUES = {item["value"] for item in ESTADO_OPTIONS}
 
 FINAL_STATES = {"1_done", "Entregado"}
+
+RESET_COHERENCE_STATES = {
+    "01_in_progress",
+    "02_changes_requested",
+    "03_approved",
+    "04_waiting_material",
+    "04_waiting_normal",
+    "1_canceled",
+    "1_cancelled",
+    "Ya no Quiere",
+    "Ya no quiere",
+    "Agendar Con Bot",
+    "En progreso",
+    "in_progress",
+    "in_process",
+}
 
 # =========================
 # HELPERS
 # =========================
+def log(*args):
+    print("[ENCARGADO]", *args, flush=True)
+
+
 def json_error(message, status=400):
     return jsonify({"error": str(message)}), status
 
@@ -225,7 +266,6 @@ def require_token():
             TOKENS.pop(token, None)
             return None, json_error("Tu sesión venció.", 401)
 
-        # renueva TTL al usarlo
         meta["exp"] = time.time() + TOKEN_TTL_SECONDS
 
     return token, None
@@ -248,6 +288,49 @@ def normalize_iso_to_odoo(val):
         return s
 
     return val
+
+
+def options_to_json(values):
+    return [{"value": v, "label": v} for v in values]
+
+
+def extract_invalid_optional_fields(error_text, fields):
+    bad = []
+    msg = str(error_text or "")
+    for f in OPTIONAL_FIELDS:
+        if f in fields and f in msg:
+            bad.append(f)
+    return bad
+
+
+def extract_order_text(value):
+    if isinstance(value, list) and len(value) >= 2:
+        return value[1] or ""
+    return ""
+
+
+def apply_state_coherence(update_data, estado_in, current):
+    estado = normalize_state(estado_in)
+    if not estado:
+        return
+
+    if estado in RESET_COHERENCE_STATES:
+        update_data[FIELD_VERIF] = False
+        update_data[FIELD_FECHA_TRABAJADO] = False
+        update_data[FIELD_TRABAJADO_POR] = False
+
+    elif estado == "TRABAJADO":
+        update_data[FIELD_VERIF] = True
+
+        if not update_data.get(FIELD_FECHA_TRABAJADO):
+            update_data[FIELD_FECHA_TRABAJADO] = (
+                current.get(FIELD_FECHA_TRABAJADO) or now_lima_str()
+            )
+
+        if FIELD_TRABAJADO_POR not in update_data:
+            existing_tp = current.get(FIELD_TRABAJADO_POR)
+            if existing_tp:
+                update_data[FIELD_TRABAJADO_POR] = existing_tp
 
 
 # =========================
@@ -321,7 +404,6 @@ def odoo_execute_kw(model, method, args=None, kwargs=None, req_id=2, retry=True)
         err = data["error"]
         msg = err.get("data", {}).get("message") or err.get("message") or "Error en Odoo"
 
-        # si caducó algo, reintenta 1 vez
         if retry and ("Access denied" in msg or "Session" in msg or "login" in msg.lower()):
             login_odoo(force=True)
             return odoo_execute_kw(model, method, args, kwargs, req_id=req_id, retry=False)
@@ -332,14 +414,32 @@ def odoo_execute_kw(model, method, args=None, kwargs=None, req_id=2, retry=True)
 
 
 def read_task(tarea_id, fields):
-    result = odoo_execute_kw(
-        "project.task",
-        "read",
-        args=[[tarea_id], fields],
-        kwargs={},
-        req_id=9,
-    )
-    return result[0] if isinstance(result, list) and result else {}
+    try:
+        result = odoo_execute_kw(
+            "project.task",
+            "read",
+            args=[[tarea_id], fields],
+            kwargs={},
+            req_id=9,
+        )
+        return result[0] if isinstance(result, list) and result else {}
+    except Exception as e:
+        bad = extract_invalid_optional_fields(str(e), fields)
+        if not bad:
+            raise
+
+        fallback_fields = [f for f in fields if f not in bad]
+        result = odoo_execute_kw(
+            "project.task",
+            "read",
+            args=[[tarea_id], fallback_fields],
+            kwargs={},
+            req_id=10,
+        )
+        rec = result[0] if isinstance(result, list) and result else {}
+        for missing in bad:
+            rec[missing] = False
+        return rec
 
 
 def search_read_tasks(domain, fields, order="create_date desc", limit=500):
@@ -352,14 +452,11 @@ def search_read_tasks(domain, fields, order="create_date desc", limit=500):
             req_id=5,
         )
     except Exception as e:
-        msg = str(e)
-        invalid_optionals = [f for f in OPTIONAL_FIELDS if f in msg]
-
-        if not invalid_optionals:
+        bad = extract_invalid_optional_fields(str(e), fields)
+        if not bad:
             raise
 
-        fallback_fields = [f for f in fields if f not in invalid_optionals]
-
+        fallback_fields = [f for f in fields if f not in bad]
         rows = odoo_execute_kw(
             "project.task",
             "search_read",
@@ -369,16 +466,30 @@ def search_read_tasks(domain, fields, order="create_date desc", limit=500):
         )
 
         for row in rows:
-            for missing in invalid_optionals:
+            for missing in bad:
                 row[missing] = False
 
         return rows
 
 
+def write_task(tarea_id, update_data, req_id=20):
+    log("WRITE tarea_id =", tarea_id)
+    log("WRITE data =", update_data)
+
+    ok = odoo_execute_kw(
+        "project.task",
+        "write",
+        args=[[tarea_id], update_data],
+        kwargs={},
+        req_id=req_id,
+    )
+
+    log("WRITE ok =", ok)
+    return ok
+
+
 def task_to_payload(rec):
-    orden_texto = ""
-    if isinstance(rec.get(FIELD_ORDEN), list) and len(rec.get(FIELD_ORDEN)) >= 2:
-        orden_texto = rec[FIELD_ORDEN][1] or ""
+    orden_texto = extract_order_text(rec.get(FIELD_ORDEN))
 
     payload = {
         "id": rec.get("id"),
@@ -387,6 +498,7 @@ def task_to_payload(rec):
         "estado_code": rec.get(FIELD_ESTADO) or "",
         "estado_label": estado_bonito(rec.get(FIELD_ESTADO)),
         "fecha_trabajado": rec.get(FIELD_FECHA_TRABAJADO) or False,
+        "fecha_a_trabajarlo": rec.get(FIELD_FECHA_A_TRABAJAR) or False,
         "fecha_entrega": rec.get(FIELD_FECHA_ENTREGA) or False,
         "orden_texto": orden_texto,
         "orden_numero": limpiar_numero(orden_texto),
@@ -401,12 +513,8 @@ def task_to_payload(rec):
     return payload
 
 
-def options_to_json(values):
-    return [{"value": v, "label": v} for v in values]
-
-
 # =========================
-# RUTAS HTML
+# RUTA HTML
 # =========================
 @encargado_bp.route("/trabajo-general")
 def trabajo_general_home():
@@ -465,6 +573,7 @@ def trabajo_general_options():
         "responsables": options_to_json(RESPONSABLE_OPTIONS),
         "ubicaciones": options_to_json(UBICACION_OPTIONS),
         "trabajado_por": options_to_json(TRABAJADO_POR_OPTIONS),
+        "estados": ESTADO_OPTIONS,
     })
 
 
@@ -483,25 +592,12 @@ def trabajo_general_tasks():
             [FIELD_ESTADO, "not in", list(FINAL_STATES)],
         ]
 
-        fields = [
-            "id",
-            FIELD_MODELO,
-            FIELD_DETALLE,
-            FIELD_FECHA_TRABAJADO,
-            FIELD_FECHA_ENTREGA,
-            FIELD_ORDEN,
-            FIELD_PASADORES,
-            FIELD_PLANTILLAS,
-            FIELD_RESPONSABLE,
-            FIELD_UBICACION,
-            FIELD_ESTADO,
-            FIELD_VERIF,
-            FIELD_TRABAJADO_POR,
-            FIELD_ANDAMIO,
-            FIELD_CREATE_DATE,
-        ]
-
-        result = search_read_tasks(domain, fields, order=f"{FIELD_CREATE_DATE} desc", limit=500)
+        result = search_read_tasks(
+            domain,
+            COMMON_TASK_FIELDS,
+            order=f"{FIELD_CREATE_DATE} desc",
+            limit=500,
+        )
 
         q = (request.args.get("q", "") or "").strip().lower()
         payload = [task_to_payload(r) for r in (result or [])]
@@ -514,11 +610,13 @@ def trabajo_general_tasks():
                     str(row.get("detalle", "")),
                     str(row.get("estado_label", "")),
                     str(row.get("fecha_trabajado", "")),
+                    str(row.get("fecha_a_trabajarlo", "")),
                     str(row.get("fecha_entrega", "")),
                     str(row.get("orden_texto", "")),
                     str(row.get("orden_numero", "")),
                     str(row.get("responsable", "")),
                     str(row.get("ubicacion_seguimiento", "")),
+                    str(row.get("trabajado_por", "")),
                 ]).lower()
                 if q in blob:
                     filtered.append(row)
@@ -527,6 +625,7 @@ def trabajo_general_tasks():
         return jsonify({"result": payload})
 
     except Exception as e:
+        log("ERROR /tasks =", str(e))
         return jsonify({"error": str(e), "result": []}), 500
 
 
@@ -543,6 +642,7 @@ def trabajo_general_update_task(tarea_id):
         body = request.get_json(silent=True) or {}
         data = body.get("data", {}) or {}
 
+        current = read_task(tarea_id, COMMON_TASK_FIELDS)
         update_data = {}
 
         if FIELD_RESPONSABLE in data:
@@ -557,39 +657,28 @@ def trabajo_general_update_task(tarea_id):
                 return json_error("Ubicación no válida.", 400)
             update_data[FIELD_UBICACION] = ubicacion or False
 
+        if FIELD_ESTADO in data:
+            estado = normalize_state(data.get(FIELD_ESTADO))
+            if estado and estado not in VALID_ESTADO_VALUES:
+                return json_error("Estado no válido.", 400)
+
+            update_data[FIELD_ESTADO] = estado or False
+            apply_state_coherence(update_data, estado, current)
+
+        if FIELD_FECHA_TRABAJADO in data:
+            update_data[FIELD_FECHA_TRABAJADO] = normalize_iso_to_odoo(
+                data.get(FIELD_FECHA_TRABAJADO)
+            )
+
         if not update_data:
             return json_error("No hay campos válidos para actualizar.", 400)
 
-        ok = odoo_execute_kw(
-            "project.task",
-            "write",
-            args=[[tarea_id], update_data],
-            kwargs={},
-            req_id=11,
-        )
-
+        ok = write_task(tarea_id, update_data, req_id=11)
         if ok is not True:
             return json_error("Odoo no confirmó la actualización.", 500)
 
-        updated = read_task(
-            tarea_id,
-            [
-                "id",
-                FIELD_MODELO,
-                FIELD_DETALLE,
-                FIELD_FECHA_TRABAJADO,
-                FIELD_FECHA_ENTREGA,
-                FIELD_ORDEN,
-                FIELD_PASADORES,
-                FIELD_PLANTILLAS,
-                FIELD_RESPONSABLE,
-                FIELD_UBICACION,
-                FIELD_ESTADO,
-                FIELD_VERIF,
-                FIELD_TRABAJADO_POR,
-                FIELD_ANDAMIO,
-            ],
-        )
+        updated = read_task(tarea_id, COMMON_TASK_FIELDS)
+        log("UPDATED =", updated)
 
         return jsonify({
             "ok": True,
@@ -598,6 +687,7 @@ def trabajo_general_update_task(tarea_id):
         })
 
     except Exception as e:
+        log("ERROR /update =", str(e))
         return jsonify({"error": str(e)}), 500
 
 
@@ -613,26 +703,7 @@ def trabajo_general_toggle_listo(tarea_id):
     try:
         body = request.get_json(silent=True) or {}
 
-        actual = read_task(
-            tarea_id,
-            [
-                "id",
-                FIELD_ESTADO,
-                FIELD_FECHA_TRABAJADO,
-                FIELD_VERIF,
-                FIELD_TRABAJADO_POR,
-                FIELD_ANDAMIO,
-                FIELD_MODELO,
-                FIELD_DETALLE,
-                FIELD_FECHA_ENTREGA,
-                FIELD_ORDEN,
-                FIELD_PASADORES,
-                FIELD_PLANTILLAS,
-                FIELD_RESPONSABLE,
-                FIELD_UBICACION,
-            ],
-        )
-
+        actual = read_task(tarea_id, COMMON_TASK_FIELDS)
         estado_actual = normalize_state(actual.get(FIELD_ESTADO))
         estaba_listo = (estado_actual == "TRABAJADO")
 
@@ -653,7 +724,6 @@ def trabajo_general_toggle_listo(tarea_id):
             }
             msg = "Marcado como listo."
         else:
-            # mismo comportamiento lógico de desmarcar listo
             data_to_update = {
                 FIELD_ESTADO: "03_approved",
                 FIELD_VERIF: False,
@@ -662,36 +732,12 @@ def trabajo_general_toggle_listo(tarea_id):
             }
             msg = "Listo desmarcado."
 
-        ok = odoo_execute_kw(
-            "project.task",
-            "write",
-            args=[[tarea_id], data_to_update],
-            kwargs={},
-            req_id=12,
-        )
-
+        ok = write_task(tarea_id, data_to_update, req_id=12)
         if ok is not True:
             return json_error("Odoo no confirmó el cambio.", 500)
 
-        updated = read_task(
-            tarea_id,
-            [
-                "id",
-                FIELD_MODELO,
-                FIELD_DETALLE,
-                FIELD_FECHA_TRABAJADO,
-                FIELD_FECHA_ENTREGA,
-                FIELD_ORDEN,
-                FIELD_PASADORES,
-                FIELD_PLANTILLAS,
-                FIELD_RESPONSABLE,
-                FIELD_UBICACION,
-                FIELD_ESTADO,
-                FIELD_VERIF,
-                FIELD_TRABAJADO_POR,
-                FIELD_ANDAMIO,
-            ],
-        )
+        updated = read_task(tarea_id, COMMON_TASK_FIELDS)
+        log("UPDATED =", updated)
 
         return jsonify({
             "ok": True,
@@ -700,6 +746,7 @@ def trabajo_general_toggle_listo(tarea_id):
         })
 
     except Exception as e:
+        log("ERROR /toggle_listo =", str(e))
         return jsonify({"error": str(e)}), 500
 
 
@@ -717,36 +764,12 @@ def trabajo_general_complete(tarea_id):
             FIELD_ESTADO: "1_done",
         }
 
-        ok = odoo_execute_kw(
-            "project.task",
-            "write",
-            args=[[tarea_id], data_to_update],
-            kwargs={},
-            req_id=13,
-        )
-
+        ok = write_task(tarea_id, data_to_update, req_id=13)
         if ok is not True:
             return json_error("Odoo no confirmó el completado.", 500)
 
-        updated = read_task(
-            tarea_id,
-            [
-                "id",
-                FIELD_MODELO,
-                FIELD_DETALLE,
-                FIELD_FECHA_TRABAJADO,
-                FIELD_FECHA_ENTREGA,
-                FIELD_ORDEN,
-                FIELD_PASADORES,
-                FIELD_PLANTILLAS,
-                FIELD_RESPONSABLE,
-                FIELD_UBICACION,
-                FIELD_ESTADO,
-                FIELD_VERIF,
-                FIELD_TRABAJADO_POR,
-                FIELD_ANDAMIO,
-            ],
-        )
+        updated = read_task(tarea_id, COMMON_TASK_FIELDS)
+        log("UPDATED =", updated)
 
         return jsonify({
             "ok": True,
@@ -755,4 +778,5 @@ def trabajo_general_complete(tarea_id):
         })
 
     except Exception as e:
+        log("ERROR /complete =", str(e))
         return jsonify({"error": str(e)}), 500
