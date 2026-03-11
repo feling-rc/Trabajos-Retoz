@@ -14,9 +14,6 @@ encargado_bp = Blueprint("encargado_bp", __name__)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PUBLIC_DIR = os.path.join(BASE_DIR, "public")
 
-# =========================
-# CONFIG GENERAL
-# =========================
 TZ = ZoneInfo("America/Lima")
 
 URL = os.getenv("ODOO_URL", "https://retoz.odoo.com")
@@ -32,16 +29,16 @@ HTML_CANDIDATES = [
 ]
 
 SESSION = requests.Session()
+SESSION.headers.update({"User-Agent": "TrabajoGeneral/1.0"})
+
 _UID = None
 _UID_LOCK = Lock()
 
 TOKENS = {}
 TOKENS_LOCK = Lock()
-TOKEN_TTL_SECONDS = 60 * 60 * 12  # 12 horas
+TOKEN_TTL_SECONDS = 60 * 60 * 12
 
-# =========================
-# CAMPOS ODOO
-# =========================
+
 FIELD_MODELO = "x_studio_modelo_de_par_1"
 FIELD_DETALLE = "x_studio_detalles_del_trabajo_1"
 FIELD_FECHA_TRABAJADO = "x_studio_fecha_de_trabajado"
@@ -82,73 +79,104 @@ COMMON_TASK_FIELDS = [
     FIELD_CREATE_DATE,
 ]
 
-# =========================
-# OPCIONES
-# =========================
-RESPONSABLE_OPTIONS = [
-    "PEDRO",
-    "FELING",
-    "YULI",
-    "JORGE",
-    "EZER",
-    "ALEX",
-    "SR COCO",
-    "KEVIN",
-    "SHINA",
+
+RESPONSABLE_CHOICES = [
+    ("PEDRO", "PEDRO"),
+    ("FELING", "FELING"),
+    ("YULI", "YULI"),
+    ("JORGE", "JORGE"),
+    ("EZER", "EZER"),
+    ("ALEX", "ALEX"),
+    ("SR COCO", "SR COCO"),
+    ("KEVIN", "KEVIN"),
+    ("SHINA", "SHINA"),
+    ("Ninguno", "Ninguno"),
 ]
 
-UBICACION_OPTIONS = [
-    "DEFINIDO",
-    "A-1",
-    "A-2",
-    "A-3",
-    "A-4",
-    "F-1",
-    "F-2",
-    "F-3",
-    "F-4",
-    "F-5",
-    "P-1",
-    "P-2",
-    "P-3",
-    "P-4",
-    "P-5",
-    "EN ANCHADORA",
-    "ABANDONADO 1",
-    "ABANDONADO 2",
-    "ENTREGADO",
-    "COMPLETADO",
-    "A",
-    "B",
-    "C",
-    "D",
-    "E",
-    "F",
-    "G",
-    "H",
-    "I",
-    "P-6",
-    "F-7",
+UBICACION_CHOICES = [
+    ("DEFINIDO", "DEFINIDO"),
+    ("A-1", "A-1"),
+    ("A-2", "A-2"),
+    ("A-3", "A-3"),
+    ("A-4", "A-4"),
+    ("F-1", "F-1"),
+    ("F-2", "F-2"),
+    ("F-3", "F-3"),
+    ("F-4", "F-4"),
+    ("F-5", "F-5"),
+    ("P-1", "P-1"),
+    ("P-2", "P-2"),
+    ("P-3", "P-3"),
+    ("P-4", "P-4"),
+    ("P-5", "P-5"),
+    ("EN ANCHEADORA", "EN ANCHEADORA"),
+    ("EN ANCHADORA", "EN ANCHADORA"),
+    ("ABANDONADO 1", "ABANDONADO 1"),
+    ("ABANDONADO 2", "ABANDONADO 2"),
+    ("ENTREGADO", "ENTREGADO"),
+    ("COMPLETADO", "COMPLETADO"),
+    ("A", "A"),
+    ("B", "B"),
+    ("C", "C"),
+    ("D", "D"),
+    ("E", "E"),
+    ("F", "F"),
+    ("G", "G"),
+    ("H", "H"),
+    ("I", "I"),
+    ("P-6", "P-6"),
+    ("F-7", "F-7"),
 ]
 
-TRABAJADO_POR_OPTIONS = [
-    "Pedro",
-    "Feling",
-    "Yuli",
-    "Jorge",
-    "Even Ezer",
-    "Alex",
-    "Sr Juan",
-    "Sr Coco",
-    "Kevin",
-    "Shina",
+TRABAJADO_POR_CHOICES = [
+    ("Ezer", "Ezer"),
+    ("Feling", "Feling"),
+    ("Pedro", "Pedro"),
+    ("Sr Juan", "Sr Juan"),
+    ("Sr Coco", "Sr Coco"),
+    ("Alex", "Alex"),
+    ("Jorge", "Jorge"),
+    ("Even Ezer", "Even Ezer"),
+    ("Kevin", "Kevin"),
+    ("Yuli", "Yuli"),
+    ("Shina", "Shina"),
 ]
+
+ESTADO_CHOICES = [
+    ("01_in_progress", "Agendado"),
+    ("En Ruta", "En ruta"),
+    ("02_changes_requested", "Sin material"),
+    ("03_approved", "En proceso"),
+    ("04_waiting_material", "Atrasado"),
+    ("04_waiting_normal", "Atrasado"),
+    ("1_canceled", "Cancelado"),
+    ("1_cancelled", "Cancelado"),
+    ("1_done", "Completado"),
+    ("Entregado", "Entregado"),
+    ("Ya no Quiere", "Ya no quiere"),
+    ("Ya no quiere", "Ya no quiere"),
+    ("Agendar Con Bot", "Agendar con bot"),
+    ("TRABAJADO", "Trabajado"),
+    ("Empaquetado", "Empaquetado"),
+    ("Agendado con Courier", "Agendado con courier"),
+    ("En Shalon", "En Shalon"),
+    ("En progreso", "Agendado"),
+    ("in_progress", "Agendado"),
+    ("in_process", "En proceso"),
+]
+
+RESPONSABLE_VALUES = {value for value, _ in RESPONSABLE_CHOICES}
+UBICACION_VALUES = {value for value, _ in UBICACION_CHOICES}
+TRABAJADO_POR_VALUES = {value for value, _ in TRABAJADO_POR_CHOICES}
+ESTADO_LABELS = {value: label for value, label in ESTADO_CHOICES}
+VALID_ESTADO_VALUES = {value for value, _ in ESTADO_CHOICES}
 
 TRABAJADO_POR_TO_ANDAMIO = {
     "Pedro": "PEDRO",
     "Feling": "FELING",
     "Yuli": "YULI",
     "Jorge": "JORGE",
+    "Ezer": "EZER",
     "Even Ezer": "EZER",
     "Alex": "ALEX",
     "Sr Juan": "SR JUAN",
@@ -156,31 +184,6 @@ TRABAJADO_POR_TO_ANDAMIO = {
     "Kevin": "KEVIN",
     "Shina": "SHINA",
 }
-
-ESTADO_OPTIONS = [
-    {"value": "01_in_progress", "label": "Agendado"},
-    {"value": "En Ruta", "label": "En ruta"},
-    {"value": "02_changes_requested", "label": "Sin material"},
-    {"value": "03_approved", "label": "En proceso"},
-    {"value": "04_waiting_material", "label": "Atrasado"},
-    {"value": "04_waiting_normal", "label": "Atrasado"},
-    {"value": "1_cancelled", "label": "Cancelado"},
-    {"value": "1_canceled", "label": "Cancelado"},
-    {"value": "1_done", "label": "Completado"},
-    {"value": "Entregado", "label": "Entregado"},
-    {"value": "Ya no Quiere", "label": "Ya no quiere"},
-    {"value": "Ya no quiere", "label": "Ya no quiere"},
-    {"value": "Agendar Con Bot", "label": "Agendar con bot"},
-    {"value": "TRABAJADO", "label": "Trabajado"},
-    {"value": "Empaquetado", "label": "Empaquetado"},
-    {"value": "Agendado con Courier", "label": "Agendado con courier"},
-    {"value": "En progreso", "label": "Agendado"},
-    {"value": "in_progress", "label": "Agendado"},
-    {"value": "in_process", "label": "En proceso"},
-]
-
-ESTADO_LABELS = {item["value"]: item["label"] for item in ESTADO_OPTIONS}
-VALID_ESTADO_VALUES = {item["value"] for item in ESTADO_OPTIONS}
 
 FINAL_STATES = {"1_done", "Entregado"}
 
@@ -200,9 +203,7 @@ RESET_COHERENCE_STATES = {
     "in_process",
 }
 
-# =========================
-# HELPERS
-# =========================
+
 def log(*args):
     print("[ENCARGADO]", *args, flush=True)
 
@@ -252,8 +253,8 @@ def create_token():
 
 def require_token():
     cleanup_tokens()
-
     token = request.headers.get("X-Encargado-Token", "").strip()
+
     if not token:
         return None, json_error("Acceso no autorizado.", 401)
 
@@ -290,16 +291,16 @@ def normalize_iso_to_odoo(val):
     return val
 
 
-def options_to_json(values):
-    return [{"value": v, "label": v} for v in values]
+def choices_to_json(choices):
+    return [{"value": value, "label": label} for value, label in choices]
 
 
 def extract_invalid_optional_fields(error_text, fields):
     bad = []
     msg = str(error_text or "")
-    for f in OPTIONAL_FIELDS:
-        if f in fields and f in msg:
-            bad.append(f)
+    for field in OPTIONAL_FIELDS:
+        if field in fields and field in msg:
+            bad.append(field)
     return bad
 
 
@@ -307,6 +308,15 @@ def extract_order_text(value):
     if isinstance(value, list) and len(value) >= 2:
         return value[1] or ""
     return ""
+
+
+def safe_current_andamio(current):
+    return current.get(FIELD_ANDAMIO) or False
+
+
+def compute_andamio_from_trabajado_por(trabajado_por, current):
+    mapped = TRABAJADO_POR_TO_ANDAMIO.get(str(trabajado_por or "").strip())
+    return mapped if mapped else safe_current_andamio(current)
 
 
 def apply_state_coherence(update_data, estado_in, current):
@@ -318,24 +328,25 @@ def apply_state_coherence(update_data, estado_in, current):
         update_data[FIELD_VERIF] = False
         update_data[FIELD_FECHA_TRABAJADO] = False
         update_data[FIELD_TRABAJADO_POR] = False
+        return
 
-    elif estado == "TRABAJADO":
+    if estado == "TRABAJADO":
+        tp = update_data.get(FIELD_TRABAJADO_POR)
+        if tp in (None, "", False):
+            tp = current.get(FIELD_TRABAJADO_POR)
+
+        if not tp:
+            raise Exception("Primero debes seleccionar Trabajado por.")
+
         update_data[FIELD_VERIF] = True
 
         if not update_data.get(FIELD_FECHA_TRABAJADO):
-            update_data[FIELD_FECHA_TRABAJADO] = (
-                current.get(FIELD_FECHA_TRABAJADO) or now_lima_str()
-            )
+            update_data[FIELD_FECHA_TRABAJADO] = current.get(FIELD_FECHA_TRABAJADO) or now_lima_str()
 
-        if FIELD_TRABAJADO_POR not in update_data:
-            existing_tp = current.get(FIELD_TRABAJADO_POR)
-            if existing_tp:
-                update_data[FIELD_TRABAJADO_POR] = existing_tp
+        update_data[FIELD_TRABAJADO_POR] = tp
+        update_data[FIELD_ANDAMIO] = compute_andamio_from_trabajado_por(tp, current)
 
 
-# =========================
-# ODOO HELPERS
-# =========================
 def login_odoo(force=False):
     global _UID
 
@@ -422,7 +433,6 @@ def read_task(tarea_id, fields):
             kwargs={},
             req_id=9,
         )
-        return result[0] if isinstance(result, list) and result else {}
     except Exception as e:
         bad = extract_invalid_optional_fields(str(e), fields)
         if not bad:
@@ -440,6 +450,8 @@ def read_task(tarea_id, fields):
         for missing in bad:
             rec[missing] = False
         return rec
+
+    return result[0] if isinstance(result, list) and result else {}
 
 
 def search_read_tasks(domain, fields, order="create_date desc", limit=500):
@@ -491,7 +503,7 @@ def write_task(tarea_id, update_data, req_id=20):
 def task_to_payload(rec):
     orden_texto = extract_order_text(rec.get(FIELD_ORDEN))
 
-    payload = {
+    return {
         "id": rec.get("id"),
         "modelo": rec.get(FIELD_MODELO) or "",
         "detalle": rec.get(FIELD_DETALLE) or "",
@@ -510,12 +522,8 @@ def task_to_payload(rec):
         "andamio": rec.get(FIELD_ANDAMIO) or "",
         "verificacion": bool(rec.get(FIELD_VERIF)),
     }
-    return payload
 
 
-# =========================
-# RUTA HTML
-# =========================
 @encargado_bp.route("/trabajo-general")
 def trabajo_general_home():
     html_path = find_html_file()
@@ -524,9 +532,6 @@ def trabajo_general_home():
     return send_file(html_path)
 
 
-# =========================
-# API AUTH
-# =========================
 @encargado_bp.route("/trabajo-general/api/login", methods=["POST"])
 def trabajo_general_login():
     body = request.get_json(silent=True) or {}
@@ -560,9 +565,6 @@ def trabajo_general_health():
     return jsonify({"ok": True}), 200
 
 
-# =========================
-# API OPCIONES
-# =========================
 @encargado_bp.route("/trabajo-general/api/options")
 def trabajo_general_options():
     _, err = require_token()
@@ -570,16 +572,13 @@ def trabajo_general_options():
         return err
 
     return jsonify({
-        "responsables": options_to_json(RESPONSABLE_OPTIONS),
-        "ubicaciones": options_to_json(UBICACION_OPTIONS),
-        "trabajado_por": options_to_json(TRABAJADO_POR_OPTIONS),
-        "estados": ESTADO_OPTIONS,
+        "responsables": choices_to_json(RESPONSABLE_CHOICES),
+        "ubicaciones": choices_to_json(UBICACION_CHOICES),
+        "trabajado_por": choices_to_json(TRABAJADO_POR_CHOICES),
+        "estados": choices_to_json(ESTADO_CHOICES),
     })
 
 
-# =========================
-# API LISTADO
-# =========================
 @encargado_bp.route("/trabajo-general/api/tasks")
 def trabajo_general_tasks():
     _, err = require_token()
@@ -629,9 +628,6 @@ def trabajo_general_tasks():
         return jsonify({"error": str(e), "result": []}), 500
 
 
-# =========================
-# API UPDATE CAMPOS DIRECTOS
-# =========================
 @encargado_bp.route("/trabajo-general/api/task/<int:tarea_id>/update", methods=["POST"])
 def trabajo_general_update_task(tarea_id):
     _, err = require_token()
@@ -643,32 +639,42 @@ def trabajo_general_update_task(tarea_id):
         data = body.get("data", {}) or {}
 
         current = read_task(tarea_id, COMMON_TASK_FIELDS)
+        if not current:
+            return json_error("Tarea no encontrada.", 404)
+
         update_data = {}
 
         if FIELD_RESPONSABLE in data:
             responsable = str(data.get(FIELD_RESPONSABLE) or "").strip()
-            if responsable and responsable not in RESPONSABLE_OPTIONS:
+            if responsable and responsable not in RESPONSABLE_VALUES:
                 return json_error("Responsable no válido.", 400)
             update_data[FIELD_RESPONSABLE] = responsable or False
 
         if FIELD_UBICACION in data:
             ubicacion = str(data.get(FIELD_UBICACION) or "").strip()
-            if ubicacion and ubicacion not in UBICACION_OPTIONS:
+            if ubicacion and ubicacion not in UBICACION_VALUES:
                 return json_error("Ubicación no válida.", 400)
             update_data[FIELD_UBICACION] = ubicacion or False
+
+        if FIELD_TRABAJADO_POR in data:
+            trabajado_por = str(data.get(FIELD_TRABAJADO_POR) or "").strip()
+            if trabajado_por and trabajado_por not in TRABAJADO_POR_VALUES:
+                return json_error("Trabajado por no válido.", 400)
+            update_data[FIELD_TRABAJADO_POR] = trabajado_por or False
+
+            current_state = normalize_state(data.get(FIELD_ESTADO) or current.get(FIELD_ESTADO))
+            if current_state == "TRABAJADO" and trabajado_por:
+                update_data[FIELD_ANDAMIO] = compute_andamio_from_trabajado_por(trabajado_por, current)
 
         if FIELD_ESTADO in data:
             estado = normalize_state(data.get(FIELD_ESTADO))
             if estado and estado not in VALID_ESTADO_VALUES:
                 return json_error("Estado no válido.", 400)
-
             update_data[FIELD_ESTADO] = estado or False
             apply_state_coherence(update_data, estado, current)
 
         if FIELD_FECHA_TRABAJADO in data:
-            update_data[FIELD_FECHA_TRABAJADO] = normalize_iso_to_odoo(
-                data.get(FIELD_FECHA_TRABAJADO)
-            )
+            update_data[FIELD_FECHA_TRABAJADO] = normalize_iso_to_odoo(data.get(FIELD_FECHA_TRABAJADO))
 
         if not update_data:
             return json_error("No hay campos válidos para actualizar.", 400)
@@ -691,9 +697,6 @@ def trabajo_general_update_task(tarea_id):
         return jsonify({"error": str(e)}), 500
 
 
-# =========================
-# API TOGGLE LISTO
-# =========================
 @encargado_bp.route("/trabajo-general/api/task/<int:tarea_id>/toggle_listo", methods=["POST"])
 def trabajo_general_toggle_listo(tarea_id):
     _, err = require_token()
@@ -702,17 +705,20 @@ def trabajo_general_toggle_listo(tarea_id):
 
     try:
         body = request.get_json(silent=True) or {}
-
         actual = read_task(tarea_id, COMMON_TASK_FIELDS)
+        if not actual:
+            return json_error("Tarea no encontrada.", 404)
+
         estado_actual = normalize_state(actual.get(FIELD_ESTADO))
         estaba_listo = (estado_actual == "TRABAJADO")
 
         if not estaba_listo:
-            trabajado_por = str(body.get("trabajado_por", "")).strip()
-            if not trabajado_por:
-                return json_error("Debes seleccionar “Trabajado por”.", 400)
+            trabajado_por = str(body.get("trabajado_por", "")).strip() or str(actual.get(FIELD_TRABAJADO_POR) or "").strip()
 
-            if trabajado_por not in TRABAJADO_POR_OPTIONS:
+            if not trabajado_por:
+                return json_error("Primero debes seleccionar Trabajado por.", 400)
+
+            if trabajado_por not in TRABAJADO_POR_VALUES:
                 return json_error("Valor de “Trabajado por” no válido.", 400)
 
             data_to_update = {
@@ -720,7 +726,7 @@ def trabajo_general_toggle_listo(tarea_id):
                 FIELD_VERIF: True,
                 FIELD_FECHA_TRABAJADO: now_lima_str(),
                 FIELD_TRABAJADO_POR: trabajado_por,
-                FIELD_ANDAMIO: TRABAJADO_POR_TO_ANDAMIO.get(trabajado_por, False),
+                FIELD_ANDAMIO: compute_andamio_from_trabajado_por(trabajado_por, actual),
             }
             msg = "Marcado como listo."
         else:
@@ -750,9 +756,6 @@ def trabajo_general_toggle_listo(tarea_id):
         return jsonify({"error": str(e)}), 500
 
 
-# =========================
-# API COMPLETAR
-# =========================
 @encargado_bp.route("/trabajo-general/api/task/<int:tarea_id>/complete", methods=["POST"])
 def trabajo_general_complete(tarea_id):
     _, err = require_token()
@@ -760,6 +763,10 @@ def trabajo_general_complete(tarea_id):
         return err
 
     try:
+        actual = read_task(tarea_id, COMMON_TASK_FIELDS)
+        if not actual:
+            return json_error("Tarea no encontrada.", 404)
+
         data_to_update = {
             FIELD_ESTADO: "1_done",
         }
