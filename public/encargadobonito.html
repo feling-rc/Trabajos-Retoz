@@ -1,11 +1,9 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8" />
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-  />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Trabajo general</title>
 
   <style>
@@ -874,6 +872,7 @@
     }
   </style>
 </head>
+
 <body>
   <div class="page">
     <div id="loginOverlay" class="overlay">
@@ -883,14 +882,8 @@
           <p class="login-sub">Ingresa el código para abrir el panel del supervisor.</p>
         </div>
 
-        <input
-          id="codeInput"
-          type="password"
-          maxlength="6"
-          inputmode="numeric"
-          placeholder="••••••"
-          autocomplete="off"
-        />
+        <input id="codeInput" type="password" maxlength="6" inputmode="numeric" placeholder="••••••"
+          autocomplete="off" />
 
         <button id="loginBtn" class="btn btn-green" type="button">Entrar</button>
         <div id="loginError" class="login-error"></div>
@@ -912,7 +905,7 @@
           <button id="viewTerminadosBtn" class="segment-btn" type="button">Trabajos Terminados</button>
         </div>
 
-        <div class="toolbar-row">
+        <div id="terminadosControls" class="toolbar-row">
           <div class="chip-wrap">
             <button id="personBtn" class="pill-btn" type="button">
               <span class="pill-left">
@@ -959,19 +952,17 @@
         <div class="toolbar">
           <div class="search">
             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M21 21l-4.35-4.35M10.8 18a7.2 7.2 0 1 0 0-14.4 7.2 7.2 0 0 0 0 14.4Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <path d="M21 21l-4.35-4.35M10.8 18a7.2 7.2 0 1 0 0-14.4 7.2 7.2 0 0 0 0 14.4Z" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" />
             </svg>
-            <input
-              id="searchInput"
-              type="text"
-              placeholder="Buscar orden, modelo, detalle, responsable..."
-              autocomplete="off"
-            />
+            <input id="searchInput" type="text" placeholder="Buscar orden, modelo, detalle, responsable..."
+              autocomplete="off" />
           </div>
 
           <button id="refreshBtn" class="icon-btn" type="button" title="Actualizar">
             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M21 12a9 9 0 1 1-2.64-6.36M21 4v6h-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M21 12a9 9 0 1 1-2.64-6.36M21 4v6h-6" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </button>
         </div>
@@ -1590,9 +1581,9 @@
 
             <div class="dropdown-menu js-dropdown-menu" data-dropdown-menu="${task.id}_estado">
               ${dedupeOptions(OPTIONS.estados, task.estado_code, label).map(item => {
-                const itemLabel = item.label;
-                const active = String(item.value) === String(task.estado_code || "");
-                return `
+          const itemLabel = item.label;
+          const active = String(item.value) === String(task.estado_code || "");
+          return `
                   <button
                     type="button"
                     class="menu-option js-menu-option ${active ? "active" : ""}"
@@ -1605,7 +1596,7 @@
                     <span class="check">✓</span>
                   </button>
                 `;
-              }).join("")}
+        }).join("")}
             </div>
           </div>
         `;
@@ -1633,8 +1624,8 @@
 
             <div class="dropdown-menu js-dropdown-menu" data-dropdown-menu="${task.id}_responsable">
               ${dedupeOptions(OPTIONS.responsables, task.responsable, shown).map(item => {
-                const active = String(item.value) === String(task.responsable || "");
-                return `
+          const active = String(item.value) === String(task.responsable || "");
+          return `
                   <button
                     type="button"
                     class="menu-option js-menu-option ${active ? "active" : ""}"
@@ -1647,7 +1638,7 @@
                     <span class="check">✓</span>
                   </button>
                 `;
-              }).join("")}
+        }).join("")}
             </div>
           </div>
         `;
@@ -1675,8 +1666,8 @@
 
             <div class="dropdown-menu js-dropdown-menu" data-dropdown-menu="${task.id}_ubicacion">
               ${dedupeOptions(OPTIONS.ubicaciones, task.ubicacion_seguimiento, shown).map(item => {
-                const active = String(item.value) === String(task.ubicacion_seguimiento || "");
-                return `
+          const active = String(item.value) === String(task.ubicacion_seguimiento || "");
+          return `
                   <button
                     type="button"
                     class="menu-option js-menu-option ${active ? "active" : ""}"
@@ -1689,7 +1680,7 @@
                     <span class="check">✓</span>
                   </button>
                 `;
-              }).join("")}
+        }).join("")}
             </div>
           </div>
         `;
@@ -1716,8 +1707,8 @@
 
           <div class="dropdown-menu js-dropdown-menu" data-dropdown-menu="${task.id}_trabajado_por">
             ${dedupeOptions(OPTIONS.trabajado_por, task.trabajado_por, shown).map(item => {
-              const active = String(item.value) === String(task.trabajado_por || "");
-              return `
+        const active = String(item.value) === String(task.trabajado_por || "");
+        return `
                 <button
                   type="button"
                   class="menu-option js-menu-option ${active ? "active" : ""}"
@@ -1730,7 +1721,7 @@
                   <span class="check">✓</span>
                 </button>
               `;
-            }).join("")}
+      }).join("")}
           </div>
         </div>
       `;
@@ -2117,6 +2108,8 @@
     function updateViewButtons() {
       byId("viewMesaBtn").classList.toggle("active", CURRENT_VIEW === "mesa");
       byId("viewTerminadosBtn").classList.toggle("active", CURRENT_VIEW === "terminados");
+
+      byId("terminadosControls").classList.toggle("hidden", CURRENT_VIEW !== "terminados");
       byId("filtersPanel").classList.toggle("show", CURRENT_VIEW === "terminados");
     }
 
@@ -2415,4 +2408,5 @@
     });
   </script>
 </body>
+
 </html>
