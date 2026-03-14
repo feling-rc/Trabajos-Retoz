@@ -221,7 +221,7 @@
       box-shadow: var(--shadow);
       padding: 12px;
       display: grid;
-      gap: 10px;
+      gap: 8px;
       overflow: visible;
     }
 
@@ -295,8 +295,16 @@
       border-radius: 16px;
       padding: 10px 11px;
       display: grid;
-      gap: 5px;
+      gap: 4px;
       min-height: 78px;
+    }
+
+    .detail-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-width: 0;
     }
 
     .k-label {
@@ -306,6 +314,18 @@
       letter-spacing: 0.07em;
       text-transform: uppercase;
       line-height: 1.15;
+      min-width: 0;
+    }
+
+    .tiny-inline-price {
+      font-size: 10px;
+      line-height: 1;
+      font-weight: 900;
+      color: #667085;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 0 0 auto;
     }
 
     .detail-text {
@@ -321,6 +341,25 @@
       gap: 6px;
       align-content: start;
       min-width: 0;
+    }
+
+    .micro-meta-row {
+      min-height: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 0 2px;
+      overflow: hidden;
+    }
+
+    .micro-meta {
+      font-size: 10px;
+      line-height: 1.1;
+      color: #667085;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-weight: 800;
     }
 
     .chip-wrap {
@@ -653,6 +692,10 @@
       .dropdown-menu {
         width: 204px;
       }
+
+      .tiny-inline-price {
+        max-width: 115px;
+      }
     }
   </style>
 </head>
@@ -732,37 +775,44 @@
 
     const DEFAULT_OPTIONS = {
       responsables: [
-        { value: "PEDRO", label: "PEDRO" },
-        { value: "FELING", label: "FELING" },
+        { value: "PEDRO 1", label: "PEDRO" },
+        { value: "FELING 1", label: "FELING" },
         { value: "YULI", label: "YULI" },
         { value: "JORGE", label: "JORGE" },
         { value: "EZER", label: "EZER" },
         { value: "ALEX", label: "ALEX" },
         { value: "SR COCO", label: "SR COCO" },
         { value: "KEVIN", label: "KEVIN" },
-        { value: "SHINA", label: "SHINA" }
+        { value: "SHINA", label: "SHINA" },
+        { value: "Ninguno", label: "Ninguno" }
       ],
       ubicaciones: [
-        { value: "DEFINIDO", label: "DEFINIDO" },
         { value: "A-1", label: "A-1" },
-        { value: "A-2", label: "A-2" },
-        { value: "A-3", label: "A-3" },
-        { value: "A-4", label: "A-4" },
         { value: "F-1", label: "F-1" },
         { value: "F-2", label: "F-2" },
         { value: "F-3", label: "F-3" },
         { value: "F-4", label: "F-4" },
         { value: "F-5", label: "F-5" },
+        { value: "F-6", label: "F-6" },
+        { value: "F-7", label: "F-7" },
         { value: "P-1", label: "P-1" },
         { value: "P-2", label: "P-2" },
         { value: "P-3", label: "P-3" },
         { value: "P-4", label: "P-4" },
         { value: "P-5", label: "P-5" },
-        { value: "EN ANCHADORA", label: "EN ANCHADORA" },
+        { value: "RECOGIDO", label: "RECOGIDO" },
         { value: "ABANDONADO 1", label: "ABANDONADO 1" },
         { value: "ABANDONADO 2", label: "ABANDONADO 2" },
-        { value: "ENTREGADO", label: "ENTREGADO" },
-        { value: "COMPLETADO", label: "COMPLETADO" },
+        { value: "EN ANCHADORA", label: "EN ANCHADORA" },
+        { value: "JORGE", label: "JORGE" },
+        { value: "PEDRO", label: "PEDRO" },
+        { value: "ALEX", label: "ALEX" },
+        { value: "ELIZABETH", label: "ELIZABETH" },
+        { value: "EZER", label: "EZER" },
+        { value: "KEVIN", label: "KEVIN" },
+        { value: "YULI", label: "YULI" },
+        { value: "SR COCO", label: "SR COCO" },
+        { value: "FELING", label: "FELING" },
         { value: "A", label: "A" },
         { value: "B", label: "B" },
         { value: "C", label: "C" },
@@ -772,19 +822,24 @@
         { value: "G", label: "G" },
         { value: "H", label: "H" },
         { value: "I", label: "I" },
-        { value: "P-6", label: "P-6" },
-        { value: "F-7", label: "F-7" }
+        { value: "J", label: "J" },
+        { value: "K", label: "K" },
+        { value: "A-2", label: "A-2" },
+        { value: "ENTREGADO", label: "ENTREGADO" },
+        { value: "COMPLETADO", label: "COMPLETADO" },
+        { value: "Esperando ser guardado", label: "ESPERANDO SER GUARDADO" }
       ],
       trabajado_por: [
-        { value: "Pedro", label: "Pedro" },
+        { value: "Ezer", label: "Ezer" },
         { value: "Feling", label: "Feling" },
-        { value: "Yuli", label: "Yuli" },
-        { value: "Jorge", label: "Jorge" },
-        { value: "Even Ezer", label: "Even Ezer" },
-        { value: "Alex", label: "Alex" },
+        { value: "Pedro", label: "Pedro" },
         { value: "Sr Juan", label: "Sr Juan" },
         { value: "Sr Coco", label: "Sr Coco" },
+        { value: "Alex", label: "Alex" },
+        { value: "Jorge", label: "Jorge" },
+        { value: "Even Ezer", label: "Even Ezer" },
         { value: "Kevin", label: "Kevin" },
+        { value: "Yuli", label: "Yuli" },
         { value: "Shina", label: "Shina" }
       ],
       estados: [
@@ -804,6 +859,7 @@
         { value: "TRABAJADO", label: "Trabajado" },
         { value: "Empaquetado", label: "Empaquetado" },
         { value: "Agendado con Courier", label: "Agendado con courier" },
+        { value: "En Shalon", label: "En Shalon" },
         { value: "En progreso", label: "Agendado" },
         { value: "in_progress", label: "Agendado" },
         { value: "in_process", label: "En proceso" }
@@ -823,7 +879,8 @@
       "Ya no quiere": "chip-default",
       "Agendar con bot": "chip-default",
       "Empaquetado": "chip-default",
-      "Agendado con courier": "chip-default"
+      "Agendado con courier": "chip-default",
+      "En Shalon": "chip-default"
     };
 
     const STATUS_DOT_MAP = {
@@ -839,7 +896,8 @@
       "Ya no quiere": "#ef4444",
       "Agendar con bot": "#667085",
       "Empaquetado": "#16a34a",
-      "Agendado con courier": "#0ea5e9"
+      "Agendado con courier": "#0ea5e9",
+      "En Shalon": "#667085"
     };
 
     let TOKEN = sessionStorage.getItem(STORAGE_TOKEN_KEY) || "";
@@ -913,6 +971,11 @@
       return String(value || "").replace(/\D+/g, "");
     }
 
+    function getOptionLabel(list, value) {
+      const item = (list || []).find(x => String(x.value) === String(value));
+      return item ? item.label : (value || "");
+    }
+
     function dedupeOptions(list, currentValue, currentLabel = null) {
       const out = [];
       const seen = new Set();
@@ -953,6 +1016,26 @@
       return String(task.estado_code || "").trim() === "TRABAJADO";
     }
 
+    function formatDateTimeDisplay(value) {
+      const s = String(value || "").trim();
+      if (!s || s === "False" || s === "false") return "";
+
+      const m = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?$/);
+      if (!m) return s;
+
+      const [, y, mo, d, h = "", mi = ""] = m;
+      return h ? `${d}/${mo}/${y} ${h}:${mi}` : `${d}/${mo}/${y}`;
+    }
+
+    function formatPrice(value) {
+      if (value === null || value === undefined || value === "" || value === false) return "";
+      const num = Number(String(value).replace(/,/g, "."));
+      if (Number.isFinite(num)) {
+        return `S/${Number.isInteger(num) ? num.toFixed(0) : num.toFixed(2)}`;
+      }
+      return `S/${String(value).trim()}`;
+    }
+
     function normalizeTask(raw) {
       const ordenTexto =
         raw.orden_texto ||
@@ -968,6 +1051,23 @@
         raw.estado_label ||
         estadoBonitoFromCode(estadoCode);
 
+      const responsableValue =
+        raw.responsable ||
+        raw.x_studio_responsable_r ||
+        "";
+
+      const ubicacionValue =
+        raw.ubicacion_seguimiento ||
+        raw.andamio ||
+        raw.x_studio_andamio ||
+        raw.x_studio_ubicacion_exacta_1 ||
+        "";
+
+      const trabajadoPorValue =
+        raw.trabajado_por ||
+        raw.x_studio_trabajado_por ||
+        "";
+
       return {
         id: raw.id,
         modelo: raw.modelo || raw.x_studio_modelo_de_par_1 || "Sin modelo",
@@ -980,9 +1080,21 @@
           typeof raw.pasadores !== "undefined" ? raw.pasadores : !!raw.x_studio_pasadores_1,
         plantillas:
           typeof raw.plantillas !== "undefined" ? raw.plantillas : !!raw.x_studio_plantillas_1,
-        responsable: raw.responsable || raw.x_studio_responsable_r || "",
-        ubicacion_seguimiento: raw.ubicacion_seguimiento || raw.x_studio_ubicacion_exacta_1 || "",
-        trabajado_por: raw.trabajado_por || raw.x_studio_trabajado_por || ""
+        responsable: responsableValue,
+        responsable_label: getOptionLabel(OPTIONS.responsables, responsableValue) || responsableValue,
+        ubicacion_seguimiento: ubicacionValue,
+        ubicacion_label: getOptionLabel(OPTIONS.ubicaciones, ubicacionValue) || ubicacionValue,
+        trabajado_por: trabajadoPorValue,
+        trabajado_por_label: getOptionLabel(OPTIONS.trabajado_por, trabajadoPorValue) || trabajadoPorValue,
+        fecha_entrega:
+          raw.fecha_entrega ||
+          raw.x_studio_fecha_de_entrega_1_1 ||
+          raw.x_studio_fecha_de_entrega ||
+          false,
+        precio_trabajo:
+          raw.precio_trabajo ??
+          raw.x_studio_precio_de_trabajo ??
+          ""
       };
     }
 
@@ -997,9 +1109,11 @@
           task.modelo,
           task.detalle,
           task.estado_label,
-          task.responsable,
-          task.ubicacion_seguimiento,
-          task.trabajado_por
+          task.responsable_label || task.responsable,
+          task.ubicacion_label || task.ubicacion_seguimiento,
+          task.trabajado_por_label || task.trabajado_por,
+          task.fecha_entrega,
+          task.precio_trabajo
         ].join(" ").toLowerCase();
 
         return blob.includes(q);
@@ -1019,10 +1133,10 @@
     function patchTask(tareaId, patch) {
       const idx = TASKS.findIndex(x => String(x.id) === String(tareaId));
       if (idx >= 0) {
-        TASKS[idx] = {
+        TASKS[idx] = normalizeTask({
           ...TASKS[idx],
           ...patch
-        };
+        });
       }
     }
 
@@ -1057,13 +1171,26 @@
 
     async function loadOptions() {
       byId("demoNotice").classList.add("hidden");
+
       try {
         const data = await api("/options", "GET");
+
         OPTIONS = {
-          responsables: Array.isArray(data.responsables) && data.responsables.length ? data.responsables : DEFAULT_OPTIONS.responsables,
-          ubicaciones: Array.isArray(data.ubicaciones) && data.ubicaciones.length ? data.ubicaciones : DEFAULT_OPTIONS.ubicaciones,
-          trabajado_por: Array.isArray(data.trabajado_por) && data.trabajado_por.length ? data.trabajado_por : DEFAULT_OPTIONS.trabajado_por,
-          estados: Array.isArray(data.estados) && data.estados.length ? data.estados : DEFAULT_OPTIONS.estados
+          responsables: Array.isArray(data.responsables) && data.responsables.length
+            ? data.responsables
+            : DEFAULT_OPTIONS.responsables,
+
+          ubicaciones: Array.isArray(data.ubicaciones) && data.ubicaciones.length
+            ? data.ubicaciones
+            : DEFAULT_OPTIONS.ubicaciones,
+
+          trabajado_por: Array.isArray(data.trabajado_por) && data.trabajado_por.length
+            ? data.trabajado_por
+            : DEFAULT_OPTIONS.trabajado_por,
+
+          estados: Array.isArray(data.estados) && data.estados.length
+            ? data.estados
+            : DEFAULT_OPTIONS.estados
         };
       } catch (error) {
         OPTIONS = JSON.parse(JSON.stringify(DEFAULT_OPTIONS));
@@ -1087,6 +1214,7 @@
     function chipHtml(task, type, saving) {
       if (type === "estado") {
         const label = task.estado_label || estadoBonitoFromCode(task.estado_code);
+
         return `
           <div class="chip-wrap" data-dropdown-wrap="${task.id}_estado">
             <button
@@ -1128,6 +1256,8 @@
       }
 
       if (type === "responsable") {
+        const shown = task.responsable_label || getOptionLabel(OPTIONS.responsables, task.responsable) || task.responsable || "Seleccionar";
+
         return `
           <div class="chip-wrap" data-dropdown-wrap="${task.id}_responsable">
             <button
@@ -1140,13 +1270,13 @@
               <span class="chip-dot" style="background:${task.responsable ? "#2b67b2" : "#98a2b3"}"></span>
               <span class="chip-text">
                 <span class="chip-caption">Responsable</span>
-                <span class="chip-value">${escapeHtml(task.responsable || "Seleccionar")}</span>
+                <span class="chip-value">${escapeHtml(shown)}</span>
               </span>
               <span class="chip-arrow"></span>
             </button>
 
             <div class="dropdown-menu js-dropdown-menu" data-dropdown-menu="${task.id}_responsable">
-              ${dedupeOptions(OPTIONS.responsables, task.responsable).map(item => {
+              ${dedupeOptions(OPTIONS.responsables, task.responsable, shown).map(item => {
                 const active = String(item.value) === String(task.responsable || "");
                 return `
                   <button
@@ -1168,6 +1298,8 @@
       }
 
       if (type === "ubicacion") {
+        const shown = task.ubicacion_label || getOptionLabel(OPTIONS.ubicaciones, task.ubicacion_seguimiento) || task.ubicacion_seguimiento || "Seleccionar";
+
         return `
           <div class="chip-wrap" data-dropdown-wrap="${task.id}_ubicacion">
             <button
@@ -1180,13 +1312,13 @@
               <span class="chip-dot" style="background:${task.ubicacion_seguimiento ? "#7b4db2" : "#98a2b3"}"></span>
               <span class="chip-text">
                 <span class="chip-caption">Ubicación</span>
-                <span class="chip-value">${escapeHtml(task.ubicacion_seguimiento || "Seleccionar")}</span>
+                <span class="chip-value">${escapeHtml(shown)}</span>
               </span>
               <span class="chip-arrow"></span>
             </button>
 
             <div class="dropdown-menu js-dropdown-menu" data-dropdown-menu="${task.id}_ubicacion">
-              ${dedupeOptions(OPTIONS.ubicaciones, task.ubicacion_seguimiento).map(item => {
+              ${dedupeOptions(OPTIONS.ubicaciones, task.ubicacion_seguimiento, shown).map(item => {
                 const active = String(item.value) === String(task.ubicacion_seguimiento || "");
                 return `
                   <button
@@ -1207,6 +1339,8 @@
         `;
       }
 
+      const shown = task.trabajado_por_label || getOptionLabel(OPTIONS.trabajado_por, task.trabajado_por) || task.trabajado_por || "Seleccionar";
+
       return `
         <div class="chip-wrap" data-dropdown-wrap="${task.id}_trabajado_por">
           <button
@@ -1219,13 +1353,13 @@
             <span class="chip-dot" style="background:${task.trabajado_por ? "#16a34a" : "#98a2b3"}"></span>
             <span class="chip-text">
               <span class="chip-caption">Trabajado por</span>
-              <span class="chip-value">${escapeHtml(task.trabajado_por || "Seleccionar")}</span>
+              <span class="chip-value">${escapeHtml(shown)}</span>
             </span>
             <span class="chip-arrow"></span>
           </button>
 
           <div class="dropdown-menu js-dropdown-menu" data-dropdown-menu="${task.id}_trabajado_por">
-            ${dedupeOptions(OPTIONS.trabajado_por, task.trabajado_por).map(item => {
+            ${dedupeOptions(OPTIONS.trabajado_por, task.trabajado_por, shown).map(item => {
               const active = String(item.value) === String(task.trabajado_por || "");
               return `
                 <button
@@ -1249,6 +1383,8 @@
     function cardHtml(task) {
       const saving = SAVING_IDS.has(String(task.id));
       const listo = isListo(task);
+      const fechaEntrega = formatDateTimeDisplay(task.fecha_entrega);
+      const precio = formatPrice(task.precio_trabajo);
 
       return `
         <article class="card" data-id="${task.id}">
@@ -1271,7 +1407,10 @@
               </div>
 
               <div class="detail-box">
-                <div class="k-label">Detalle de trabajo</div>
+                <div class="detail-head">
+                  <div class="k-label">Detalle de trabajo</div>
+                  ${precio ? `<div class="tiny-inline-price">Precio=${escapeHtml(precio)}</div>` : ``}
+                </div>
                 <div class="detail-text">${escapeHtml(task.detalle || "-")}</div>
               </div>
             </div>
@@ -1282,6 +1421,10 @@
               ${chipHtml(task, "ubicacion", saving)}
               ${chipHtml(task, "trabajado_por", saving)}
             </div>
+          </div>
+
+          <div class="micro-meta-row">
+            <div class="micro-meta">${fechaEntrega ? `Entrega: ${escapeHtml(fechaEntrega)}` : ""}</div>
           </div>
 
           <div class="actions">
@@ -1320,9 +1463,11 @@
       document.querySelectorAll(".dropdown-menu.open").forEach(el => {
         el.classList.remove("open", "up");
       });
+
       document.querySelectorAll(".card.menu-open").forEach(el => {
         el.classList.remove("menu-open");
       });
+
       if (!skipStateReset) OPEN_DROPDOWN = null;
     }
 
@@ -1404,7 +1549,8 @@
         patchTask(tareaId, {
           estado_code: "03_approved",
           estado_label: "En proceso",
-          trabajado_por: ""
+          trabajado_por: "",
+          trabajado_por_label: ""
         });
       }
 
@@ -1431,8 +1577,10 @@
       document.querySelectorAll(".js-chip-btn").forEach(btn => {
         btn.addEventListener("click", function (e) {
           e.stopPropagation();
+
           const taskId = this.dataset.id;
           const type = this.dataset.type;
+
           const sameOpen =
             OPEN_DROPDOWN &&
             String(OPEN_DROPDOWN.taskId) === String(taskId) &&
@@ -1484,15 +1632,22 @@
 
           if (type === "responsable") {
             const prev = task.responsable || "";
+            const prevLabel = task.responsable_label || "";
+            const newLabel = getOptionLabel(OPTIONS.responsables, value) || value;
+
             await quickUpdateTask(
               tareaId,
               { x_studio_responsable_r: value || false },
               () => {
-                patchTask(tareaId, { responsable: prev });
+                patchTask(tareaId, {
+                  responsable: prev,
+                  responsable_label: prevLabel
+                });
               },
               "Responsable actualizado.",
               {
-                responsable: value || ""
+                responsable: value || "",
+                responsable_label: newLabel
               }
             );
             return;
@@ -1500,30 +1655,44 @@
 
           if (type === "ubicacion") {
             const prev = task.ubicacion_seguimiento || "";
+            const prevLabel = task.ubicacion_label || "";
+            const newLabel = getOptionLabel(OPTIONS.ubicaciones, value) || value;
+
             await quickUpdateTask(
               tareaId,
-              { x_studio_ubicacion_exacta_1: value || false },
+              { x_studio_andamio: value || false },
               () => {
-                patchTask(tareaId, { ubicacion_seguimiento: prev });
+                patchTask(tareaId, {
+                  ubicacion_seguimiento: prev,
+                  ubicacion_label: prevLabel
+                });
               },
               "Ubicación actualizada.",
               {
-                ubicacion_seguimiento: value || ""
+                ubicacion_seguimiento: value || "",
+                ubicacion_label: newLabel
               }
             );
             return;
           }
 
           const prevTrab = task.trabajado_por || "";
+          const prevTrabLabel = task.trabajado_por_label || "";
+          const newTrabLabel = getOptionLabel(OPTIONS.trabajado_por, value) || value;
+
           await quickUpdateTask(
             tareaId,
             { x_studio_trabajado_por: value || false },
             () => {
-              patchTask(tareaId, { trabajado_por: prevTrab });
+              patchTask(tareaId, {
+                trabajado_por: prevTrab,
+                trabajado_por_label: prevTrabLabel
+              });
             },
             "Trabajado por actualizado.",
             {
-              trabajado_por: value || ""
+              trabajado_por: value || "",
+              trabajado_por_label: newTrabLabel
             }
           );
         });
@@ -1552,6 +1721,7 @@
 
       try {
         const code = (input.value || "").trim();
+
         if (!code) {
           err.textContent = "Ingresa el código.";
           return;
@@ -1586,6 +1756,7 @@
 
     function startAutoRefresh() {
       clearInterval(REFRESH_TIMER);
+
       REFRESH_TIMER = setInterval(async () => {
         if (!TOKEN) return;
         if (SAVING_IDS.size > 0) return;
@@ -1601,21 +1772,15 @@
     }
 
     window.addEventListener("click", function () {
-      if (OPEN_DROPDOWN) {
-        closeAllDropdowns();
-      }
+      if (OPEN_DROPDOWN) closeAllDropdowns();
     });
 
     window.addEventListener("resize", function () {
-      if (OPEN_DROPDOWN) {
-        closeAllDropdowns();
-      }
+      if (OPEN_DROPDOWN) closeAllDropdowns();
     });
 
     window.addEventListener("scroll", function () {
-      if (OPEN_DROPDOWN) {
-        closeAllDropdowns();
-      }
+      if (OPEN_DROPDOWN) closeAllDropdowns();
     }, { passive: true });
 
     window.addEventListener("load", async () => {
