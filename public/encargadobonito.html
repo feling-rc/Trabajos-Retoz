@@ -40,9 +40,6 @@
       --soft-teal-text: #0f766e;
 
       --radius-xl: 22px;
-      --radius-lg: 16px;
-      --radius-md: 12px;
-      --radius-sm: 10px;
     }
 
     * {
@@ -74,7 +71,7 @@
       top: 0;
       z-index: 80;
       backdrop-filter: blur(12px);
-      background: rgba(244, 246, 248, 0.9);
+      background: rgba(244, 246, 248, 0.92);
       border-bottom: 1px solid rgba(230, 235, 241, 0.88);
     }
 
@@ -177,6 +174,170 @@
       width: 20px;
       height: 20px;
       color: var(--text);
+    }
+
+    .toolbar-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .pill-btn {
+      width: 100%;
+      min-height: 44px;
+      border: 1px solid var(--stroke);
+      background: var(--surface);
+      border-radius: 999px;
+      box-shadow: var(--shadow);
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 900;
+      color: var(--text);
+    }
+
+    .pill-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .pill-label {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .pill-arrow {
+      width: 8px;
+      height: 8px;
+      border-right: 2px solid currentColor;
+      border-bottom: 2px solid currentColor;
+      transform: rotate(45deg) translateY(-1px);
+      opacity: 0.75;
+      flex: 0 0 auto;
+    }
+
+    .segmented {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      padding: 4px;
+      background: #eef2f6;
+      border-radius: 999px;
+    }
+
+    .segment-btn {
+      border: none;
+      background: transparent;
+      color: #516171;
+      border-radius: 999px;
+      padding: 10px 12px;
+      font-size: 12px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .segment-btn.active {
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: 0 4px 12px rgba(16, 24, 40, 0.08);
+    }
+
+    .filters-panel {
+      display: none;
+      background: var(--surface);
+      border: 1px solid var(--stroke);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 10px;
+      gap: 10px;
+    }
+
+    .filters-panel.show {
+      display: grid;
+    }
+
+    .filter-mode-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .filter-mode-btn {
+      border: none;
+      background: #eef2f6;
+      color: #516171;
+      border-radius: 12px;
+      padding: 10px;
+      font-size: 12px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .filter-mode-btn.active {
+      background: #ddeeff;
+      color: #2b67b2;
+    }
+
+    .filter-fields {
+      display: grid;
+      gap: 8px;
+    }
+
+    .date-row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .filter-field {
+      background: #f8fafc;
+      border: 1px solid var(--stroke);
+      border-radius: 14px;
+      padding: 10px 12px;
+      display: grid;
+      gap: 6px;
+    }
+
+    .filter-field label {
+      font-size: 11px;
+      font-weight: 900;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .filter-field input,
+    .filter-field select {
+      border: none;
+      outline: none;
+      background: transparent;
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 700;
+      width: 100%;
+    }
+
+    .meta-strip {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 0 2px;
+    }
+
+    .meta-text {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--muted);
     }
 
     .container {
@@ -680,6 +841,20 @@
       }
     }
 
+    @media (max-width: 640px) {
+      .toolbar-row {
+        grid-template-columns: 1fr;
+      }
+
+      .filter-mode-row {
+        grid-template-columns: 1fr;
+      }
+
+      .date-row-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+
     @media (max-width: 420px) {
       .card-top {
         grid-template-columns: minmax(0, 1fr) 126px;
@@ -727,9 +902,58 @@
         <div class="hero">
           <div>
             <h1 class="title">Trabajo general</h1>
-            <div class="subtitle">Panel compacto para supervisor</div>
+            <div class="subtitle">Entrada rápida con últimos 20 y búsqueda puntual por orden.</div>
           </div>
           <div id="countBadge" class="count-pill">0 pares</div>
+        </div>
+
+        <div class="segmented">
+          <button id="viewMesaBtn" class="segment-btn active" type="button">Trabajos en Mesa</button>
+          <button id="viewTerminadosBtn" class="segment-btn" type="button">Trabajos Terminados</button>
+        </div>
+
+        <div class="toolbar-row">
+          <div class="chip-wrap">
+            <button id="personBtn" class="pill-btn" type="button">
+              <span class="pill-left">
+                <span>👤</span>
+                <span id="personLabel" class="pill-label">Feling Reyes</span>
+              </span>
+              <span class="pill-arrow"></span>
+            </button>
+
+            <div id="personMenu" class="dropdown-menu">
+              <!-- se llena por JS -->
+            </div>
+          </div>
+
+          <div class="chip-wrap">
+            <button id="filterTypeBtn" class="pill-btn" type="button">
+              <span class="pill-left">
+                <span>📅</span>
+                <span id="filterTypeLabel" class="pill-label">La Fecha es</span>
+              </span>
+              <span class="pill-arrow"></span>
+            </button>
+
+            <div id="filterTypeMenu" class="dropdown-menu">
+              <button class="menu-option js-filter-type" data-filter-type="day" type="button">
+                <span class="opt-dot" style="background:#2b67b2"></span>
+                <span>La Fecha es</span>
+                <span class="check">✓</span>
+              </button>
+              <button class="menu-option js-filter-type" data-filter-type="range" type="button">
+                <span class="opt-dot" style="background:#7b4db2"></span>
+                <span>La Fecha es Entre</span>
+                <span class="check">✓</span>
+              </button>
+              <button class="menu-option js-filter-type" data-filter-type="month" type="button">
+                <span class="opt-dot" style="background:#c98300"></span>
+                <span>El Mes es</span>
+                <span class="check">✓</span>
+              </button>
+            </div>
+          </div>
         </div>
 
         <div class="toolbar">
@@ -750,6 +974,42 @@
               <path d="M21 12a9 9 0 1 1-2.64-6.36M21 4v6h-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </button>
+        </div>
+
+        <div id="filtersPanel" class="filters-panel">
+          <div class="filter-mode-row">
+            <button id="modeDayBtn" class="filter-mode-btn active" type="button">La Fecha es</button>
+            <button id="modeRangeBtn" class="filter-mode-btn" type="button">La Fecha es Entre</button>
+            <button id="modeMonthBtn" class="filter-mode-btn" type="button">El Mes es</button>
+          </div>
+
+          <div id="filterFields" class="filter-fields">
+            <div id="dayField" class="filter-field">
+              <label for="dateExact">Fecha</label>
+              <input id="dateExact" type="date" />
+            </div>
+
+            <div id="rangeField" class="date-row-2 hidden">
+              <div class="filter-field">
+                <label for="dateFrom">Desde</label>
+                <input id="dateFrom" type="date" />
+              </div>
+              <div class="filter-field">
+                <label for="dateTo">Hasta</label>
+                <input id="dateTo" type="date" />
+              </div>
+            </div>
+
+            <div id="monthField" class="filter-field hidden">
+              <label for="monthInput">Mes</label>
+              <input id="monthInput" type="month" />
+            </div>
+          </div>
+        </div>
+
+        <div class="meta-strip">
+          <div id="metaText" class="meta-text">Mostrando últimos 20 en mesa.</div>
+          <div id="modeHint" class="meta-text">Vista actual: Mesa</div>
         </div>
       </div>
     </header>
@@ -772,6 +1032,21 @@
     const API_ROOT = "/trabajo-general/api";
     const STORAGE_TOKEN_KEY = "trabajo_general_token";
     const REFRESH_MS = 8000;
+    const SEARCH_DEBOUNCE_MS = 350;
+    const INITIAL_LIMIT = 20;
+    const SEARCH_LIMIT = 80;
+
+    const PERSONS = [
+      { name: "Pedro Reyes", trabajadoPor: "Pedro" },
+      { name: "Feling Reyes", trabajadoPor: "Feling" },
+      { name: "Yuli Cueto", trabajadoPor: "Yuli" },
+      { name: "Jorge Leon", trabajadoPor: "Jorge" },
+      { name: "Even Ezer", trabajadoPor: "Even Ezer" },
+      { name: "Alex", trabajadoPor: "Alex" },
+      { name: "Sr: Juan", trabajadoPor: "Sr Juan" },
+      { name: "Sr: Coco", trabajadoPor: "Sr Coco" },
+      { name: "Kevin", trabajadoPor: "Kevin" }
+    ];
 
     const DEFAULT_OPTIONS = {
       responsables: [
@@ -902,11 +1177,20 @@
 
     let TOKEN = sessionStorage.getItem(STORAGE_TOKEN_KEY) || "";
     let OPTIONS = JSON.parse(JSON.stringify(DEFAULT_OPTIONS));
-    let TASKS = [];
-    let REFRESH_TIMER = null;
-    let SAVING_IDS = new Set();
-    let OPEN_DROPDOWN = null;
+
+    let CURRENT_VIEW = "mesa";
+    let CURRENT_PERSON = PERSONS.find(p => p.name === "Feling Reyes") || PERSONS[0];
+    let FILTER_MODE = "day";
+
+    let TASKS_MESA = [];
+    let TASKS_TERMINADOS = [];
+
     let LAST_SCROLL_Y = 0;
+    let REFRESH_TIMER = null;
+    let OPEN_DROPDOWN = null;
+    let SAVING_IDS = new Set();
+    let SEARCH_TIMER = null;
+    let CURRENT_SEARCH = "";
 
     function byId(id) {
       return document.getElementById(id);
@@ -919,6 +1203,16 @@
         .replaceAll(">", "&gt;")
         .replaceAll('"', "&quot;")
         .replaceAll("'", "&#039;");
+    }
+
+    function saveScroll() {
+      LAST_SCROLL_Y = window.scrollY || window.pageYOffset || 0;
+    }
+
+    function restoreScroll() {
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: LAST_SCROLL_Y, left: 0, behavior: "auto" });
+      });
     }
 
     function showToast(message, isError = false) {
@@ -955,16 +1249,6 @@
       byId("emptyBox").classList.add("hidden");
       byId("errorBox").textContent = message || "Ocurrió un error.";
       byId("errorBox").classList.remove("hidden");
-    }
-
-    function saveScroll() {
-      LAST_SCROLL_Y = window.scrollY || window.pageYOffset || 0;
-    }
-
-    function restoreScroll() {
-      requestAnimationFrame(() => {
-        window.scrollTo({ top: LAST_SCROLL_Y, left: 0, behavior: "auto" });
-      });
     }
 
     function cleanDigits(value) {
@@ -1036,6 +1320,14 @@
       return `S/${String(value).trim()}`;
     }
 
+    function toDateOnlyKey(value) {
+      const s = String(value || "").trim();
+      if (!s) return "";
+      const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+      return "";
+    }
+
     function normalizeTask(raw) {
       const ordenTexto =
         raw.orden_texto ||
@@ -1060,7 +1352,6 @@
         raw.ubicacion_seguimiento ||
         raw.andamio ||
         raw.x_studio_andamio ||
-        raw.x_studio_ubicacion_exacta_1 ||
         "";
 
       const trabajadoPorValue =
@@ -1091,53 +1382,19 @@
           raw.x_studio_fecha_de_entrega_1_1 ||
           raw.x_studio_fecha_de_entrega ||
           false,
+        fecha_trabajado:
+          raw.fecha_trabajado ||
+          raw.x_studio_fecha_de_trabajado ||
+          false,
+        verificacion:
+          typeof raw.verificacion !== "undefined"
+            ? !!raw.verificacion
+            : !!raw.x_studio_verificacion_de_excel,
         precio_trabajo:
           raw.precio_trabajo ??
           raw.x_studio_precio_de_trabajo ??
           ""
       };
-    }
-
-    function filterTasks() {
-      const q = (byId("searchInput").value || "").trim().toLowerCase();
-      if (!q) return TASKS;
-
-      return TASKS.filter(task => {
-        const blob = [
-          task.orden_texto,
-          task.orden_numero,
-          task.modelo,
-          task.detalle,
-          task.estado_label,
-          task.responsable_label || task.responsable,
-          task.ubicacion_label || task.ubicacion_seguimiento,
-          task.trabajado_por_label || task.trabajado_por,
-          task.fecha_entrega,
-          task.precio_trabajo
-        ].join(" ").toLowerCase();
-
-        return blob.includes(q);
-      });
-    }
-
-    function mergeTask(updated) {
-      const idx = TASKS.findIndex(x => String(x.id) === String(updated.id));
-      if (idx >= 0) {
-        TASKS[idx] = {
-          ...TASKS[idx],
-          ...normalizeTask(updated)
-        };
-      }
-    }
-
-    function patchTask(tareaId, patch) {
-      const idx = TASKS.findIndex(x => String(x.id) === String(tareaId));
-      if (idx >= 0) {
-        TASKS[idx] = normalizeTask({
-          ...TASKS[idx],
-          ...patch
-        });
-      }
     }
 
     async function api(path, method = "GET", body = null) {
@@ -1198,16 +1455,115 @@
       }
     }
 
-    async function loadTasks(silent = false) {
-      if (!silent) setLoading("Cargando trabajos...");
+    function getMesaQueryParams() {
+      const q = (CURRENT_SEARCH || "").trim();
+      if (q) {
+        return `?q=${encodeURIComponent(q)}&limit=${SEARCH_LIMIT}`;
+      }
+      return `?mode=latest&limit=${INITIAL_LIMIT}`;
+    }
+
+    async function loadMesa(silent = false) {
+      if (!silent) {
+        setLoading(CURRENT_SEARCH.trim() ? "Buscando trabajos..." : "Cargando últimos trabajos...");
+      }
 
       try {
-        const data = await api("/tasks", "GET");
-        TASKS = (Array.isArray(data.result) ? data.result : []).map(normalizeTask);
-        renderTasks();
+        const data = await api(`/tasks${getMesaQueryParams()}`, "GET");
+        TASKS_MESA = (Array.isArray(data.result) ? data.result : []).map(normalizeTask);
+        if (CURRENT_VIEW === "mesa") renderCurrentView();
       } catch (error) {
-        if (!TASKS.length) setError(error.message || "No se pudieron cargar los trabajos.");
-        else showToast(error.message || "No se pudo actualizar.", true);
+        if (CURRENT_VIEW === "mesa" && !TASKS_MESA.length) {
+          setError(error.message || "No se pudieron cargar los trabajos.");
+        } else {
+          showToast(error.message || "No se pudo actualizar.", true);
+        }
+      }
+    }
+
+    async function loadTerminados(silent = false) {
+      if (!silent) setLoading("Cargando trabajos terminados...");
+
+      try {
+        const trabajadoPor = CURRENT_PERSON?.trabajadoPor || "ALL";
+        const data = await api(`/terminados?trabajado_por=${encodeURIComponent(trabajadoPor)}&limit=500`, "GET");
+        TASKS_TERMINADOS = (Array.isArray(data.result) ? data.result : []).map(normalizeTask);
+        if (CURRENT_VIEW === "terminados") renderCurrentView();
+      } catch (error) {
+        if (CURRENT_VIEW === "terminados" && !TASKS_TERMINADOS.length) {
+          setError(error.message || "No se pudieron cargar los terminados.");
+        } else {
+          showToast(error.message || "No se pudo actualizar terminados.", true);
+        }
+      }
+    }
+
+    function getFilteredTerminados() {
+      const q = (CURRENT_SEARCH || "").trim().toLowerCase();
+      const exact = byId("dateExact").value;
+      const from = byId("dateFrom").value;
+      const to = byId("dateTo").value;
+      const month = byId("monthInput").value;
+
+      return TASKS_TERMINADOS.filter(task => {
+        if (q) {
+          const blob = [
+            task.orden_texto,
+            task.orden_numero,
+            task.modelo,
+            task.detalle,
+            task.estado_label,
+            task.responsable_label || task.responsable,
+            task.ubicacion_label || task.ubicacion_seguimiento,
+            task.trabajado_por_label || task.trabajado_por,
+            task.fecha_entrega,
+            task.fecha_trabajado,
+            task.precio_trabajo
+          ].join(" ").toLowerCase();
+
+          if (!blob.includes(q)) return false;
+        }
+
+        const fechaKey = toDateOnlyKey(task.fecha_trabajado);
+        if (!fechaKey) return false;
+
+        if (FILTER_MODE === "day") {
+          if (!exact) return true;
+          return fechaKey === exact;
+        }
+
+        if (FILTER_MODE === "range") {
+          if (!from || !to) return true;
+          return fechaKey >= from && fechaKey <= to;
+        }
+
+        if (FILTER_MODE === "month") {
+          if (!month) return true;
+          return fechaKey.startsWith(month + "-");
+        }
+
+        return true;
+      });
+    }
+
+    function getCurrentTasks() {
+      if (CURRENT_VIEW === "terminados") {
+        return getFilteredTerminados();
+      }
+      return TASKS_MESA;
+    }
+
+    function setMetaText() {
+      if (CURRENT_VIEW === "mesa") {
+        if ((CURRENT_SEARCH || "").trim()) {
+          byId("metaText").textContent = `Búsqueda puntual en Odoo. Máximo ${SEARCH_LIMIT} resultados.`;
+        } else {
+          byId("metaText").textContent = `Mostrando solo los últimos ${INITIAL_LIMIT} para entrada rápida.`;
+        }
+        byId("modeHint").textContent = "Vista actual: Mesa";
+      } else {
+        byId("metaText").textContent = `Historial de ${CURRENT_PERSON.name} con filtro por fecha.`;
+        byId("modeHint").textContent = "Vista actual: Terminados";
       }
     }
 
@@ -1384,7 +1740,11 @@
       const saving = SAVING_IDS.has(String(task.id));
       const listo = isListo(task);
       const fechaEntrega = formatDateTimeDisplay(task.fecha_entrega);
+      const fechaTrabajado = formatDateTimeDisplay(task.fecha_trabajado);
       const precio = formatPrice(task.precio_trabajo);
+      const extraMeta = CURRENT_VIEW === "terminados"
+        ? (fechaTrabajado ? `🕒 ${fechaTrabajado}` : "")
+        : (fechaEntrega ? `Entrega: ${fechaEntrega}` : "");
 
       return `
         <article class="card" data-id="${task.id}">
@@ -1424,7 +1784,7 @@
           </div>
 
           <div class="micro-meta-row">
-            <div class="micro-meta">${fechaEntrega ? `Entrega: ${escapeHtml(fechaEntrega)}` : ""}</div>
+            <div class="micro-meta">${escapeHtml(extraMeta || "")}</div>
           </div>
 
           <div class="actions">
@@ -1440,21 +1800,22 @@
       `;
     }
 
-    function renderTasks() {
+    function renderCurrentView() {
       clearMessages();
       closeAllDropdowns(true);
+      setMetaText();
 
-      const filtered = filterTasks();
-      byId("countBadge").textContent = `${filtered.length} pares`;
+      const current = getCurrentTasks();
+      byId("countBadge").textContent = `${current.length} pares`;
 
-      if (!filtered.length) {
+      if (!current.length) {
         byId("cards").classList.add("hidden");
         byId("emptyBox").classList.remove("hidden");
         return;
       }
 
       byId("emptyBox").classList.add("hidden");
-      byId("cards").innerHTML = filtered.map(cardHtml).join("");
+      byId("cards").innerHTML = current.map(cardHtml).join("");
       byId("cards").classList.remove("hidden");
       bindEvents();
     }
@@ -1494,7 +1855,23 @@
       }
     }
 
-    async function quickUpdateTask(tareaId, payloadData, onRollback, successMsg, patch = null) {
+    function patchInCollection(collection, tareaId, patch) {
+      const idx = collection.findIndex(x => String(x.id) === String(tareaId));
+      if (idx >= 0) {
+        collection[idx] = normalizeTask({
+          ...collection[idx],
+          ...patch
+        });
+      }
+    }
+
+    function mergeTaskEverywhere(updated) {
+      const normalized = normalizeTask(updated);
+      patchInCollection(TASKS_MESA, normalized.id, normalized);
+      patchInCollection(TASKS_TERMINADOS, normalized.id, normalized);
+    }
+
+    async function quickUpdateTask(tareaId, payloadData, rollbackFn, successMsg, patch = null) {
       const key = String(tareaId);
       if (SAVING_IDS.has(key)) return;
 
@@ -1502,20 +1879,21 @@
       SAVING_IDS.add(key);
 
       if (patch) {
-        patchTask(tareaId, patch);
-        renderTasks();
+        patchInCollection(TASKS_MESA, tareaId, patch);
+        patchInCollection(TASKS_TERMINADOS, tareaId, patch);
+        renderCurrentView();
         restoreScroll();
       }
 
       try {
         const data = await api(`/task/${tareaId}/update`, "POST", { data: payloadData });
-        if (data.task) mergeTask(data.task);
-        renderTasks();
+        if (data.task) mergeTaskEverywhere(data.task);
+        renderCurrentView();
         restoreScroll();
         showToast(successMsg || data.message || "Actualizado.");
       } catch (error) {
-        if (typeof onRollback === "function") onRollback();
-        await loadTasks(true);
+        if (typeof rollbackFn === "function") rollbackFn();
+        await reloadCurrentView(true);
         restoreScroll();
         showToast(error.message || "No se pudo guardar.", true);
       } finally {
@@ -1527,7 +1905,10 @@
       const key = String(tareaId);
       if (SAVING_IDS.has(key)) return;
 
-      const current = TASKS.find(x => String(x.id) === String(tareaId));
+      const current = getCurrentTasks().find(x => String(x.id) === String(tareaId))
+        || TASKS_MESA.find(x => String(x.id) === String(tareaId))
+        || TASKS_TERMINADOS.find(x => String(x.id) === String(tareaId));
+
       if (!current) return;
 
       if (!isListo(current) && !String(current.trabajado_por || "").trim()) {
@@ -1541,31 +1922,48 @@
       const estabaListo = isListo(current);
 
       if (!estabaListo) {
-        patchTask(tareaId, {
+        patchInCollection(TASKS_MESA, tareaId, {
+          estado_code: "TRABAJADO",
+          estado_label: "Trabajado"
+        });
+        patchInCollection(TASKS_TERMINADOS, tareaId, {
           estado_code: "TRABAJADO",
           estado_label: "Trabajado"
         });
       } else {
-        patchTask(tareaId, {
+        patchInCollection(TASKS_MESA, tareaId, {
           estado_code: "03_approved",
           estado_label: "En proceso",
           trabajado_por: "",
-          trabajado_por_label: ""
+          trabajado_por_label: "",
+          fecha_trabajado: false
+        });
+        patchInCollection(TASKS_TERMINADOS, tareaId, {
+          estado_code: "03_approved",
+          estado_label: "En proceso",
+          trabajado_por: "",
+          trabajado_por_label: "",
+          fecha_trabajado: false
         });
       }
 
-      renderTasks();
+      renderCurrentView();
       restoreScroll();
 
       try {
         const body = !estabaListo ? { trabajado_por: current.trabajado_por } : {};
         const data = await api(`/task/${tareaId}/toggle_listo`, "POST", body);
-        if (data.task) mergeTask(data.task);
-        renderTasks();
+        if (data.task) mergeTaskEverywhere(data.task);
+
+        if (CURRENT_VIEW === "terminados" && !estabaListo) {
+          await loadTerminados(true);
+        }
+
+        renderCurrentView();
         restoreScroll();
         showToast(data.message || "Actualizado.");
       } catch (error) {
-        await loadTasks(true);
+        await reloadCurrentView(true);
         restoreScroll();
         showToast(error.message || "No se pudo cambiar el listo.", true);
       } finally {
@@ -1602,7 +2000,10 @@
           const tareaId = this.dataset.id;
           const type = this.dataset.type;
           const value = this.dataset.value || "";
-          const task = TASKS.find(x => String(x.id) === String(tareaId));
+
+          const task = TASKS_MESA.find(x => String(x.id) === String(tareaId))
+            || TASKS_TERMINADOS.find(x => String(x.id) === String(tareaId));
+
           if (!task) return;
 
           closeAllDropdowns();
@@ -1616,7 +2017,11 @@
               tareaId,
               { x_studio_selection_field_3j_1ivn1ho1m: value || false },
               () => {
-                patchTask(tareaId, {
+                patchInCollection(TASKS_MESA, tareaId, {
+                  estado_code: prevCode,
+                  estado_label: prevLabel
+                });
+                patchInCollection(TASKS_TERMINADOS, tareaId, {
                   estado_code: prevCode,
                   estado_label: prevLabel
                 });
@@ -1639,10 +2044,8 @@
               tareaId,
               { x_studio_responsable_r: value || false },
               () => {
-                patchTask(tareaId, {
-                  responsable: prev,
-                  responsable_label: prevLabel
-                });
+                patchInCollection(TASKS_MESA, tareaId, { responsable: prev, responsable_label: prevLabel });
+                patchInCollection(TASKS_TERMINADOS, tareaId, { responsable: prev, responsable_label: prevLabel });
               },
               "Responsable actualizado.",
               {
@@ -1662,10 +2065,8 @@
               tareaId,
               { x_studio_andamio: value || false },
               () => {
-                patchTask(tareaId, {
-                  ubicacion_seguimiento: prev,
-                  ubicacion_label: prevLabel
-                });
+                patchInCollection(TASKS_MESA, tareaId, { ubicacion_seguimiento: prev, ubicacion_label: prevLabel });
+                patchInCollection(TASKS_TERMINADOS, tareaId, { ubicacion_seguimiento: prev, ubicacion_label: prevLabel });
               },
               "Ubicación actualizada.",
               {
@@ -1684,10 +2085,8 @@
             tareaId,
             { x_studio_trabajado_por: value || false },
             () => {
-              patchTask(tareaId, {
-                trabajado_por: prevTrab,
-                trabajado_por_label: prevTrabLabel
-              });
+              patchInCollection(TASKS_MESA, tareaId, { trabajado_por: prevTrab, trabajado_por_label: prevTrabLabel });
+              patchInCollection(TASKS_TERMINADOS, tareaId, { trabajado_por: prevTrab, trabajado_por_label: prevTrabLabel });
             },
             "Trabajado por actualizado.",
             {
@@ -1701,7 +2100,8 @@
       document.querySelectorAll(".js-toggle-listo").forEach(btn => {
         btn.addEventListener("click", async function () {
           const tareaId = this.dataset.id;
-          const task = TASKS.find(t => String(t.id) === String(tareaId));
+          const task = TASKS_MESA.find(t => String(t.id) === String(tareaId))
+            || TASKS_TERMINADOS.find(t => String(t.id) === String(tareaId));
           if (!task) return;
 
           if (isListo(task)) {
@@ -1714,6 +2114,143 @@
       });
     }
 
+    function updateViewButtons() {
+      byId("viewMesaBtn").classList.toggle("active", CURRENT_VIEW === "mesa");
+      byId("viewTerminadosBtn").classList.toggle("active", CURRENT_VIEW === "terminados");
+      byId("filtersPanel").classList.toggle("show", CURRENT_VIEW === "terminados");
+    }
+
+    function updatePersonLabel() {
+      byId("personLabel").textContent = CURRENT_PERSON.name;
+    }
+
+    function renderPersonMenu() {
+      const menu = byId("personMenu");
+      menu.innerHTML = PERSONS.map(person => {
+        const active = person.name === CURRENT_PERSON.name;
+        return `
+          <button
+            type="button"
+            class="menu-option js-person-option ${active ? "active" : ""}"
+            data-person-name="${escapeHtml(person.name)}"
+          >
+            <span class="opt-dot" style="background:${active ? "#2b67b2" : "#c4c9d1"}"></span>
+            <span>${escapeHtml(person.name)}</span>
+            <span class="check">✓</span>
+          </button>
+        `;
+      }).join("");
+
+      menu.querySelectorAll(".js-person-option").forEach(btn => {
+        btn.addEventListener("click", async function (e) {
+          e.stopPropagation();
+          const name = this.dataset.personName;
+          const found = PERSONS.find(p => p.name === name);
+          if (!found) return;
+
+          CURRENT_PERSON = found;
+          updatePersonLabel();
+          renderPersonMenu();
+          closeAllDropdowns();
+
+          if (CURRENT_VIEW === "terminados") {
+            saveScroll();
+            await loadTerminados(false);
+            restoreScroll();
+          } else {
+            renderCurrentView();
+          }
+        });
+      });
+    }
+
+    function updateFilterModeUI() {
+      byId("modeDayBtn").classList.toggle("active", FILTER_MODE === "day");
+      byId("modeRangeBtn").classList.toggle("active", FILTER_MODE === "range");
+      byId("modeMonthBtn").classList.toggle("active", FILTER_MODE === "month");
+
+      byId("dayField").classList.toggle("hidden", FILTER_MODE !== "day");
+      byId("rangeField").classList.toggle("hidden", FILTER_MODE !== "range");
+      byId("monthField").classList.toggle("hidden", FILTER_MODE !== "month");
+
+      const labelMap = {
+        day: "La Fecha es",
+        range: "La Fecha es Entre",
+        month: "El Mes es"
+      };
+      byId("filterTypeLabel").textContent = labelMap[FILTER_MODE] || "La Fecha es";
+
+      document.querySelectorAll(".js-filter-type").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.filterType === FILTER_MODE);
+      });
+    }
+
+    async function reloadCurrentView(silent = true) {
+      if (CURRENT_VIEW === "terminados") {
+        await loadTerminados(silent);
+      } else {
+        await loadMesa(silent);
+      }
+    }
+
+    function triggerSearch() {
+      clearTimeout(SEARCH_TIMER);
+      SEARCH_TIMER = setTimeout(async () => {
+        saveScroll();
+        if (CURRENT_VIEW === "mesa") {
+          await loadMesa(false);
+        } else {
+          renderCurrentView();
+        }
+        restoreScroll();
+      }, SEARCH_DEBOUNCE_MS);
+    }
+
+    function startAutoRefresh() {
+      clearInterval(REFRESH_TIMER);
+
+      REFRESH_TIMER = setInterval(async () => {
+        if (!TOKEN) return;
+        if (SAVING_IDS.size > 0) return;
+        if (OPEN_DROPDOWN) return;
+
+        if (CURRENT_VIEW === "mesa") {
+          if ((CURRENT_SEARCH || "").trim()) return;
+          const currentSearch = byId("searchInput").value;
+          saveScroll();
+          await loadMesa(true);
+          byId("searchInput").value = currentSearch;
+          CURRENT_SEARCH = currentSearch;
+          renderCurrentView();
+          restoreScroll();
+          return;
+        }
+
+        saveScroll();
+        await loadTerminados(true);
+        renderCurrentView();
+        restoreScroll();
+      }, REFRESH_MS);
+    }
+
+    async function switchView(viewName) {
+      if (CURRENT_VIEW === viewName) return;
+
+      CURRENT_VIEW = viewName;
+      updateViewButtons();
+      closeAllDropdowns();
+
+      saveScroll();
+
+      if (CURRENT_VIEW === "terminados") {
+        await loadTerminados(false);
+      } else {
+        await loadMesa(false);
+      }
+
+      restoreScroll();
+    }
+
     async function doLogin() {
       const input = byId("codeInput");
       const err = byId("loginError");
@@ -1721,7 +2258,6 @@
 
       try {
         const code = (input.value || "").trim();
-
         if (!code) {
           err.textContent = "Ingresa el código.";
           return;
@@ -1749,61 +2285,118 @@
     }
 
     async function initProtected() {
+      updatePersonLabel();
+      renderPersonMenu();
+      updateFilterModeUI();
+      updateViewButtons();
+
       await loadOptions();
-      await loadTasks(false);
+      await loadMesa(false);
       startAutoRefresh();
     }
 
-    function startAutoRefresh() {
-      clearInterval(REFRESH_TIMER);
-
-      REFRESH_TIMER = setInterval(async () => {
-        if (!TOKEN) return;
-        if (SAVING_IDS.size > 0) return;
-        if (OPEN_DROPDOWN) return;
-
-        const currentSearch = byId("searchInput").value;
-        saveScroll();
-        await loadTasks(true);
-        byId("searchInput").value = currentSearch;
-        renderTasks();
-        restoreScroll();
-      }, REFRESH_MS);
-    }
-
-    window.addEventListener("click", function () {
-      if (OPEN_DROPDOWN) closeAllDropdowns();
-    });
-
-    window.addEventListener("resize", function () {
-      if (OPEN_DROPDOWN) closeAllDropdowns();
-    });
-
-    window.addEventListener("scroll", function () {
-      if (OPEN_DROPDOWN) closeAllDropdowns();
-    }, { passive: true });
-
-    window.addEventListener("load", async () => {
+    function bindStaticEvents() {
       byId("loginBtn").addEventListener("click", doLogin);
 
       byId("codeInput").addEventListener("keydown", e => {
         if (e.key === "Enter") doLogin();
       });
 
+      byId("viewMesaBtn").addEventListener("click", async () => {
+        await switchView("mesa");
+      });
+
+      byId("viewTerminadosBtn").addEventListener("click", async () => {
+        await switchView("terminados");
+      });
+
+      byId("personBtn").addEventListener("click", function (e) {
+        e.stopPropagation();
+        const menu = byId("personMenu");
+        const isOpen = menu.classList.contains("open");
+        closeAllDropdowns();
+        menu.classList.toggle("open", !isOpen);
+      });
+
+      byId("filterTypeBtn").addEventListener("click", function (e) {
+        e.stopPropagation();
+        if (CURRENT_VIEW !== "terminados") return;
+        const menu = byId("filterTypeMenu");
+        const isOpen = menu.classList.contains("open");
+        closeAllDropdowns();
+        menu.classList.toggle("open", !isOpen);
+      });
+
+      document.querySelectorAll(".js-filter-type").forEach(btn => {
+        btn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          FILTER_MODE = this.dataset.filterType;
+          updateFilterModeUI();
+          closeAllDropdowns();
+          if (CURRENT_VIEW === "terminados") renderCurrentView();
+        });
+      });
+
+      byId("modeDayBtn").addEventListener("click", () => {
+        FILTER_MODE = "day";
+        updateFilterModeUI();
+        if (CURRENT_VIEW === "terminados") renderCurrentView();
+      });
+
+      byId("modeRangeBtn").addEventListener("click", () => {
+        FILTER_MODE = "range";
+        updateFilterModeUI();
+        if (CURRENT_VIEW === "terminados") renderCurrentView();
+      });
+
+      byId("modeMonthBtn").addEventListener("click", () => {
+        FILTER_MODE = "month";
+        updateFilterModeUI();
+        if (CURRENT_VIEW === "terminados") renderCurrentView();
+      });
+
+      byId("dateExact").addEventListener("change", () => {
+        if (CURRENT_VIEW === "terminados") renderCurrentView();
+      });
+
+      byId("dateFrom").addEventListener("change", () => {
+        if (CURRENT_VIEW === "terminados") renderCurrentView();
+      });
+
+      byId("dateTo").addEventListener("change", () => {
+        if (CURRENT_VIEW === "terminados") renderCurrentView();
+      });
+
+      byId("monthInput").addEventListener("change", () => {
+        if (CURRENT_VIEW === "terminados") renderCurrentView();
+      });
+
       byId("searchInput").addEventListener("input", () => {
-        saveScroll();
-        renderTasks();
-        restoreScroll();
+        CURRENT_SEARCH = byId("searchInput").value || "";
+        triggerSearch();
       });
 
       byId("refreshBtn").addEventListener("click", async () => {
-        const currentSearch = byId("searchInput").value;
         saveScroll();
-        await loadTasks(true);
-        byId("searchInput").value = currentSearch;
-        renderTasks();
+        await reloadCurrentView(false);
         restoreScroll();
       });
+
+      window.addEventListener("click", function () {
+        closeAllDropdowns();
+      });
+
+      window.addEventListener("resize", function () {
+        closeAllDropdowns();
+      });
+
+      window.addEventListener("scroll", function () {
+        closeAllDropdowns();
+      }, { passive: true });
+    }
+
+    window.addEventListener("load", async () => {
+      bindStaticEvents();
 
       if (TOKEN) {
         try {
