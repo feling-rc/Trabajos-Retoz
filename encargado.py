@@ -29,7 +29,7 @@ HTML_CANDIDATES = [
 ]
 
 SESSION = requests.Session()
-SESSION.headers.update({"User-Agent": "TrabajoGeneral/2.0"})
+SESSION.headers.update({"User-Agent": "TrabajoGeneral/3.0"})
 
 _UID = None
 _UID_LOCK = Lock()
@@ -47,6 +47,7 @@ OPTIONS_CACHE_SECONDS = 120
 # CAMPOS ODOO
 # =========================
 MODEL_TASK = "project.task"
+MODEL_ORDER = "sale.order"
 
 FIELD_MODELO = "x_studio_modelo_de_par_1"
 FIELD_DETALLE = "x_studio_detalles_del_trabajo_1"
@@ -64,7 +65,7 @@ FIELD_ANDAMIO = "x_studio_andamio"
 FIELD_PRECIO_TRABAJO = "x_studio_precio_de_trabajo"
 FIELD_CREATE_DATE = "create_date"
 
-# Alias viejo del frontend/backend anterior, se acepta para compatibilidad
+# Compatibilidad con código viejo
 FIELD_UBICACION_ALIAS_OLD = "x_studio_ubicacion_exacta_1"
 
 OPTIONAL_FIELDS = {
@@ -190,8 +191,6 @@ ESTADO_CHOICES_FALLBACK = [
     ("in_process", "En proceso"),
 ]
 
-FINAL_STATES = {"1_done", "Entregado"}
-
 RESET_COHERENCE_STATES = {
     "01_in_progress",
     "02_changes_requested",
@@ -208,23 +207,9 @@ RESET_COHERENCE_STATES = {
     "in_process",
 }
 
-TRABAJADO_POR_TO_ANDAMIO = {
-    "Pedro": "PEDRO",
-    "Feling": "FELING",
-    "Yuli": "YULI",
-    "Jorge": "JORGE",
-    "Ezer": "EZER",
-    "Even Ezer": "EZER",
-    "Alex": "ALEX",
-    "Sr Juan": "PEDRO",   # ajustado para no romper si SR JUAN no existe en andamio
-    "Sr Coco": "SR COCO",
-    "Kevin": "KEVIN",
-    "Shina": "SHINA",
-}
-
 
 # =========================
-# HELPERS
+# HELPERS GENERALES
 # =========================
 def log(*args):
     print("[ENCARGADO]", *args, flush=True)
@@ -486,14 +471,14 @@ def read_task(tarea_id, fields):
     return result[0] if isinstance(result, list) and result else {}
 
 
-def search_read_tasks(domain, fields, order="create_date desc", limit=500):
+def search_read_tasks(domain, fields, order="create_date desc", limit=500, req_id=5):
     try:
         return odoo_execute_kw(
             MODEL_TASK,
             "search_read",
             args=[domain],
             kwargs={"fields": fields, "order": order, "limit": limit},
-            req_id=5,
+            req_id=req_id,
         )
     except Exception as e:
         bad = extract_invalid_optional_fields(str(e), fields)
@@ -506,7 +491,7 @@ def search_read_tasks(domain, fields, order="create_date desc", limit=500):
             "search_read",
             args=[domain],
             kwargs={"fields": fallback_fields, "order": order, "limit": limit},
-            req_id=6,
+            req_id=req_id + 1,
         )
 
         for row in rows:
@@ -514,6 +499,25 @@ def search_read_tasks(domain, fields, order="create_date desc", limit=500):
                 row[missing] = False
 
         return rows
+
+
+def search_sale_order_ids(query, limit=80):
+    q = str(query or "").strip()
+    if not q:
+        return []
+
+    try:
+        ids = odoo_execute_kw(
+            MODEL_ORDER,
+            "search",
+            args=[[["name", "ilike", q]]],
+            kwargs={"limit": limit},
+            req_id=41,
+        )
+        return ids or []
+    except Exception as e:
+        log("search_sale_order_ids fallback:", str(e))
+        return []
 
 
 def write_task(tarea_id, update_data, req_id=20):
@@ -540,24 +544,7 @@ def estado_bonito(code, estado_labels):
     return estado_labels.get(key, key or "-")
 
 
-def safe_current_andamio(current):
-    return current.get(FIELD_ANDAMIO) or False
-
-
-def compute_andamio_from_trabajado_por(trabajado_por, current, valid_ubicacion_values):
-    worked = str(trabajado_por or "").strip()
-    mapped = TRABAJADO_POR_TO_ANDAMIO.get(worked)
-
-    if mapped and mapped in valid_ubicacion_values:
-        return mapped
-
-    if worked and worked.upper() in valid_ubicacion_values:
-        return worked.upper()
-
-    return safe_current_andamio(current)
-
-
-def apply_state_coherence(update_data, estado_in, current, valid_ubicacion_values):
+def apply_state_coherence(update_data, estado_in, current):
     estado = normalize_state(estado_in)
     if not estado:
         return
@@ -578,11 +565,12 @@ def apply_state_coherence(update_data, estado_in, current, valid_ubicacion_value
 
         update_data[FIELD_VERIF] = True
 
-        if not update_data.get(FIELD_FECHA_TRABAJADO):
+        if FIELD_FECHA_TRABAJADO not in update_data or not update_data.get(FIELD_FECHA_TRABAJADO):
             update_data[FIELD_FECHA_TRABAJADO] = current.get(FIELD_FECHA_TRABAJADO) or now_lima_str()
 
         update_data[FIELD_TRABAJADO_POR] = tp
-        update_data[FIELD_ANDAMIO] = compute_andamio_from_trabajado_por(tp, current, valid_ubicacion_values)
+        # NO cambiamos andamio automáticamente.
+        # El botón Marcar listo debe conservar la lógica original.
 
 
 def task_to_payload(rec, estado_labels):
@@ -607,7 +595,148 @@ def task_to_payload(rec, estado_labels):
         "andamio": rec.get(FIELD_ANDAMIO) or "",
         "verificacion": bool(rec.get(FIELD_VERIF)),
         "precio_trabajo": rec.get(FIELD_PRECIO_TRABAJO) if rec.get(FIELD_PRECIO_TRABAJO) not in (None, False) else "",
+        "create_date": rec.get(FIELD_CREATE_DATE) or "",
     }
+
+
+def sort_rows_by_create_date_desc(rows):
+    def key_fn(row):
+        return str(row.get(FIELD_CREATE_DATE) or "")
+
+    return sorted(rows, key=key_fn, reverse=True)
+
+
+def unique_rows_by_id(rows):
+    seen = set()
+    out = []
+    for row in rows:
+        rid = row.get("id")
+        if rid in seen:
+            continue
+        seen.add(rid)
+        out.append(row)
+    return out
+
+
+def search_tasks_by_query(query, limit, fields):
+    q = str(query or "").strip()
+    if not q:
+        return []
+
+    base_domain = [[FIELD_MODELO, "!=", False]]
+    buckets = []
+
+    # 1) Buscar por orden de venta (robusto)
+    order_ids = search_sale_order_ids(q, limit=limit)
+    if order_ids:
+        buckets.extend(
+            search_read_tasks(
+                base_domain + [[FIELD_ORDEN, "in", order_ids]],
+                fields,
+                order=f"{FIELD_CREATE_DATE} desc",
+                limit=limit,
+                req_id=50,
+            )
+        )
+
+    # 2) Buscar por modelo
+    buckets.extend(
+        search_read_tasks(
+            base_domain + [[FIELD_MODELO, "ilike", q]],
+            fields,
+            order=f"{FIELD_CREATE_DATE} desc",
+            limit=limit,
+            req_id=52,
+        )
+    )
+
+    # 3) Buscar por detalle
+    buckets.extend(
+        search_read_tasks(
+            base_domain + [[FIELD_DETALLE, "ilike", q]],
+            fields,
+            order=f"{FIELD_CREATE_DATE} desc",
+            limit=limit,
+            req_id=54,
+        )
+    )
+
+    # 4) Buscar por responsable
+    buckets.extend(
+        search_read_tasks(
+            base_domain + [[FIELD_RESPONSABLE, "ilike", q]],
+            fields,
+            order=f"{FIELD_CREATE_DATE} desc",
+            limit=limit,
+            req_id=56,
+        )
+    )
+
+    # 5) Buscar por trabajado por
+    buckets.extend(
+        search_read_tasks(
+            base_domain + [[FIELD_TRABAJADO_POR, "ilike", q]],
+            fields,
+            order=f"{FIELD_CREATE_DATE} desc",
+            limit=limit,
+            req_id=58,
+        )
+    )
+
+    # 6) Buscar por andamio / ubicación
+    buckets.extend(
+        search_read_tasks(
+            base_domain + [[FIELD_ANDAMIO, "ilike", q]],
+            fields,
+            order=f"{FIELD_CREATE_DATE} desc",
+            limit=limit,
+            req_id=60,
+        )
+    )
+
+    # 7) Buscar por estado
+    buckets.extend(
+        search_read_tasks(
+            base_domain + [[FIELD_ESTADO, "ilike", q]],
+            fields,
+            order=f"{FIELD_CREATE_DATE} desc",
+            limit=limit,
+            req_id=62,
+        )
+    )
+
+    rows = unique_rows_by_id(sort_rows_by_create_date_desc(buckets))
+
+    # 8) Fallback adicional por texto completo en Python
+    if len(rows) < limit:
+        text_q = q.lower()
+        fallback_rows = search_read_tasks(
+            base_domain,
+            fields,
+            order=f"{FIELD_CREATE_DATE} desc",
+            limit=max(limit * 3, 200),
+            req_id=64,
+        )
+
+        filtered = []
+        for row in fallback_rows:
+            orden_texto = extract_order_text(row.get(FIELD_ORDEN))
+            blob = " ".join([
+                str(row.get(FIELD_MODELO, "")),
+                str(row.get(FIELD_DETALLE, "")),
+                str(orden_texto),
+                str(row.get(FIELD_RESPONSABLE, "")),
+                str(row.get(FIELD_TRABAJADO_POR, "")),
+                str(row.get(FIELD_ANDAMIO, "")),
+                str(row.get(FIELD_ESTADO, "")),
+            ]).lower()
+
+            if text_q in blob:
+                filtered.append(row)
+
+        rows = unique_rows_by_id(sort_rows_by_create_date_desc(rows + filtered))
+
+    return rows[:limit]
 
 
 # =========================
@@ -688,46 +817,98 @@ def trabajo_general_tasks():
         opts = get_live_options(force=False)
         estado_labels = {value: label for value, label in opts["estados"]}
 
-        domain = [
-            [FIELD_MODELO, "!=", False],
-            [FIELD_ESTADO, "not in", list(FINAL_STATES)],
-        ]
+        q = (request.args.get("q", "") or "").strip()
+        mode = (request.args.get("mode", "") or "").strip().lower()
+        limit_raw = request.args.get("limit", "20")
 
-        result = search_read_tasks(
-            domain,
-            COMMON_TASK_FIELDS,
-            order=f"{FIELD_CREATE_DATE} desc",
-            limit=500,
-        )
+        try:
+            limit = int(limit_raw)
+        except Exception:
+            limit = 20
+
+        if limit <= 0:
+            limit = 20
+        if limit > 300:
+            limit = 300
+
+        base_fields = COMMON_TASK_FIELDS
+
+        if q:
+            result = search_tasks_by_query(q, limit, base_fields)
+        else:
+            base_domain = [[FIELD_MODELO, "!=", False]]
+            if mode == "latest":
+                result = search_read_tasks(
+                    base_domain,
+                    base_fields,
+                    order=f"{FIELD_CREATE_DATE} desc",
+                    limit=limit,
+                    req_id=70,
+                )
+            else:
+                result = search_read_tasks(
+                    base_domain,
+                    base_fields,
+                    order=f"{FIELD_CREATE_DATE} desc",
+                    limit=limit,
+                    req_id=72,
+                )
 
         payload = [task_to_payload(r, estado_labels) for r in (result or [])]
-
-        q = (request.args.get("q", "") or "").strip().lower()
-        if q:
-            filtered = []
-            for row in payload:
-                blob = " ".join([
-                    str(row.get("modelo", "")),
-                    str(row.get("detalle", "")),
-                    str(row.get("estado_label", "")),
-                    str(row.get("fecha_trabajado", "")),
-                    str(row.get("fecha_a_trabajarlo", "")),
-                    str(row.get("fecha_entrega", "")),
-                    str(row.get("orden_texto", "")),
-                    str(row.get("orden_numero", "")),
-                    str(row.get("responsable", "")),
-                    str(row.get("ubicacion_seguimiento", "")),
-                    str(row.get("trabajado_por", "")),
-                    str(row.get("precio_trabajo", "")),
-                ]).lower()
-                if q in blob:
-                    filtered.append(row)
-            payload = filtered
 
         return jsonify({"result": payload})
 
     except Exception as e:
         log("ERROR /tasks =", str(e))
+        return jsonify({"error": str(e), "result": []}), 500
+
+
+@encargado_bp.route("/trabajo-general/api/terminados")
+def trabajo_general_terminados():
+    _, err = require_token()
+    if err:
+        return err
+
+    try:
+        trabajado_por = (request.args.get("trabajado_por", "") or "").strip()
+        limit_raw = request.args.get("limit", "500")
+
+        try:
+            limit = int(limit_raw)
+        except Exception:
+            limit = 500
+
+        if limit <= 0:
+            limit = 500
+        if limit > 1000:
+            limit = 1000
+
+        opts = get_live_options(force=False)
+        estado_labels = {value: label for value, label in opts["estados"]}
+
+        domain = [
+            [FIELD_MODELO, "!=", False],
+            [FIELD_TRABAJADO_POR, "!=", False],
+            [FIELD_FECHA_TRABAJADO, "!=", False],
+            [FIELD_ESTADO, "!=", "03_approved"],
+        ]
+
+        if trabajado_por and trabajado_por.upper() != "ALL":
+            domain.append([FIELD_TRABAJADO_POR, "=", trabajado_por])
+
+        result = search_read_tasks(
+            domain,
+            COMMON_TASK_FIELDS,
+            order=f"{FIELD_FECHA_TRABAJADO} desc",
+            limit=limit,
+            req_id=80,
+        )
+
+        payload = [task_to_payload(r, estado_labels) for r in (result or [])]
+        return jsonify({"result": payload})
+
+    except Exception as e:
+        log("ERROR /terminados =", str(e))
         return jsonify({"error": str(e), "result": []}), 500
 
 
@@ -760,7 +941,6 @@ def trabajo_general_update_task(tarea_id):
                 return json_error(f"Responsable no válido: {responsable}", 400)
             update_data[FIELD_RESPONSABLE] = responsable or False
 
-        # acepta campo nuevo y alias viejo
         if FIELD_ANDAMIO in data or FIELD_UBICACION_ALIAS_OLD in data:
             raw_ubi = data.get(FIELD_ANDAMIO, data.get(FIELD_UBICACION_ALIAS_OLD))
             ubicacion = str(raw_ubi or "").strip()
@@ -772,24 +952,14 @@ def trabajo_general_update_task(tarea_id):
             trabajado_por = str(data.get(FIELD_TRABAJADO_POR) or "").strip()
             if trabajado_por and trabajado_por not in trabajado_por_values:
                 return json_error(f"Trabajado por no válido: {trabajado_por}", 400)
-
             update_data[FIELD_TRABAJADO_POR] = trabajado_por or False
-
-            current_state = normalize_state(data.get(FIELD_ESTADO) or current.get(FIELD_ESTADO))
-            if current_state == "TRABAJADO" and trabajado_por:
-                update_data[FIELD_ANDAMIO] = compute_andamio_from_trabajado_por(
-                    trabajado_por,
-                    current,
-                    ubicacion_values,
-                )
 
         if FIELD_ESTADO in data:
             estado = normalize_state(data.get(FIELD_ESTADO))
             if estado and estado not in valid_estado_values:
                 return json_error(f"Estado no válido: {estado}", 400)
-
             update_data[FIELD_ESTADO] = estado or False
-            apply_state_coherence(update_data, estado, current, ubicacion_values)
+            apply_state_coherence(update_data, estado, current)
 
         if FIELD_FECHA_TRABAJADO in data:
             update_data[FIELD_FECHA_TRABAJADO] = normalize_iso_to_odoo(data.get(FIELD_FECHA_TRABAJADO))
@@ -797,7 +967,7 @@ def trabajo_general_update_task(tarea_id):
         if not update_data:
             return json_error("No hay campos válidos para actualizar.", 400)
 
-        ok = write_task(tarea_id, update_data, req_id=11)
+        ok = write_task(tarea_id, update_data, req_id=90)
         if ok is not True:
             return json_error("Odoo no confirmó la actualización.", 500)
 
@@ -830,7 +1000,6 @@ def trabajo_general_toggle_listo(tarea_id):
 
         opts = get_live_options(force=True)
         trabajado_por_values = {value for value, _ in opts["trabajado_por"]}
-        ubicacion_values = {value for value, _ in opts["ubicaciones"]}
         estado_labels = {value: label for value, label in opts["estados"]}
 
         estado_actual = normalize_state(actual.get(FIELD_ESTADO))
@@ -852,11 +1021,7 @@ def trabajo_general_toggle_listo(tarea_id):
                 FIELD_VERIF: True,
                 FIELD_FECHA_TRABAJADO: actual.get(FIELD_FECHA_TRABAJADO) or now_lima_str(),
                 FIELD_TRABAJADO_POR: trabajado_por,
-                FIELD_ANDAMIO: compute_andamio_from_trabajado_por(
-                    trabajado_por,
-                    actual,
-                    ubicacion_values,
-                ),
+                FIELD_ANDAMIO: actual.get(FIELD_ANDAMIO) or False,
             }
             msg = "Marcado como listo."
         else:
@@ -865,10 +1030,11 @@ def trabajo_general_toggle_listo(tarea_id):
                 FIELD_VERIF: False,
                 FIELD_FECHA_TRABAJADO: False,
                 FIELD_TRABAJADO_POR: False,
+                FIELD_ANDAMIO: actual.get(FIELD_ANDAMIO) or False,
             }
             msg = "Listo desmarcado."
 
-        ok = write_task(tarea_id, data_to_update, req_id=12)
+        ok = write_task(tarea_id, data_to_update, req_id=92)
         if ok is not True:
             return json_error("Odoo no confirmó el cambio.", 500)
 
@@ -904,7 +1070,7 @@ def trabajo_general_complete(tarea_id):
             FIELD_ESTADO: "1_done",
         }
 
-        ok = write_task(tarea_id, data_to_update, req_id=13)
+        ok = write_task(tarea_id, data_to_update, req_id=94)
         if ok is not True:
             return json_error("Odoo no confirmó el completado.", 500)
 
