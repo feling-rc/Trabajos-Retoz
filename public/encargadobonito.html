@@ -1878,17 +1878,21 @@
 
       try {
         const data = await api(`/task/${tareaId}/update`, "POST", { data: payloadData });
-        if (data.task) mergeTaskEverywhere(data.task);
-        renderCurrentView();
-        restoreScroll();
+
+        if (data.task) {
+          mergeTaskEverywhere(data.task);
+        }
+
         showToast(successMsg || data.message || "Actualizado.");
       } catch (error) {
         if (typeof rollbackFn === "function") rollbackFn();
+
         await reloadCurrentView(true);
-        restoreScroll();
         showToast(error.message || "No se pudo guardar.", true);
       } finally {
         SAVING_IDS.delete(key);
+        renderCurrentView();
+        restoreScroll();
       }
     }
 
@@ -1896,9 +1900,10 @@
       const key = String(tareaId);
       if (SAVING_IDS.has(key)) return;
 
-      const current = getCurrentTasks().find(x => String(x.id) === String(tareaId))
-        || TASKS_MESA.find(x => String(x.id) === String(tareaId))
-        || TASKS_TERMINADOS.find(x => String(x.id) === String(tareaId));
+      const current =
+        getCurrentTasks().find(x => String(x.id) === String(tareaId)) ||
+        TASKS_MESA.find(x => String(x.id) === String(tareaId)) ||
+        TASKS_TERMINADOS.find(x => String(x.id) === String(tareaId));
 
       if (!current) return;
 
@@ -1944,21 +1949,23 @@
       try {
         const body = !estabaListo ? { trabajado_por: current.trabajado_por } : {};
         const data = await api(`/task/${tareaId}/toggle_listo`, "POST", body);
-        if (data.task) mergeTaskEverywhere(data.task);
+
+        if (data.task) {
+          mergeTaskEverywhere(data.task);
+        }
 
         if (CURRENT_VIEW === "terminados" && !estabaListo) {
           await loadTerminados(true);
         }
 
-        renderCurrentView();
-        restoreScroll();
         showToast(data.message || "Actualizado.");
       } catch (error) {
         await reloadCurrentView(true);
-        restoreScroll();
         showToast(error.message || "No se pudo cambiar el listo.", true);
       } finally {
         SAVING_IDS.delete(key);
+        renderCurrentView();
+        restoreScroll();
       }
     }
 
