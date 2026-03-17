@@ -883,7 +883,7 @@
 
 <body>
   <div class="page">
-    <div id="loginOverlay" class="overlay">
+    <div id="loginOverlay" class="overlay hidden">
       <div class="login-card">
         <div>
           <h1 class="login-title">Trabajo general</h1>
@@ -1442,8 +1442,7 @@
       if (response.status === 401) {
         TOKEN = "";
         sessionStorage.removeItem(STORAGE_TOKEN_KEY);
-        showLogin(true);
-        throw new Error(data.error || "Tu sesión venció.");
+        throw new Error(data.error || "Acceso no autorizado.");
       }
 
       if (!response.ok) {
@@ -2387,11 +2386,15 @@
     }
 
     function bindStaticEvents() {
-      byId("loginBtn").addEventListener("click", doLogin);
+      if (byId("loginBtn")) {
+        byId("loginBtn").addEventListener("click", doLogin);
+      }
 
-      byId("codeInput").addEventListener("keydown", e => {
-        if (e.key === "Enter") doLogin();
-      });
+      if (byId("codeInput")) {
+        byId("codeInput").addEventListener("keydown", e => {
+          if (e.key === "Enter") doLogin();
+        });
+      }
 
       byId("viewMesaBtn").addEventListener("click", async () => {
         await switchView("mesa");
@@ -2484,20 +2487,12 @@
 
     window.addEventListener("load", async () => {
       bindStaticEvents();
+      showLogin(false);
 
-      if (TOKEN) {
-        try {
-          showLogin(false);
-          await initProtected();
-        } catch (error) {
-          TOKEN = "";
-          sessionStorage.removeItem(STORAGE_TOKEN_KEY);
-          showLogin(true);
-          setLoading("Cargando trabajos...");
-        }
-      } else {
-        showLogin(true);
-        setLoading("Cargando trabajos...");
+      try {
+        await initProtected();
+      } catch (error) {
+        setError(error.message || "No se pudieron cargar los trabajos.");
       }
     });
   </script>
