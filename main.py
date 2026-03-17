@@ -2,11 +2,9 @@ from server import app
 import os
 import threading
 from datoscliente import main as datoscliente_main
-from tareas import tareas_bp
 from encargado import encargado_bp
 
 # registrar modulos
-app.register_blueprint(tareas_bp)
 app.register_blueprint(encargado_bp)
 
 # arrancar bot

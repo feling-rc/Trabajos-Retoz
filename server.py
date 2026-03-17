@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request, send_from_directory, send_file, abort
+from flask import Flask, jsonify, request, send_from_directory, send_file, abort, redirect
 from flask_cors import CORS
 import requests
 import os
@@ -23,6 +23,8 @@ def no_cache(resp):
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PUBLIC_DIR = os.path.join(BASE_DIR, "public")
+
+LEGACY_MESA_ENABLED = (os.getenv("LEGACY_MESA_ENABLED") or "false").strip().lower() in {"1", "true", "yes", "on"}
 
 # 🔹 CONFIG ODOO (si existe env, lo usa)
 URL = os.getenv("ODOO_URL", "https://retoz.odoo.com")
@@ -71,6 +73,9 @@ def find_index_file():
 
 @app.route("/")
 def web_home():
+    if not LEGACY_MESA_ENABLED:
+        return redirect("/trabajo-general", code=302)
+
     index_path = find_index_file()
     if not index_path:
         return (
@@ -246,6 +251,9 @@ def es_listo_para_quitar_de_mesa(rec):
 # =========================
 @app.route("/tareas/<ubicacion>")
 def traer_tareas(ubicacion):
+    if not LEGACY_MESA_ENABLED:
+        return jsonify({"error": "Ruta deshabilitada", "result": []}), 404
+
     try:
         # ✅ MISMO domain (NO TOCADO)
         domain = [
@@ -317,6 +325,9 @@ def traer_tareas(ubicacion):
 # =========================
 @app.route("/terminados/<trabajado_por>")
 def traer_terminados(trabajado_por):
+    if not LEGACY_MESA_ENABLED:
+        return jsonify({"error": "Ruta deshabilitada", "result": []}), 404
+
     """
     Historial:
     - aparece aunque cambie estado o andamio
@@ -373,6 +384,9 @@ def traer_terminados(trabajado_por):
 # =========================
 @app.route("/actualizar_tarea/<int:tarea_id>", methods=["POST"])
 def actualizar_tarea(tarea_id):
+    if not LEGACY_MESA_ENABLED:
+        return jsonify({"error": "Ruta deshabilitada"}), 404
+
     """
     ✅ Reglas industriales finales:
     - Al marcar LISTO:
