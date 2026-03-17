@@ -22,6 +22,7 @@ USERNAME = os.getenv("ODOO_USERNAME", "retoz2023@gmail.com").strip()
 API_KEY = (os.getenv("ODOO_API_KEY") or "").strip()
 
 ACCESS_CODE = (os.getenv("ENCARGADO_ACCESS_CODE") or "210720").strip()
+AUTH_REQUIRED = (os.getenv("ENCARGADO_AUTH_REQUIRED") or "false").strip().lower() in {"1", "true", "yes", "on"}
 
 HTML_CANDIDATES = [
     os.path.join(PUBLIC_DIR, "encargadobonito.html"),
@@ -279,6 +280,9 @@ def create_token():
 
 
 def require_token():
+    if not AUTH_REQUIRED:
+        return None, None
+
     cleanup_tokens()
     token = request.headers.get("X-Encargado-Token", "").strip()
 
@@ -752,6 +756,13 @@ def trabajo_general_home():
 
 @encargado_bp.route("/trabajo-general/api/login", methods=["POST"])
 def trabajo_general_login():
+    if not AUTH_REQUIRED:
+        return jsonify({
+            "ok": True,
+            "token": "",
+            "user": "Trabajo general",
+        })
+
     body = request.get_json(silent=True) or {}
     code = str(body.get("code", "")).strip()
 
