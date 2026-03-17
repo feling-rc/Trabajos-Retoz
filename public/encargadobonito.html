@@ -180,6 +180,10 @@
       gap: 10px;
     }
 
+    #terminadosControls {
+      grid-template-columns: 1fr;
+    }
+
     .pill-btn {
       width: 100%;
       min-height: 44px;
@@ -250,70 +254,67 @@
 
     .filters-panel {
       display: none;
-      background: var(--surface);
-      border: 1px solid var(--stroke);
+      background: linear-gradient(180deg, #ffffff 0%, #f7faff 100%);
+      border: 1px solid #dbe5f2;
       border-radius: 18px;
       box-shadow: var(--shadow);
       padding: 10px;
-      gap: 10px;
     }
 
     .filters-panel.show {
-      display: grid;
+      display: block;
     }
 
-    .filter-mode-row {
+    .date-filter-row {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: minmax(180px, 0.95fr) minmax(0, 2.05fr);
       gap: 8px;
+      align-items: stretch;
     }
 
-    .filter-mode-btn {
-      border: none;
-      background: #eef2f6;
-      color: #516171;
-      border-radius: 12px;
-      padding: 10px;
-      font-size: 12px;
-      font-weight: 900;
-      cursor: pointer;
+    .filter-type-wrap .dropdown-menu {
+      width: 100%;
     }
 
-    .filter-mode-btn.active {
-      background: #ddeeff;
-      color: #2b67b2;
-    }
-
-    .filter-fields {
-      display: grid;
-      gap: 8px;
-    }
-
-    .date-row-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
-
-    .filter-field {
-      background: #f8fafc;
-      border: 1px solid var(--stroke);
+    .filter-type-pill {
+      min-height: 52px;
+      border-color: #d7e8ff;
+      background: #eef5ff;
+      color: #1f4f90;
+      box-shadow: none;
       border-radius: 14px;
-      padding: 10px 12px;
-      display: grid;
-      gap: 6px;
     }
 
-    .filter-field label {
-      font-size: 11px;
+    .filter-inline {
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(0, 1fr);
+      gap: 8px;
+      align-items: stretch;
+      min-width: 0;
+    }
+
+    .filter-block {
+      background: #f9fbff;
+      border: 1px solid #dbe5f2;
+      border-radius: 14px;
+      min-height: 52px;
+      padding: 6px 12px;
+      display: grid;
+      align-content: center;
+      gap: 2px;
+    }
+
+    .filter-block label {
+      font-size: 10px;
       font-weight: 900;
       color: var(--muted);
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
 
-    .filter-field input,
-    .filter-field select {
+    .filter-block input,
+    .filter-block select {
       border: none;
       outline: none;
       background: transparent;
@@ -844,12 +845,19 @@
         grid-template-columns: 1fr;
       }
 
-      .filter-mode-row {
-        grid-template-columns: 1fr;
+      .filters-panel {
+        padding: 9px;
       }
 
-      .date-row-2 {
-        grid-template-columns: 1fr;
+      .date-filter-row {
+        grid-template-columns: minmax(170px, 0.95fr) minmax(240px, 2.05fr);
+        overflow-x: auto;
+        padding-bottom: 2px;
+      }
+
+      .filter-inline {
+        grid-auto-flow: column;
+        grid-auto-columns: minmax(132px, 1fr);
       }
     }
 
@@ -919,32 +927,91 @@
               <!-- se llena por JS -->
             </div>
           </div>
+        </div>
 
-          <div class="chip-wrap">
-            <button id="filterTypeBtn" class="pill-btn" type="button">
-              <span class="pill-left">
-                <span>📅</span>
-                <span id="filterTypeLabel" class="pill-label">La Fecha es</span>
-              </span>
-              <span class="pill-arrow"></span>
-            </button>
+        <div id="filtersPanel" class="filters-panel">
+          <div class="date-filter-row">
+            <div class="chip-wrap filter-type-wrap">
+              <button id="filterTypeBtn" class="pill-btn filter-type-pill" type="button">
+                <span class="pill-left">
+                  <span>📅</span>
+                  <span id="filterTypeLabel" class="pill-label">La Fecha es - --/--/----</span>
+                </span>
+                <span class="pill-arrow"></span>
+              </button>
 
-            <div id="filterTypeMenu" class="dropdown-menu">
-              <button class="menu-option js-filter-type" data-filter-type="day" type="button">
-                <span class="opt-dot" style="background:#2b67b2"></span>
-                <span>La Fecha es</span>
-                <span class="check">✓</span>
-              </button>
-              <button class="menu-option js-filter-type" data-filter-type="range" type="button">
-                <span class="opt-dot" style="background:#7b4db2"></span>
-                <span>La Fecha es Entre</span>
-                <span class="check">✓</span>
-              </button>
-              <button class="menu-option js-filter-type" data-filter-type="month" type="button">
-                <span class="opt-dot" style="background:#c98300"></span>
-                <span>El Mes es</span>
-                <span class="check">✓</span>
-              </button>
+              <div id="filterTypeMenu" class="dropdown-menu">
+                <button class="menu-option js-filter-type" data-filter-type="day" type="button">
+                  <span class="opt-dot" style="background:#2b67b2"></span>
+                  <span>La Fecha es</span>
+                  <span class="check">✓</span>
+                </button>
+                <button class="menu-option js-filter-type" data-filter-type="range" type="button">
+                  <span class="opt-dot" style="background:#7b4db2"></span>
+                  <span>La Fecha es Entre</span>
+                  <span class="check">✓</span>
+                </button>
+                <button class="menu-option js-filter-type" data-filter-type="month" type="button">
+                  <span class="opt-dot" style="background:#c98300"></span>
+                  <span>El Mes es</span>
+                  <span class="check">✓</span>
+                </button>
+                <button class="menu-option js-filter-type" data-filter-type="year" type="button">
+                  <span class="opt-dot" style="background:#127a55"></span>
+                  <span>Año</span>
+                  <span class="check">✓</span>
+                </button>
+              </div>
+            </div>
+
+            <div id="dayField" class="filter-inline">
+              <div class="filter-block">
+                <label for="dateExact">Fecha</label>
+                <input id="dateExact" type="date" />
+              </div>
+            </div>
+
+            <div id="rangeField" class="filter-inline hidden">
+              <div class="filter-block">
+                <label for="dateFrom">Desde</label>
+                <input id="dateFrom" type="date" />
+              </div>
+              <div class="filter-block">
+                <label for="dateTo">Hasta</label>
+                <input id="dateTo" type="date" />
+              </div>
+            </div>
+
+            <div id="monthField" class="filter-inline hidden">
+              <div class="filter-block">
+                <label for="monthSelect">Mes</label>
+                <select id="monthSelect">
+                  <option value="">Mes</option>
+                  <option value="01">Enero</option>
+                  <option value="02">Febrero</option>
+                  <option value="03">Marzo</option>
+                  <option value="04">Abril</option>
+                  <option value="05">Mayo</option>
+                  <option value="06">Junio</option>
+                  <option value="07">Julio</option>
+                  <option value="08">Agosto</option>
+                  <option value="09">Septiembre</option>
+                  <option value="10">Octubre</option>
+                  <option value="11">Noviembre</option>
+                  <option value="12">Diciembre</option>
+                </select>
+              </div>
+              <div class="filter-block">
+                <label for="monthYearInput">Año</label>
+                <input id="monthYearInput" type="number" min="2000" max="2100" step="1" placeholder="2026" />
+              </div>
+            </div>
+
+            <div id="yearField" class="filter-inline hidden">
+              <div class="filter-block">
+                <label for="yearInput">Año</label>
+                <input id="yearInput" type="number" min="2000" max="2100" step="1" placeholder="2026" />
+              </div>
             </div>
           </div>
         </div>
@@ -965,37 +1032,6 @@
                 stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </button>
-        </div>
-
-        <div id="filtersPanel" class="filters-panel">
-          <div class="filter-mode-row">
-            <button id="modeDayBtn" class="filter-mode-btn active" type="button">La Fecha es</button>
-            <button id="modeRangeBtn" class="filter-mode-btn" type="button">La Fecha es Entre</button>
-            <button id="modeMonthBtn" class="filter-mode-btn" type="button">El Mes es</button>
-          </div>
-
-          <div id="filterFields" class="filter-fields">
-            <div id="dayField" class="filter-field">
-              <label for="dateExact">Fecha</label>
-              <input id="dateExact" type="date" />
-            </div>
-
-            <div id="rangeField" class="date-row-2 hidden">
-              <div class="filter-field">
-                <label for="dateFrom">Desde</label>
-                <input id="dateFrom" type="date" />
-              </div>
-              <div class="filter-field">
-                <label for="dateTo">Hasta</label>
-                <input id="dateTo" type="date" />
-              </div>
-            </div>
-
-            <div id="monthField" class="filter-field hidden">
-              <label for="monthInput">Mes</label>
-              <input id="monthInput" type="month" />
-            </div>
-          </div>
         </div>
 
         <div class="meta-strip">
@@ -1489,12 +1525,70 @@
       }
     }
 
+    function formatDateShort(isoDate) {
+      if (!isoDate || !/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) return "--/--/----";
+      const [yyyy, mm, dd] = isoDate.split("-");
+      return `${dd}/${mm}/${yyyy}`;
+    }
+
+    function getMonthLabel(mm) {
+      const map = {
+        "01": "Enero",
+        "02": "Febrero",
+        "03": "Marzo",
+        "04": "Abril",
+        "05": "Mayo",
+        "06": "Junio",
+        "07": "Julio",
+        "08": "Agosto",
+        "09": "Septiembre",
+        "10": "Octubre",
+        "11": "Noviembre",
+        "12": "Diciembre"
+      };
+      return map[mm] || "Mes";
+    }
+
+    function getFilterLabelText() {
+      const exact = byId("dateExact").value;
+      const from = byId("dateFrom").value;
+      const to = byId("dateTo").value;
+      const month = byId("monthSelect").value;
+      const monthYear = (byId("monthYearInput").value || "").trim();
+      const year = (byId("yearInput").value || "").trim();
+
+      if (FILTER_MODE === "day") {
+        return `La Fecha es - ${formatDateShort(exact)}`;
+      }
+
+      if (FILTER_MODE === "range") {
+        if (from && to) {
+          return `La Fecha es Entre - ${formatDateShort(from)} - ${formatDateShort(to)}`;
+        }
+        return "La Fecha es Entre - Desde  Hasta";
+      }
+
+      if (FILTER_MODE === "month") {
+        const yearTxt = /^\d{4}$/.test(monthYear) ? monthYear : "----";
+        return `El Mes es = ${getMonthLabel(month)} ${yearTxt}`;
+      }
+
+      if (FILTER_MODE === "year") {
+        const yearTxt = /^\d{4}$/.test(year) ? year : "----";
+        return `Año - ${yearTxt}`;
+      }
+
+      return "La Fecha es - --/--/----";
+    }
+
     function getFilteredTerminados() {
       const q = (CURRENT_SEARCH || "").trim().toLowerCase();
       const exact = byId("dateExact").value;
       const from = byId("dateFrom").value;
       const to = byId("dateTo").value;
-      const month = byId("monthInput").value;
+      const month = byId("monthSelect").value;
+      const monthYear = (byId("monthYearInput").value || "").trim();
+      const year = (byId("yearInput").value || "").trim();
 
       return TASKS_TERMINADOS.filter(task => {
         if (q) {
@@ -1529,8 +1623,13 @@
         }
 
         if (FILTER_MODE === "month") {
-          if (!month) return true;
-          return fechaKey.startsWith(month + "-");
+          if (!month || !/^\d{4}$/.test(monthYear)) return true;
+          return fechaKey.startsWith(`${monthYear}-${month}-`);
+        }
+
+        if (FILTER_MODE === "year") {
+          if (!/^\d{4}$/.test(year)) return true;
+          return fechaKey.startsWith(`${year}-`);
         }
 
         return true;
@@ -2165,20 +2264,12 @@
     }
 
     function updateFilterModeUI() {
-      byId("modeDayBtn").classList.toggle("active", FILTER_MODE === "day");
-      byId("modeRangeBtn").classList.toggle("active", FILTER_MODE === "range");
-      byId("modeMonthBtn").classList.toggle("active", FILTER_MODE === "month");
-
       byId("dayField").classList.toggle("hidden", FILTER_MODE !== "day");
       byId("rangeField").classList.toggle("hidden", FILTER_MODE !== "range");
       byId("monthField").classList.toggle("hidden", FILTER_MODE !== "month");
+      byId("yearField").classList.toggle("hidden", FILTER_MODE !== "year");
 
-      const labelMap = {
-        day: "La Fecha es",
-        range: "La Fecha es Entre",
-        month: "El Mes es"
-      };
-      byId("filterTypeLabel").textContent = labelMap[FILTER_MODE] || "La Fecha es";
+      byId("filterTypeLabel").textContent = getFilterLabelText();
 
       document.querySelectorAll(".js-filter-type").forEach(btn => {
         btn.classList.toggle("active", btn.dataset.filterType === FILTER_MODE);
@@ -2337,37 +2428,33 @@
         });
       });
 
-      byId("modeDayBtn").addEventListener("click", () => {
-        FILTER_MODE = "day";
-        updateFilterModeUI();
-        if (CURRENT_VIEW === "terminados") renderCurrentView();
-      });
-
-      byId("modeRangeBtn").addEventListener("click", () => {
-        FILTER_MODE = "range";
-        updateFilterModeUI();
-        if (CURRENT_VIEW === "terminados") renderCurrentView();
-      });
-
-      byId("modeMonthBtn").addEventListener("click", () => {
-        FILTER_MODE = "month";
-        updateFilterModeUI();
-        if (CURRENT_VIEW === "terminados") renderCurrentView();
-      });
-
       byId("dateExact").addEventListener("change", () => {
+        updateFilterModeUI();
         if (CURRENT_VIEW === "terminados") renderCurrentView();
       });
 
       byId("dateFrom").addEventListener("change", () => {
+        updateFilterModeUI();
         if (CURRENT_VIEW === "terminados") renderCurrentView();
       });
 
       byId("dateTo").addEventListener("change", () => {
+        updateFilterModeUI();
         if (CURRENT_VIEW === "terminados") renderCurrentView();
       });
 
-      byId("monthInput").addEventListener("change", () => {
+      byId("monthSelect").addEventListener("change", () => {
+        updateFilterModeUI();
+        if (CURRENT_VIEW === "terminados") renderCurrentView();
+      });
+
+      byId("monthYearInput").addEventListener("input", () => {
+        updateFilterModeUI();
+        if (CURRENT_VIEW === "terminados") renderCurrentView();
+      });
+
+      byId("yearInput").addEventListener("input", () => {
+        updateFilterModeUI();
         if (CURRENT_VIEW === "terminados") renderCurrentView();
       });
 
