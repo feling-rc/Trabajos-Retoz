@@ -1097,6 +1097,8 @@ def trabajo_general_complete(tarea_id):
     except Exception as e:
         log("ERROR /complete =", str(e))
         return jsonify({"error": str(e)}), 500
+
+
 # =========================
 # ORDEN DE VENTA MÓVIL
 # =========================
@@ -1192,8 +1194,37 @@ def m2o_to_json(value):
 
 def m2m_ids(value):
     if isinstance(value, list):
-        return [int(v) for v in value if isinstance(v, (int, float))]
+        out = []
+        for v in value:
+            try:
+                out.append(int(v))
+            except Exception:
+                pass
+        return out
     return []
+
+
+def read_partner_brief(partner_id):
+    partner_id = to_int_or_false(partner_id)
+    if not partner_id:
+        return {"id": None, "name": "", "phone": ""}
+
+    rows = odoo_execute_kw(
+        MODEL_PARTNER,
+        "read",
+        args=[[partner_id], ["id", "name", "phone", "mobile"]],
+        kwargs={},
+        req_id=208,
+    ) or []
+    if not rows:
+        return {"id": None, "name": "", "phone": ""}
+
+    row = rows[0]
+    return {
+        "id": row.get("id"),
+        "name": row.get("name") or "",
+        "phone": row.get("phone") or row.get("mobile") or "",
+    }
 
 
 def to_float(value, default=0.0):
@@ -1255,12 +1286,15 @@ def order_to_payload(order, lines):
         except Exception:
             tax_totals = {}
 
+    partner_info = read_partner_brief(m2o_to_json(order.get("partner_id")).get("id"))
+
     return {
         "id": order.get("id"),
         "name": order.get("name") or "",
         "state": order.get("state") or "",
-        "partner_id": m2o_to_json(order.get("partner_id")),
-        "x_studio_numero_de_celular": order.get("x_studio_numero_de_celular") or "",
+        "partner_id": {"id": partner_info.get("id"), "name": partner_info.get("name")},
+        "x_studio_numero_de_celular": order.get("x_studio_numero_de_celular") or partner_info.get("phone") or "",
+        "partner_phone": partner_info.get("phone") or "",
         "x_studio_plantillas_y_pasadores_revisadas_1": order.get("x_studio_plantillas_y_pasadores_revisadas_1") or "",
         "x_studio_pasadores_o_plantillas_lugar": order.get("x_studio_pasadores_o_plantillas_lugar") if order.get("x_studio_pasadores_o_plantillas_lugar") not in (None, False) else "",
         "date_order": order.get("date_order") or "",
@@ -1382,9 +1416,11 @@ def prepare_order_vals(body):
     if not date_order:
         raise Exception("Fecha de orden es obligatoria")
 
+    partner_info = read_partner_brief(partner_id)
+
     return {
         "partner_id": partner_id,
-        "x_studio_numero_de_celular": str(body.get("x_studio_numero_de_celular") or "").strip(),
+        "x_studio_numero_de_celular": str(body.get("x_studio_numero_de_celular") or partner_info.get("phone") or "").strip(),
         "x_studio_plantillas_y_pasadores_revisadas_1": revisado,
         "x_studio_pasadores_o_plantillas_lugar": to_int_or_false(body.get("x_studio_pasadores_o_plantillas_lugar")),
         "date_order": date_order,
@@ -1423,6 +1459,8 @@ def prepare_line_vals(line):
 
     if product_id:
         vals["product_id"] = product_id
+    if product_template_id:
+        vals["product_template_id"] = product_template_id
 
     return vals
 
@@ -1456,11 +1494,22 @@ def orden_venta_mobile_meta():
         revisado_choices = get_selection_choices(MODEL_ORDER, "x_studio_plantillas_y_pasadores_revisadas_1")
         responsable_choices = get_selection_choices(MODEL_ORDER_LINE, "x_studio_responsable_r")
 
+        revisado_true_value = ""
+        for item in revisado_choices:
+            label = str(item.get("label") or "").strip().lower()
+            value = str(item.get("value") or "").strip()
+            if "revis" in label or label in {"si", "sí", "true"}:
+                revisado_true_value = value
+                break
+        if not revisado_true_value and revisado_choices:
+            revisado_true_value = str(revisado_choices[0].get("value") or "")
+
         return jsonify({
             "cuentas_adelanto": cuentas_adelanto,
             "cuentas_restante": cuentas_restante,
             "cuentas_adelanto_extra": cuentas_extra,
             "plantillas_pasadores_revisadas": revisado_choices,
+            "plantillas_pasadores_revisadas_true_value": revisado_true_value,
             "responsable_linea": responsable_choices,
             "actions": list(ORDER_ACTIONS.keys()),
         })
@@ -1475,23 +1524,49 @@ def orden_venta_mobile_partners():
         return err
 
     q = (request.args.get("q") or "").strip()
-    domain = []
-    if q:
-        domain = ["|", "|", ["name", "ilike", q], ["phone", "ilike", q], ["mobile", "ilike", q]]
+    if not q:
+        return jsonify({"result": []})
 
-    rows = odoo_execute_kw(
+    ids = odoo_execute_kw(
         MODEL_PARTNER,
-        "search_read",
-        args=[domain],
-        kwargs={"fields": ["id", "name", "phone", "mobile"], "limit": 30, "order": "name asc"},
+        "search",
+        args=[["|", "|", ["name", "ilike", q], ["phone", "ilike", q], ["mobile", "ilike", q]]],
+        kwargs={"limit": 20},
         req_id=250,
     ) or []
 
-    result = [{
-        "id": r.get("id"),
-        "name": r.get("name") or "",
-        "phone": r.get("phone") or r.get("mobile") or "",
-    } for r in rows]
+    rows = []
+    if ids:
+        rows = odoo_execute_kw(
+            MODEL_PARTNER,
+            "read",
+            args=[ids, ["id", "name", "phone", "mobile", "city"]],
+            kwargs={},
+            req_id=251,
+        ) or []
+
+    rows = sorted(
+        rows,
+        key=lambda r: (
+            0 if q.lower() in str(r.get("name") or "").lower()[: max(len(q), 1)] else 1,
+            str(r.get("name") or "").lower()
+        )
+    )
+
+    result = []
+    seen = set()
+    for r in rows:
+        rid = r.get("id")
+        if rid in seen:
+            continue
+        seen.add(rid)
+        result.append({
+            "id": rid,
+            "name": r.get("name") or "",
+            "phone": r.get("phone") or r.get("mobile") or "",
+            "subtitle": (r.get("city") or "").strip(),
+        })
+
     return jsonify({"result": result})
 
 
@@ -1514,7 +1589,6 @@ def orden_venta_mobile_partner_create():
         args=[{
             "name": name,
             "phone": phone or False,
-            "mobile": phone or False,
         }],
         kwargs={},
         req_id=251,
@@ -1538,15 +1612,22 @@ def orden_venta_mobile_products():
         MODEL_PRODUCT_TEMPLATE,
         "search_read",
         args=[domain],
-        kwargs={"fields": ["id", "name", "list_price"], "limit": 40, "order": "name asc"},
+        kwargs={"fields": ["id", "name", "list_price", "taxes_id", "description_sale"], "limit": 40, "order": "name asc"},
         req_id=252,
     ) or []
 
-    result = [{
-        "id": r.get("id"),
-        "name": r.get("name") or "",
-        "list_price": to_float(r.get("list_price"), 0.0),
-    } for r in rows]
+    result = []
+    for r in rows:
+        tax_ids = m2m_ids(r.get("taxes_id"))
+        variant_id = resolve_product_variant_id(r.get("id"))
+        result.append({
+            "id": r.get("id"),
+            "variant_id": variant_id,
+            "name": r.get("name") or "",
+            "list_price": to_float(r.get("list_price"), 0.0),
+            "tax_ids": tax_ids,
+            "description_sale": r.get("description_sale") or "",
+        })
     return jsonify({"result": result})
 
 
@@ -1565,7 +1646,7 @@ def orden_venta_mobile_taxes():
         MODEL_TAX,
         "search_read",
         args=[domain],
-        kwargs={"fields": ["id", "name", "amount"], "limit": 50, "order": "name asc"},
+        kwargs={"fields": ["id", "name", "amount", "amount_type", "price_include"], "limit": 50, "order": "name asc"},
         req_id=253,
     ) or []
 
