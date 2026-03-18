@@ -1097,6 +1097,8 @@ def trabajo_general_complete(tarea_id):
     except Exception as e:
         log("ERROR /complete =", str(e))
         return jsonify({"error": str(e)}), 500
+
+
 # =========================
 # ORDEN DE VENTA MÓVIL
 # =========================
@@ -1543,7 +1545,14 @@ def orden_venta_mobile_partners():
             req_id=251,
         ) or []
 
-    rows = sorted(rows, key=lambda r: (0 if q.lower() in str(r.get("name") or "").lower()[: max(len(q), 1)] else 1, str(r.get("name") or "").lower()))
+    rows = sorted(
+        rows,
+        key=lambda r: (
+            0 if q.lower() in str(r.get("name") or "").lower()[: max(len(q), 1)] else 1,
+            str(r.get("name") or "").lower()
+        )
+    )
+
     result = []
     seen = set()
     for r in rows:
@@ -1557,6 +1566,7 @@ def orden_venta_mobile_partners():
             "phone": r.get("phone") or r.get("mobile") or "",
             "subtitle": (r.get("city") or "").strip(),
         })
+
     return jsonify({"result": result})
 
 
