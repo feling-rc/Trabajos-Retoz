@@ -5,72 +5,368 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Orden de Venta · Mobile</title>
   <style>
-    :root{--bg:#f3f4f6;--card:#fff;--line:#dde3ee;--text:#121926;--muted:#667085;--primary:#1f4f90;--ok:#0f9d58}
+    :root{
+      --bg:#f3f4f6;
+      --card:#fff;
+      --line:#dde3ee;
+      --text:#121926;
+      --muted:#667085;
+      --primary:#1f4f90;
+      --ok:#0f9d58;
+    }
+
     *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);font-family:Inter,system-ui,Arial,sans-serif;color:var(--text)}
-    .app{max-width:760px;margin:0 auto;padding:12px 12px 96px;display:grid;gap:10px}
-    .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;box-shadow:0 8px 24px rgba(16,24,40,.06)}
-    .head{position:static;background:var(--card);padding-bottom:0}
-    h1{font-size:18px;margin:0}
-    .sub{font-size:12px;color:var(--muted);margin-top:4px}
-    .row{display:grid;gap:8px}
+
+    body{
+      margin:0;
+      background:var(--bg);
+      font-family:Inter,system-ui,Arial,sans-serif;
+      color:var(--text);
+    }
+
+    .app{
+      max-width:760px;
+      margin:0 auto;
+      padding:12px 12px 96px;
+      display:grid;
+      gap:10px;
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:12px;
+      box-shadow:0 8px 24px rgba(16,24,40,.06);
+    }
+
+    .head{
+      position:static;
+      background:var(--card);
+      padding-bottom:0;
+    }
+
+    h1{
+      font-size:18px;
+      margin:0;
+    }
+
+    .sub{
+      font-size:12px;
+      color:var(--muted);
+      margin-top:4px;
+    }
+
+    .row{
+      display:grid;
+      gap:8px;
+    }
+
     .row.two{grid-template-columns:1fr 1fr}
     .row.three{grid-template-columns:1fr 1fr 1fr}
-    label{font-size:12px;font-weight:800;color:#344054;display:block;margin-bottom:4px}
-    input,select,textarea{width:100%;border:1px solid #d0d8e6;border-radius:12px;padding:11px 12px;font-size:14px;background:#fff}
-    textarea{min-height:82px;resize:vertical}
-    .topbar{display:grid;gap:10px}
-    .title-row{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
-    .status-wrap{display:flex;flex-direction:column;gap:6px}
-    .pill{display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;background:#eef4ff;color:var(--primary);font-size:12px;font-weight:800;width:max-content}
-    .actions-bar{display:flex;flex-wrap:wrap;gap:8px}
-    .actions-bar .btn{padding:9px 12px;font-size:12px}
-    .btn{border:none;border-radius:12px;padding:11px 10px;font-weight:800;cursor:pointer;font-size:13px}
-    .btn.main{background:var(--primary);color:#fff}
-    .btn.soft{background:#eef2f7;color:#344054}
-    .btn.ok{background:#0f9d58;color:#fff}
-    .btn.warn{background:#9a4f5f;color:#fff}
-    .lines{display:grid;gap:10px}
-    .line{border:1px solid #d6e2f5;background:#fbfdff;border-radius:14px;padding:10px;display:grid;gap:8px}
-    .line-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
-    .line-title{font-weight:900;font-size:14px}
-    .toggles{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-    .toggle{border:1px solid #d6ddeb;border-radius:12px;padding:8px;display:flex;justify-content:space-between;align-items:center;background:#fff}
-    .sum{display:grid;gap:6px}
-    .sum div{display:flex;justify-content:space-between;font-size:13px}
-    .sum .total{font-size:16px;font-weight:900}
-    .sticky{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:8px 12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;z-index:30}
-    .autocomplete{position:relative}
-    .dropdown{position:absolute;z-index:40;left:0;right:0;top:calc(100% + 4px);max-height:220px;overflow:auto;border:1px solid var(--line);background:#fff;border-radius:12px;display:none}
-    .dropdown.open{display:block}
-    .opt{padding:10px;border-bottom:1px solid #eef2f7;cursor:pointer;font-size:13px}
-    .opt:last-child{border-bottom:none}
-    .muted{color:var(--muted);font-size:12px}
-    .money-input{font-variant-numeric:tabular-nums}
-    .line-summary{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted)}
-    .error{background:#fef2f2;border:1px solid #fecaca;color:#b42318;padding:8px;border-radius:10px;font-size:12px;display:none}
-    .okmsg{background:#ecfdf3;border:1px solid #abefc6;color:#067647;padding:8px;border-radius:10px;font-size:12px;display:none}
-    @media (max-width:560px){.row.two,.row.three{grid-template-columns:1fr}.title-row{align-items:flex-start}.actions-bar .btn{flex:1 1 calc(50% - 8px)}}
+
+    label{
+      font-size:12px;
+      font-weight:800;
+      color:#344054;
+      display:block;
+      margin-bottom:4px;
+    }
+
+    input,select,textarea{
+      width:100%;
+      border:1px solid #d0d8e6;
+      border-radius:12px;
+      padding:11px 12px;
+      font-size:14px;
+      background:#fff;
+    }
+
+    textarea{
+      min-height:82px;
+      resize:vertical;
+    }
+
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .status-wrap{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      min-width:0;
+    }
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      padding:6px 10px;
+      border-radius:999px;
+      background:#eef4ff;
+      color:var(--primary);
+      font-size:12px;
+      font-weight:800;
+      width:max-content;
+    }
+
+    .actions-menu{
+      position:relative;
+      margin-left:auto;
+    }
+
+    .actions-toggle{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+    }
+
+    .actions{
+      position:absolute;
+      right:0;
+      top:calc(100% + 8px);
+      min-width:220px;
+      display:none;
+      grid-template-columns:1fr;
+      gap:6px;
+      padding:8px;
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:14px;
+      box-shadow:0 18px 30px rgba(16,24,40,.12);
+      z-index:50;
+    }
+
+    .actions.open{
+      display:grid;
+    }
+
+    .btn{
+      border:none;
+      border-radius:12px;
+      padding:11px 10px;
+      font-weight:800;
+      cursor:pointer;
+      font-size:13px;
+    }
+
+    .btn.main{
+      background:var(--primary);
+      color:#fff;
+    }
+
+    .btn.soft{
+      background:#eef2f7;
+      color:#344054;
+    }
+
+    .btn.ok{
+      background:#0f9d58;
+      color:#fff;
+    }
+
+    .btn.warn{
+      background:#9a4f5f;
+      color:#fff;
+    }
+
+    .lines{
+      display:grid;
+      gap:10px;
+    }
+
+    .line{
+      border:1px solid #d6e2f5;
+      background:#fbfdff;
+      border-radius:14px;
+      padding:10px;
+      display:grid;
+      gap:8px;
+    }
+
+    .line-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:8px;
+    }
+
+    .line-title{
+      font-weight:900;
+      font-size:14px;
+    }
+
+    .toggles{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:8px;
+    }
+
+    .toggle{
+      border:1px solid #d6ddeb;
+      border-radius:12px;
+      padding:8px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      background:#fff;
+    }
+
+    .sum{
+      display:grid;
+      gap:6px;
+    }
+
+    .sum div{
+      display:flex;
+      justify-content:space-between;
+      font-size:13px;
+    }
+
+    .sum .total{
+      font-size:16px;
+      font-weight:900;
+    }
+
+    .sticky{
+      position:fixed;
+      left:0;
+      right:0;
+      bottom:0;
+      background:#fff;
+      border-top:1px solid var(--line);
+      padding:8px 12px;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:8px;
+      z-index:30;
+    }
+
+    .autocomplete{
+      position:relative;
+    }
+
+    .dropdown{
+      position:absolute;
+      z-index:40;
+      left:0;
+      right:0;
+      top:calc(100% + 4px);
+      max-height:220px;
+      overflow:auto;
+      border:1px solid var(--line);
+      background:#fff;
+      border-radius:12px;
+      display:none;
+    }
+
+    .dropdown.open{
+      display:block;
+    }
+
+    .opt{
+      padding:10px;
+      border-bottom:1px solid #eef2f7;
+      cursor:pointer;
+      font-size:13px;
+    }
+
+    .opt:last-child{
+      border-bottom:none;
+    }
+
+    .muted{
+      color:var(--muted);
+      font-size:12px;
+    }
+
+    .money-input{
+      font-variant-numeric:tabular-nums;
+    }
+
+    .line-summary{
+      display:flex;
+      justify-content:space-between;
+      gap:8px;
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    .error{
+      background:#fef2f2;
+      border:1px solid #fecaca;
+      color:#b42318;
+      padding:8px;
+      border-radius:10px;
+      font-size:12px;
+      display:none;
+    }
+
+    .okmsg{
+      background:#ecfdf3;
+      border:1px solid #abefc6;
+      color:#067647;
+      padding:8px;
+      border-radius:10px;
+      font-size:12px;
+      display:none;
+    }
+
+    @media (max-width:560px){
+      .row.two,
+      .row.three{
+        grid-template-columns:1fr;
+      }
+
+      .topbar{
+        align-items:stretch;
+      }
+
+      .actions-menu{
+        width:100%;
+        margin-left:0;
+      }
+
+      .actions-toggle{
+        width:100%;
+      }
+
+      .actions{
+        left:0;
+        right:0;
+        min-width:0;
+      }
+    }
   </style>
 </head>
 <body>
   <div class="app">
     <div class="head card">
       <div class="topbar">
-        <div class="title-row">
-          <div class="status-wrap">
-            <h1 id="title">Nueva orden de venta</h1>
-            <div class="sub" id="subtitle">Flujo rápido para celular · Odoo real</div>
-            <div class="pill" id="stateBadge">Estado: draft</div>
-          </div>
+        <div class="status-wrap">
+          <h1 id="title">Nueva orden de venta</h1>
+          <div class="sub" id="subtitle">Flujo rápido para celular · Odoo real</div>
+          <div class="pill" id="stateBadge">Estado: draft</div>
         </div>
-        <div class="actions-bar" id="actionsBar">
-          <button class="btn soft" data-action="desbloquear">Desbloquear</button>
-          <button class="btn soft" data-action="descargar_orden">Descargar orden</button>
-          <button class="btn warn" data-action="recogido">Recogido</button>
-          <button class="btn warn" data-action="completado">Completado</button>
-          <button class="btn soft" data-action="imprimir_nro_orden">Imprimir Nro</button>
-          <button class="btn soft" data-action="actividad">Actividad</button>
+
+        <div class="actions-menu">
+          <button class="btn soft actions-toggle" id="actionsToggle" type="button">
+            Acciones rápidas ▾
+          </button>
+
+          <div class="actions" id="actionsMenu">
+            <button class="btn soft" type="button" data-action="desbloquear">Desbloquear</button>
+            <button class="btn soft" type="button" data-action="descargar_orden">Descargar orden</button>
+            <button class="btn warn" type="button" data-action="recogido">Recogido</button>
+            <button class="btn warn" type="button" data-action="completado">Completado</button>
+            <button class="btn soft" type="button" data-action="imprimir_nro_orden">Imprimir Nro</button>
+            <button class="btn soft" type="button" data-action="actividad">Actividad</button>
+          </div>
         </div>
       </div>
     </div>
@@ -82,7 +378,7 @@
       <div class="row two">
         <div class="autocomplete">
           <label>Cliente *</label>
-          <input id="partnerSearch" placeholder="Buscar cliente por nombre o celular" />
+          <input id="partnerSearch" placeholder="Buscar cliente por nombre o celular" autocomplete="off" />
           <div id="partnerDrop" class="dropdown"></div>
         </div>
         <div>
@@ -107,6 +403,7 @@
           <input id="ubicacionPLPS" type="number" />
         </div>
       </div>
+
       <div class="row two" style="margin-top:8px">
         <div>
           <label>Fecha de orden *</label>
@@ -117,6 +414,7 @@
           <input id="fechaEntrega" type="datetime-local" />
         </div>
       </div>
+
       <div class="row" style="margin-top:8px">
         <div>
           <label>Fecha de recojo (readonly)</label>
@@ -127,16 +425,36 @@
 
     <section class="card">
       <div class="row two">
-        <div><label>Adelanto</label><input id="adelanto" class="money-input" inputmode="decimal" /></div>
-        <div><label>Cuenta adelanto</label><select id="cuentaAdelanto"></select></div>
+        <div>
+          <label>Adelanto</label>
+          <input id="adelanto" class="money-input" inputmode="decimal" />
+        </div>
+        <div>
+          <label>Cuenta adelanto</label>
+          <select id="cuentaAdelanto"></select>
+        </div>
       </div>
+
       <div class="row two" style="margin-top:8px">
-        <div><label>Adelanto extra</label><input id="adelantoExtra" class="money-input" inputmode="decimal" /></div>
-        <div><label>Cuenta adelanto extra</label><select id="cuentaAdelantoExtra"></select></div>
+        <div>
+          <label>Adelanto extra</label>
+          <input id="adelantoExtra" class="money-input" inputmode="decimal" />
+        </div>
+        <div>
+          <label>Cuenta adelanto extra</label>
+          <select id="cuentaAdelantoExtra"></select>
+        </div>
       </div>
+
       <div class="row two" style="margin-top:8px">
-        <div><label>Restante (readonly Odoo)</label><input id="restante" class="money-input" readonly /></div>
-        <div><label>Cuenta restante</label><select id="cuentaRestante"></select></div>
+        <div>
+          <label>Restante (readonly Odoo)</label>
+          <input id="restante" class="money-input" readonly />
+        </div>
+        <div>
+          <label>Cuenta restante</label>
+          <select id="cuentaRestante"></select>
+        </div>
       </div>
     </section>
 
@@ -161,282 +479,612 @@
     <button id="reloadBtn" class="btn soft" type="button">Recargar</button>
   </div>
 
-<script>
-const API = '/orden-venta/mobile/api';
-const TOKEN = sessionStorage.getItem('trabajo_general_token') || '';
-let ORDER_ID = null;
-let META = null;
-let CURRENT_PARTNER = null;
-let LINES = [];
-let TAX_MAP = new Map();
+  <script>
+    const API = '/orden-venta/mobile/api';
+    const TOKEN = sessionStorage.getItem('trabajo_general_token') || '';
 
-function byId(id){return document.getElementById(id)}
-function showError(msg){const el=byId('error');el.style.display='block';el.textContent=msg||'Error';setTimeout(()=>el.style.display='none',4000)}
-function showOk(msg){const el=byId('ok');el.style.display='block';el.textContent=msg||'OK';setTimeout(()=>el.style.display='none',2500)}
-function money(v){const n=Number(v||0);return `S/ ${n.toFixed(2)}`}
-function parseMoney(value){if(value===null||value===undefined)return 0;const cleaned=String(value).replace(/[^\d,.-]/g,'').replace(/,/g,'');const n=Number(cleaned);return Number.isFinite(n)?n:0}
-function formatMoneyInput(value){return Number(parseMoney(value)||0).toFixed(2)}
-function taxAmountFromId(taxId, base){const tax=TAX_MAP.get(Number(taxId)); if(!tax) return 0; return base * (Number(tax.amount||0)/100);}
-function lineSubtotal(line){return parseMoney(line.price_unit);}
-function lineTax(line){const base=lineSubtotal(line); return (line.tax_ids||[]).reduce((sum,id)=>sum+taxAmountFromId(id, base),0);}
-function lineTotal(line){return lineSubtotal(line)+lineTax(line);}
-function formatTaxLabel(taxIds){if(!(taxIds||[]).length) return '<span class="muted">Sin impuestos</span>'; return (taxIds||[]).map(id=>{const tax=TAX_MAP.get(Number(id)); return tax?`${tax.name} (${Number(tax.amount||0)}%)`:`ID ${id}`;}).join(' · ');}
-function recalcSummary(){const untaxed=LINES.reduce((sum,ln)=>sum+lineSubtotal(ln),0); const tax=LINES.reduce((sum,ln)=>sum+lineTax(ln),0); const total=untaxed+tax; const restante=total-parseMoney(byId('adelanto').value)-parseMoney(byId('adelantoExtra').value); byId('sumUntaxed').textContent=money(untaxed); byId('sumTax').textContent=money(tax); byId('sumTotal').textContent=money(total); byId('sumRestante').textContent=money(restante); byId('restante').value=money(restante);}
-function toServerDate(local){if(!local)return false;return local.replace('T',' ') + ':00'}
-function toLocalDate(val){if(!val)return '';return String(val).replace(' ','T').slice(0,16)}
+    let ORDER_ID = null;
+    let META = null;
+    let CURRENT_PARTNER = null;
+    let LINES = [];
+    let TAX_MAP = new Map();
 
-async function api(path, method='GET', body=null){
-  const headers={};
-  if(TOKEN) headers['X-Encargado-Token']=TOKEN;
-  if(body!==null) headers['Content-Type']='application/json';
-  const r=await fetch(API+path,{method,headers,body:body?JSON.stringify(body):undefined,cache:'no-store'});
-  const d=await r.json().catch(()=>({}));
-  if(!r.ok) throw new Error(d.error || 'Error de servidor');
-  return d;
-}
+    function byId(id){
+      return document.getElementById(id);
+    }
 
-function fillSelect(el, options){
-  el.innerHTML='<option value="">Seleccionar...</option>';
-  (options||[]).forEach(o=>{const op=document.createElement('option');op.value=o.value;op.textContent=o.label;el.appendChild(op);});
-}
+    function showError(msg){
+      const el = byId('error');
+      el.style.display = 'block';
+      el.textContent = msg || 'Error';
+      setTimeout(() => el.style.display = 'none', 4000);
+    }
 
-function normalizePhone(value){return String(value||'').replace(/\s+/g,' ').trim();}
-function normalizeSearch(value){return normalizePhone(value);}
-function syncPartnerUI(partner){
-  CURRENT_PARTNER = partner && partner.id ? {id:Number(partner.id), name:partner.name||'', phone:normalizePhone(partner.phone||'')} : null;
-  byId('celular').value = CURRENT_PARTNER?.phone || '';
-  byId('partnerInfo').textContent = CURRENT_PARTNER ? `Cliente: ${CURRENT_PARTNER.name} · ${CURRENT_PARTNER.phone||'Sin celular'}` : 'Sin cliente seleccionado';
-}
+    function showOk(msg){
+      const el = byId('ok');
+      el.style.display = 'block';
+      el.textContent = msg || 'OK';
+      setTimeout(() => el.style.display = 'none', 2500);
+    }
 
-function makeLine(data={}){
-  return {
-    id:data.id||null,
-    name:data.name||'',
-    product_template_id:data.product_template_id||{id:null,name:''},
-    product_id:data.product_id||{id:null,name:''},
-    x_studio_modelo_de_par_1:data.x_studio_modelo_de_par_1||'',
-    x_studio_ps:!!data.x_studio_ps,
-    x_studio_pl:!!data.x_studio_pl,
-    x_studio_responsable_r:data.x_studio_responsable_r||'',
-    x_studio_comprar_1:data.x_studio_comprar_1||'',
-    price_unit:Number(data.price_unit||0),
-    price_total:Number(data.price_total||0),
-    tax_ids:Array.isArray(data.tax_ids)?data.tax_ids:[],
-  };
-}
+    function money(v){
+      const n = Number(v || 0);
+      return `S/ ${n.toFixed(2)}`;
+    }
 
-function renderLines(){
-  const wrap=byId('lines');
-  wrap.innerHTML='';
-  LINES.forEach((ln,idx)=>{
-    const div=document.createElement('div');
-    div.className='line';
-    div.innerHTML=`
-      <div class="line-head">
-        <div class="line-title">Ficha #${idx+1} ${ln.product_template_id?.name?`· ${ln.product_template_id.name}`:''}</div>
-        <button class="btn soft" data-del="${idx}">Eliminar</button>
-      </div>
-      <div class="row two">
-        <div><label>Modelo de par</label><input data-f="modelo" data-i="${idx}" value="${ln.x_studio_modelo_de_par_1||''}" /></div>
-        <div class="autocomplete"><label>Producto/servicio</label><input data-f="product" data-i="${idx}" value="${ln.product_template_id?.name||''}" placeholder="Buscar producto" /><div class="dropdown" data-f="product-drop" data-i="${idx}"></div></div>
-      </div>
-      <div class="toggles">
-        <div class="toggle"><span>PS</span><input type="checkbox" data-f="ps" data-i="${idx}" ${ln.x_studio_ps?'checked':''}></div>
-        <div class="toggle"><span>PL</span><input type="checkbox" data-f="pl" data-i="${idx}" ${ln.x_studio_pl?'checked':''}></div>
-      </div>
-      <div class="row two">
-        <div><label>Responsable</label><select data-f="responsable" data-i="${idx}">${(META?.responsable_linea||[]).map(o=>`<option value="${o.value}" ${o.value===ln.x_studio_responsable_r?'selected':''}>${o.label}</option>`).join('')}</select></div>
-        <div><label>Precio unitario *</label><input class="money-input" inputmode="decimal" data-f="price" data-i="${idx}" value="${formatMoneyInput(ln.price_unit||0)}"></div>
-      </div>
-      <div class="row two">
-        <div><label>Impuestos (ids separados por coma)</label><input data-f="tax" data-i="${idx}" value="${(ln.tax_ids||[]).join(',')}"><div class="line-summary">${formatTaxLabel(ln.tax_ids)}</div></div>
-        <div><label>Total línea (readonly)</label><input readonly value="${money(ln.price_total)}"></div>
-      </div>
-      <div><label>Detalle adicional</label><textarea data-f="name" data-i="${idx}" placeholder="Detalle / nota">${ln.name||''}</textarea></div>
-      <div><label>Comprar</label><input data-f="comprar" data-i="${idx}" value="${ln.x_studio_comprar_1||''}"></div>
-    `;
-    wrap.appendChild(div);
-  });
+    function parseMoney(value){
+      if(value === null || value === undefined) return 0;
+      const cleaned = String(value).replace(/[^\d,.-]/g, '').replace(/,/g, '');
+      const n = Number(cleaned);
+      return Number.isFinite(n) ? n : 0;
+    }
 
-  wrap.querySelectorAll('[data-del]').forEach(btn=>btn.onclick=()=>{LINES.splice(Number(btn.dataset.del),1);renderLines();recalcSummary();});
-  wrap.querySelectorAll('[data-f]').forEach(el=>{
-    const i=Number(el.dataset.i); const f=el.dataset.f;
-    if(f==='product-drop') return;
-    el.addEventListener('input',()=>updateLine(i,f,el));
-    el.addEventListener('change',()=>updateLine(i,f,el));
-    if(f==='product') el.addEventListener('input',()=>searchProduct(i,el.value));
-  });
-}
+    function formatMoneyInput(value){
+      return Number(parseMoney(value) || 0).toFixed(2);
+    }
 
-function updateLine(i,f,el){
-  const ln=LINES[i]; if(!ln) return;
-  if(f==='modelo') ln.x_studio_modelo_de_par_1=el.value;
-  if(f==='ps') ln.x_studio_ps=!!el.checked;
-  if(f==='pl') ln.x_studio_pl=!!el.checked;
-  if(f==='responsable') ln.x_studio_responsable_r=el.value;
-  if(f==='price'){ ln.price_unit=parseMoney(el.value||0); if(document.activeElement!==el) el.value=formatMoneyInput(ln.price_unit); }
-  if(f==='tax') ln.tax_ids=(el.value||'').split(',').map(v=>Number(v.trim())).filter(v=>Number.isFinite(v)&&v>0);
-  if(f==='name') ln.name=el.value;
-  if(f==='comprar') ln.x_studio_comprar_1=el.value;
-  ln.price_total=lineTotal(ln);
-  recalcSummary();
-  if(f==='price' || f==='tax') renderLines();
-}
+    function taxAmountFromId(taxId, base){
+      const tax = TAX_MAP.get(Number(taxId));
+      if(!tax) return 0;
+      return base * (Number(tax.amount || 0) / 100);
+    }
 
-async function searchProduct(idx,q){
-  const drop=document.querySelector(`[data-f="product-drop"][data-i="${idx}"]`);
-  if(!drop) return;
-  if(!(q||'').trim()){drop.classList.remove('open');drop.innerHTML='';return;}
-  try{
-    const data=await api(`/products?q=${encodeURIComponent(q)}`);
-    drop.innerHTML=(data.result||[]).map(p=>`<div class="opt" data-pid="${p.id}" data-vid="${p.product_variant_id||''}" data-name="${p.name.replace(/"/g,'&quot;')}" data-price="${p.list_price}" data-taxes="${(p.taxes_id||[]).join(',')}">${p.name} · ${money(p.list_price)}</div>`).join('');
-    drop.classList.add('open');
-    drop.querySelectorAll('.opt').forEach(op=>op.onclick=()=>{
-      LINES[idx].product_template_id={id:Number(op.dataset.pid),name:op.dataset.name};
-      LINES[idx].product_id={id:Number(op.dataset.vid||0),name:op.dataset.name};
-      LINES[idx].price_unit=Number(op.dataset.price||0);
-      LINES[idx].tax_ids=(op.dataset.taxes||'').split(',').map(v=>Number(v.trim())).filter(Boolean);
-      LINES[idx].price_total=lineTotal(LINES[idx]);
+    function lineSubtotal(line){
+      return parseMoney(line.price_unit);
+    }
+
+    function lineTax(line){
+      const base = lineSubtotal(line);
+      return (line.tax_ids || []).reduce((sum, id) => sum + taxAmountFromId(id, base), 0);
+    }
+
+    function lineTotal(line){
+      return lineSubtotal(line) + lineTax(line);
+    }
+
+    function formatTaxLabel(taxIds){
+      if(!(taxIds || []).length) return '<span class="muted">Sin impuestos</span>';
+      return (taxIds || []).map(id => {
+        const tax = TAX_MAP.get(Number(id));
+        return tax ? `${tax.name} (${Number(tax.amount || 0)}%)` : `ID ${id}`;
+      }).join(' · ');
+    }
+
+    function recalcSummary(){
+      const untaxed = LINES.reduce((sum, ln) => sum + lineSubtotal(ln), 0);
+      const tax = LINES.reduce((sum, ln) => sum + lineTax(ln), 0);
+      const total = untaxed + tax;
+      const restante = total - parseMoney(byId('adelanto').value) - parseMoney(byId('adelantoExtra').value);
+
+      byId('sumUntaxed').textContent = money(untaxed);
+      byId('sumTax').textContent = money(tax);
+      byId('sumTotal').textContent = money(total);
+      byId('sumRestante').textContent = money(restante);
+      byId('restante').value = money(restante);
+    }
+
+    function toServerDate(local){
+      if(!local) return false;
+      return local.replace('T', ' ') + ':00';
+    }
+
+    function toLocalDate(val){
+      if(!val) return '';
+      return String(val).replace(' ', 'T').slice(0, 16);
+    }
+
+    async function api(path, method='GET', body=null){
+      const headers = {};
+      if(TOKEN) headers['X-Encargado-Token'] = TOKEN;
+      if(body !== null) headers['Content-Type'] = 'application/json';
+
+      const r = await fetch(API + path, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : undefined,
+        cache: 'no-store'
+      });
+
+      const d = await r.json().catch(() => ({}));
+      if(!r.ok) throw new Error(d.error || 'Error de servidor');
+      return d;
+    }
+
+    function fillSelect(el, options){
+      el.innerHTML = '<option value="">Seleccionar...</option>';
+      (options || []).forEach(o => {
+        const op = document.createElement('option');
+        op.value = o.value;
+        op.textContent = o.label;
+        el.appendChild(op);
+      });
+    }
+
+    function normalizePhone(value){
+      return String(value || '').replace(/\s+/g, ' ').trim();
+    }
+
+    function normalizeSearch(value){
+      return normalizePhone(value);
+    }
+
+    function syncPartnerUI(partner){
+      CURRENT_PARTNER = partner && partner.id
+        ? {
+            id: Number(partner.id),
+            name: partner.name || '',
+            phone: normalizePhone(partner.phone || '')
+          }
+        : null;
+
+      byId('celular').value = CURRENT_PARTNER?.phone || '';
+      byId('partnerInfo').textContent = CURRENT_PARTNER
+        ? `Cliente: ${CURRENT_PARTNER.name} · ${CURRENT_PARTNER.phone || 'Sin celular'}`
+        : 'Sin cliente seleccionado';
+    }
+
+    function makeLine(data = {}){
+      return {
+        id: data.id || null,
+        name: data.name || '',
+        product_template_id: data.product_template_id || {id:null, name:''},
+        product_id: data.product_id || {id:null, name:''},
+        x_studio_modelo_de_par_1: data.x_studio_modelo_de_par_1 || '',
+        x_studio_ps: !!data.x_studio_ps,
+        x_studio_pl: !!data.x_studio_pl,
+        x_studio_responsable_r: data.x_studio_responsable_r || '',
+        x_studio_comprar_1: data.x_studio_comprar_1 || '',
+        price_unit: Number(data.price_unit || 0),
+        price_total: Number(data.price_total || 0),
+        tax_ids: Array.isArray(data.tax_ids) ? data.tax_ids : [],
+      };
+    }
+
+    function renderLines(){
+      const wrap = byId('lines');
+      wrap.innerHTML = '';
+
+      LINES.forEach((ln, idx) => {
+        const div = document.createElement('div');
+        div.className = 'line';
+        div.innerHTML = `
+          <div class="line-head">
+            <div class="line-title">Ficha #${idx + 1} ${ln.product_template_id?.name ? `· ${ln.product_template_id.name}` : ''}</div>
+            <button class="btn soft" type="button" data-del="${idx}">Eliminar</button>
+          </div>
+
+          <div class="row two">
+            <div>
+              <label>Modelo de par</label>
+              <input data-f="modelo" data-i="${idx}" value="${ln.x_studio_modelo_de_par_1 || ''}" />
+            </div>
+            <div class="autocomplete">
+              <label>Producto/servicio</label>
+              <input data-f="product" data-i="${idx}" value="${ln.product_template_id?.name || ''}" placeholder="Buscar producto" autocomplete="off" />
+              <div class="dropdown" data-f="product-drop" data-i="${idx}"></div>
+            </div>
+          </div>
+
+          <div class="toggles">
+            <div class="toggle">
+              <span>PS</span>
+              <input type="checkbox" data-f="ps" data-i="${idx}" ${ln.x_studio_ps ? 'checked' : ''}>
+            </div>
+            <div class="toggle">
+              <span>PL</span>
+              <input type="checkbox" data-f="pl" data-i="${idx}" ${ln.x_studio_pl ? 'checked' : ''}>
+            </div>
+          </div>
+
+          <div class="row two">
+            <div>
+              <label>Responsable</label>
+              <select data-f="responsable" data-i="${idx}">
+                ${(META?.responsable_linea || []).map(o => `
+                  <option value="${o.value}" ${o.value === ln.x_studio_responsable_r ? 'selected' : ''}>
+                    ${o.label}
+                  </option>
+                `).join('')}
+              </select>
+            </div>
+            <div>
+              <label>Precio unitario *</label>
+              <input class="money-input" inputmode="decimal" data-f="price" data-i="${idx}" value="${formatMoneyInput(ln.price_unit || 0)}">
+            </div>
+          </div>
+
+          <div class="row two">
+            <div>
+              <label>Impuestos (ids separados por coma)</label>
+              <input data-f="tax" data-i="${idx}" value="${(ln.tax_ids || []).join(',')}">
+              <div class="line-summary">${formatTaxLabel(ln.tax_ids)}</div>
+            </div>
+            <div>
+              <label>Total línea (readonly)</label>
+              <input readonly value="${money(ln.price_total)}">
+            </div>
+          </div>
+
+          <div>
+            <label>Detalle adicional</label>
+            <textarea data-f="name" data-i="${idx}" placeholder="Detalle / nota">${ln.name || ''}</textarea>
+          </div>
+
+          <div>
+            <label>Comprar</label>
+            <input data-f="comprar" data-i="${idx}" value="${ln.x_studio_comprar_1 || ''}">
+          </div>
+        `;
+        wrap.appendChild(div);
+      });
+
+      wrap.querySelectorAll('[data-del]').forEach(btn => {
+        btn.onclick = () => {
+          LINES.splice(Number(btn.dataset.del), 1);
+          renderLines();
+          recalcSummary();
+        };
+      });
+
+      wrap.querySelectorAll('[data-f]').forEach(el => {
+        const i = Number(el.dataset.i);
+        const f = el.dataset.f;
+
+        if(f === 'product-drop') return;
+
+        el.addEventListener('input', () => updateLine(i, f, el));
+        el.addEventListener('change', () => updateLine(i, f, el));
+
+        if(f === 'product'){
+          el.addEventListener('input', () => searchProduct(i, el.value));
+        }
+      });
+    }
+
+    function updateLine(i, f, el){
+      const ln = LINES[i];
+      if(!ln) return;
+
+      if(f === 'modelo') ln.x_studio_modelo_de_par_1 = el.value;
+      if(f === 'ps') ln.x_studio_ps = !!el.checked;
+      if(f === 'pl') ln.x_studio_pl = !!el.checked;
+      if(f === 'responsable') ln.x_studio_responsable_r = el.value;
+      if(f === 'price'){
+        ln.price_unit = parseMoney(el.value || 0);
+        if(document.activeElement !== el){
+          el.value = formatMoneyInput(ln.price_unit);
+        }
+      }
+      if(f === 'tax'){
+        ln.tax_ids = (el.value || '')
+          .split(',')
+          .map(v => Number(v.trim()))
+          .filter(v => Number.isFinite(v) && v > 0);
+      }
+      if(f === 'name') ln.name = el.value;
+      if(f === 'comprar') ln.x_studio_comprar_1 = el.value;
+
+      ln.price_total = lineTotal(ln);
+      recalcSummary();
+
+      if(f === 'price' || f === 'tax'){
+        renderLines();
+      }
+    }
+
+    async function searchProduct(idx, q){
+      const drop = document.querySelector(`[data-f="product-drop"][data-i="${idx}"]`);
+      if(!drop) return;
+
+      if(!(q || '').trim()){
+        drop.classList.remove('open');
+        drop.innerHTML = '';
+        return;
+      }
+
+      try{
+        const data = await api(`/products?q=${encodeURIComponent(q)}`);
+        drop.innerHTML = (data.result || []).map(p => `
+          <div
+            class="opt"
+            data-pid="${p.id}"
+            data-vid="${p.product_variant_id || ''}"
+            data-name="${String(p.name || '').replace(/"/g, '&quot;')}"
+            data-price="${p.list_price}"
+            data-taxes="${(p.taxes_id || []).join(',')}"
+          >
+            ${p.name} · ${money(p.list_price)}
+          </div>
+        `).join('');
+
+        drop.classList.add('open');
+
+        drop.querySelectorAll('.opt').forEach(op => {
+          op.onclick = () => {
+            LINES[idx].product_template_id = {
+              id: Number(op.dataset.pid),
+              name: op.dataset.name
+            };
+            LINES[idx].product_id = {
+              id: Number(op.dataset.vid || 0),
+              name: op.dataset.name
+            };
+            LINES[idx].price_unit = Number(op.dataset.price || 0);
+            LINES[idx].tax_ids = (op.dataset.taxes || '')
+              .split(',')
+              .map(v => Number(v.trim()))
+              .filter(Boolean);
+            LINES[idx].price_total = lineTotal(LINES[idx]);
+
+            renderLines();
+            recalcSummary();
+          };
+        });
+      }catch(e){
+        showError(e.message);
+      }
+    }
+
+    async function searchPartners(q){
+      const drop = byId('partnerDrop');
+      const term = normalizeSearch(q);
+
+      if(!term){
+        drop.classList.remove('open');
+        drop.innerHTML = '';
+        return;
+      }
+
+      try{
+        const data = await api(`/partners?q=${encodeURIComponent(term)}`);
+        const results = data.result || [];
+
+        drop.innerHTML = results.map(p => `
+          <div
+            class="opt"
+            data-id="${p.id}"
+            data-name="${String(p.name || '').replace(/"/g, '&quot;')}"
+            data-phone="${normalizePhone(p.phone || '').replace(/"/g, '&quot;')}"
+          >
+            ${p.name}<br>
+            <span class="muted">${p.phone || 'Sin teléfono'}</span>
+          </div>
+        `).join('');
+
+        drop.classList.toggle('open', results.length > 0);
+
+        drop.querySelectorAll('.opt').forEach(op => {
+          op.onclick = () => {
+            syncPartnerUI({
+              id: Number(op.dataset.id),
+              name: op.dataset.name,
+              phone: op.dataset.phone
+            });
+
+            byId('partnerSearch').value = op.dataset.name;
+            drop.classList.remove('open');
+          };
+        });
+      }catch(e){
+        showError(e.message);
+      }
+    }
+
+    async function createPartnerQuick(){
+      const name = prompt('Nombre del cliente');
+      if(!name || !name.trim()) return;
+
+      const phone = normalizePhone(prompt('Número de celular') || '');
+
+      try{
+        const d = await api('/partners/create', 'POST', {
+          name: name.trim(),
+          phone
+        });
+
+        syncPartnerUI(d.partner || null);
+        byId('partnerSearch').value = d.partner?.name || name.trim();
+        showOk('Cliente creado');
+      }catch(e){
+        showError(e.message);
+      }
+    }
+
+    function fillForm(order){
+      ORDER_ID = order.id || null;
+
+      byId('title').textContent = order.id
+        ? `Editar orden ${order.name || ''}`
+        : 'Nueva orden de venta';
+
+      byId('subtitle').textContent = order.state
+        ? 'Estado actual sincronizado con Odoo'
+        : 'Borrador';
+
+      byId('stateBadge').textContent = `Estado: ${order.state || 'draft'}`;
+
+      syncPartnerUI(
+        order.partner_id?.id
+          ? {
+              id: order.partner_id.id,
+              name: order.partner_id.name,
+              phone: order.partner_phone || order.x_studio_numero_de_celular || ''
+            }
+          : null
+      );
+
+      byId('partnerSearch').value = order.partner_id?.name || '';
+      byId('revisadas').value = order.x_studio_plantillas_y_pasadores_revisadas_1 || '';
+      byId('ubicacionPLPS').value = order.x_studio_pasadores_o_plantillas_lugar || '';
+      byId('dateOrder').value = toLocalDate(order.date_order) || '';
+      byId('fechaEntrega').value = toLocalDate(order.x_studio_fecha_de_entrega) || '';
+      byId('fechaRecojo').value = order.x_studio_fecha_de_recojo || '';
+      byId('adelanto').value = formatMoneyInput(order.x_studio_adelanto || 0);
+      byId('cuentaAdelanto').value = order.x_studio_cuenta_adelanto || '';
+      byId('adelantoExtra').value = formatMoneyInput(order.x_studio_adelanto_extra || 0);
+      byId('cuentaAdelantoExtra').value = order.x_studio_cuenta_de_adelanto_extra || '';
+      byId('restante').value = money(order.x_studio_total || 0);
+      byId('cuentaRestante').value = order.x_studio_cuenta_restante || '';
+
+      byId('sumUntaxed').textContent = money(order.amount_untaxed || 0);
+      byId('sumTax').textContent = money(order.amount_tax || 0);
+      byId('sumTotal').textContent = money(order.amount_total || 0);
+      byId('sumRestante').textContent = money(order.x_studio_total || 0);
+
+      LINES = (order.lines || [])
+        .map(makeLine)
+        .map(ln => ({ ...ln, price_total: lineTotal(ln) }));
+
       renderLines();
       recalcSummary();
-    });
-  }catch(e){showError(e.message)}
-}
-
-async function searchPartners(q){
-  const drop=byId('partnerDrop');
-  const term=normalizeSearch(q);
-  if(!term){drop.classList.remove('open');drop.innerHTML='';return;}
-  try{
-    const data=await api(`/partners?q=${encodeURIComponent(term)}`);
-    const results=data.result||[];
-    drop.innerHTML=results.map(p=>`<div class="opt" data-id="${p.id}" data-name="${p.name.replace(/"/g,'&quot;')}" data-phone="${normalizePhone(p.phone||'').replace(/"/g,'&quot;')}">${p.name}<br><span class='muted'>${p.phone||'Sin teléfono'}</span></div>`).join('');
-    drop.classList.toggle('open', results.length > 0);
-    drop.querySelectorAll('.opt').forEach(op=>op.onclick=()=>{
-      syncPartnerUI({id:Number(op.dataset.id),name:op.dataset.name,phone:op.dataset.phone});
-      byId('partnerSearch').value=op.dataset.name;
-      drop.classList.remove('open');
-    });
-  }catch(e){showError(e.message)}
-}
-
-async function createPartnerQuick(){
-  const name=prompt('Nombre del cliente'); if(!name) return;
-  const phone=normalizePhone(prompt('Número de celular')||'');
-  try{
-    const d=await api('/partners/create','POST',{name:name.trim(),phone});
-    syncPartnerUI(d.partner||null);
-    byId('partnerSearch').value=d.partner?.name||name.trim();
-    showOk('Cliente creado');
-  }catch(e){showError(e.message)}
-}
-
-function fillForm(order){
-  ORDER_ID=order.id;
-  byId('title').textContent=order.id?`Editar orden ${order.name}`:'Nueva orden de venta';
-  byId('subtitle').textContent=order.state?`Estado actual sincronizado con Odoo`:'Borrador';
-  byId('stateBadge').textContent=`Estado: ${order.state||'draft'}`;
-    syncPartnerUI(order.partner_id?.id?{id:order.partner_id.id,name:order.partner_id.name,phone:order.partner_phone||order.x_studio_numero_de_celular||''}:null);
-  byId('partnerSearch').value=order.partner_id?.name||'';
-  byId('revisadas').value=order.x_studio_plantillas_y_pasadores_revisadas_1||'';
-  byId('ubicacionPLPS').value=order.x_studio_pasadores_o_plantillas_lugar||'';
-  byId('dateOrder').value=toLocalDate(order.date_order)||'';
-  byId('fechaEntrega').value=toLocalDate(order.x_studio_fecha_de_entrega)||'';
-  byId('fechaRecojo').value=order.x_studio_fecha_de_recojo||'';
-  byId('adelanto').value=formatMoneyInput(order.x_studio_adelanto||0);
-  byId('cuentaAdelanto').value=order.x_studio_cuenta_adelanto||'';
-  byId('adelantoExtra').value=formatMoneyInput(order.x_studio_adelanto_extra||0);
-  byId('cuentaAdelantoExtra').value=order.x_studio_cuenta_de_adelanto_extra||'';
-  byId('restante').value=money(order.x_studio_total||0);
-  byId('cuentaRestante').value=order.x_studio_cuenta_restante||'';
-  byId('sumUntaxed').textContent=money(order.amount_untaxed);
-  byId('sumTax').textContent=money(order.amount_tax);
-  byId('sumTotal').textContent=money(order.amount_total);
-  byId('sumRestante').textContent=money(order.x_studio_total);
-  LINES=(order.lines||[]).map(makeLine).map(ln=>({ ...ln, price_total: lineTotal(ln) }));
-  renderLines();
-  recalcSummary();
-}
-
-function buildPayload(){
-  return {
-    id: ORDER_ID,
-    partner_id: CURRENT_PARTNER?.id || null,
-    x_studio_numero_de_celular: normalizePhone(CURRENT_PARTNER?.phone || byId('celular').value || ''),
-    x_studio_plantillas_y_pasadores_revisadas_1: byId('revisadas').value || '',
-    x_studio_pasadores_o_plantillas_lugar: byId('ubicacionPLPS').value || '',
-    date_order: toServerDate(byId('dateOrder').value),
-    x_studio_fecha_de_entrega: toServerDate(byId('fechaEntrega').value),
-    x_studio_adelanto: parseMoney(byId('adelanto').value||0),
-    x_studio_cuenta_adelanto: byId('cuentaAdelanto').value || '',
-    x_studio_adelanto_extra: parseMoney(byId('adelantoExtra').value||0),
-    x_studio_cuenta_de_adelanto_extra: byId('cuentaAdelantoExtra').value || '',
-    x_studio_cuenta_restante: byId('cuentaRestante').value || '',
-    lines: LINES,
-  };
-}
-
-async function saveOrder(){
-  try{
-    const data=await api('/order/save','POST',buildPayload());
-    fillForm(data.order);
-    showOk('Orden guardada');
-    if(history.replaceState && data.order?.id){
-      history.replaceState({},'',`/orden-venta/mobile/${data.order.id}`);
     }
-  }catch(e){showError(e.message)}
-}
 
-async function runAction(action){
-  if(!ORDER_ID){showError('Guarda primero la orden');return}
-  try{
-    const d=await api(`/order/${ORDER_ID}/action/${action}`,'POST',{});
-    if(d.order) fillForm(d.order);
-    showOk('Acción ejecutada');
-  }catch(e){showError(e.message)}
-}
+    function buildPayload(){
+      return {
+        id: ORDER_ID,
+        partner_id: CURRENT_PARTNER?.id || null,
+        x_studio_numero_de_celular: normalizePhone(CURRENT_PARTNER?.phone || byId('celular').value || ''),
+        x_studio_plantillas_y_pasadores_revisadas_1: byId('revisadas').value || '',
+        x_studio_pasadores_o_plantillas_lugar: byId('ubicacionPLPS').value || '',
+        date_order: toServerDate(byId('dateOrder').value),
+        x_studio_fecha_de_entrega: toServerDate(byId('fechaEntrega').value),
+        x_studio_adelanto: parseMoney(byId('adelanto').value || 0),
+        x_studio_cuenta_adelanto: byId('cuentaAdelanto').value || '',
+        x_studio_adelanto_extra: parseMoney(byId('adelantoExtra').value || 0),
+        x_studio_cuenta_de_adelanto_extra: byId('cuentaAdelantoExtra').value || '',
+        x_studio_cuenta_restante: byId('cuentaRestante').value || '',
+        lines: LINES,
+      };
+    }
 
-async function loadMeta(){
-  META=await api('/meta');
-  TAX_MAP = new Map((META.taxes||[]).map(t=>[Number(t.id), t]));
-  fillSelect(byId('revisadas'), META.plantillas_pasadores_revisadas);
-  fillSelect(byId('cuentaAdelanto'), META.cuentas_adelanto);
-  fillSelect(byId('cuentaRestante'), META.cuentas_restante);
-  fillSelect(byId('cuentaAdelantoExtra'), META.cuentas_adelanto_extra);
-}
+    async function saveOrder(){
+      try{
+        const data = await api('/order/save', 'POST', buildPayload());
+        fillForm(data.order);
+        showOk('Orden guardada');
 
-async function loadOrderIfEdit(){
-  const m=location.pathname.match(/\/orden-venta\/mobile\/(\d+)$/);
-  if(m){
-    const d=await api(`/order/${m[1]}`);
-    fillForm(d.order);
-  } else {
-    fillForm({id:null,name:'',state:'draft',partner_id:{id:null,name:''},lines:[],amount_untaxed:0,amount_tax:0,amount_total:0,x_studio_total:0});
-    byId('dateOrder').value=new Date().toISOString().slice(0,16);
-  }
-}
+        if(history.replaceState && data.order?.id){
+          history.replaceState({}, '', `/orden-venta/mobile/${data.order.id}`);
+        }
+      }catch(e){
+        showError(e.message);
+      }
+    }
 
-window.addEventListener('load', async ()=>{
-  try{
-    await loadMeta();
-    await loadOrderIfEdit();
+    async function runAction(action){
+      if(!ORDER_ID){
+        showError('Guarda primero la orden');
+        return;
+      }
 
-    byId('addLine').onclick=()=>{LINES.push(makeLine());renderLines();recalcSummary();};
-    byId('saveBtn').onclick=saveOrder;
-    byId('reloadBtn').onclick=()=>location.reload();
-    byId('partnerSearch').addEventListener('input',e=>{ const value=e.target.value; if(CURRENT_PARTNER && value!==CURRENT_PARTNER.name){ syncPartnerUI(null); } searchPartners(value); });
-    byId('btnCreatePartner').onclick=createPartnerQuick;
-    ['adelanto','adelantoExtra'].forEach(id=>{ const el=byId(id); el.addEventListener('focus',()=>{el.value=parseMoney(el.value||0)||''}); el.addEventListener('blur',()=>{el.value=formatMoneyInput(el.value||0); recalcSummary();}); el.addEventListener('input',recalcSummary); });
+      try{
+        const d = await api(`/order/${ORDER_ID}/action/${action}`, 'POST', {});
+        if(d.order) fillForm(d.order);
+        showOk('Acción ejecutada');
+      }catch(e){
+        showError(e.message);
+      }
+    }
 
-    document.querySelectorAll('[data-action]').forEach(btn=>btn.onclick=()=>runAction(btn.dataset.action));
+    async function loadMeta(){
+      META = await api('/meta');
+      TAX_MAP = new Map((META.taxes || []).map(t => [Number(t.id), t]));
 
-    document.addEventListener('click',e=>{
-      if(!e.target.closest('.autocomplete')){
-        document.querySelectorAll('.dropdown').forEach(d=>d.classList.remove('open'));
+      fillSelect(byId('revisadas'), META.plantillas_pasadores_revisadas);
+      fillSelect(byId('cuentaAdelanto'), META.cuentas_adelanto);
+      fillSelect(byId('cuentaRestante'), META.cuentas_restante);
+      fillSelect(byId('cuentaAdelantoExtra'), META.cuentas_adelanto_extra);
+    }
+
+    async function loadOrderIfEdit(){
+      const m = location.pathname.match(/\/orden-venta\/mobile\/(\d+)$/);
+
+      if(m){
+        const d = await api(`/order/${m[1]}`);
+        fillForm(d.order);
+      }else{
+        fillForm({
+          id:null,
+          name:'',
+          state:'draft',
+          partner_id:{id:null,name:''},
+          lines:[],
+          amount_untaxed:0,
+          amount_tax:0,
+          amount_total:0,
+          x_studio_total:0
+        });
+
+        byId('dateOrder').value = new Date().toISOString().slice(0,16);
+      }
+    }
+
+    window.addEventListener('load', async () => {
+      try{
+        await loadMeta();
+        await loadOrderIfEdit();
+
+        byId('addLine').onclick = () => {
+          LINES.push(makeLine());
+          renderLines();
+          recalcSummary();
+        };
+
+        byId('saveBtn').onclick = saveOrder;
+        byId('reloadBtn').onclick = () => location.reload();
+
+        byId('partnerSearch').addEventListener('input', e => {
+          const value = e.target.value;
+
+          if(CURRENT_PARTNER && value !== CURRENT_PARTNER.name){
+            syncPartnerUI(null);
+          }
+
+          searchPartners(value);
+        });
+
+        byId('btnCreatePartner').onclick = createPartnerQuick;
+
+        ['adelanto', 'adelantoExtra'].forEach(id => {
+          const el = byId(id);
+
+          el.addEventListener('focus', () => {
+            el.value = parseMoney(el.value || 0) || '';
+          });
+
+          el.addEventListener('blur', () => {
+            el.value = formatMoneyInput(el.value || 0);
+            recalcSummary();
+          });
+
+          el.addEventListener('input', recalcSummary);
+        });
+
+        byId('actionsToggle').onclick = (e) => {
+          e.stopPropagation();
+          byId('actionsMenu').classList.toggle('open');
+        };
+
+        document.querySelectorAll('[data-action]').forEach(btn => {
+          btn.onclick = () => {
+            byId('actionsMenu').classList.remove('open');
+            runAction(btn.dataset.action);
+          };
+        });
+
+        document.addEventListener('click', e => {
+          if(!e.target.closest('.autocomplete')){
+            document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('open'));
+          }
+
+          if(!e.target.closest('.actions-menu')){
+            byId('actionsMenu').classList.remove('open');
+          }
+        });
+      }catch(e){
+        showError(e.message);
       }
     });
-  }catch(e){showError(e.message)}
-});
-</script>
+  </script>
 </body>
 </html>

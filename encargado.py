@@ -1100,6 +1100,8 @@ def trabajo_general_complete(tarea_id):
     except Exception as e:
         log("ERROR /complete =", str(e))
         return jsonify({"error": str(e)}), 500
+
+
 # =========================
 # ORDEN DE VENTA MÓVIL
 # =========================
@@ -1279,6 +1281,25 @@ def get_partner_field_info(force=False):
     return data
 
 
+def build_partner_create_vals(name, phone):
+    partner_info = get_partner_field_info()
+    vals = {"name": name}
+
+    phone = normalize_partner_phone(phone)
+    if phone:
+        if partner_info.get("has_phone"):
+            vals["phone"] = phone
+        if partner_info.get("has_mobile"):
+            vals["mobile"] = phone
+
+        # fallback defensivo: si fields_get no devolvió nada útil, intentamos con create_field
+        create_field = partner_info.get("create_field")
+        if create_field and create_field not in vals:
+            vals[create_field] = phone
+
+    return vals
+
+
 def partner_row_to_payload(row):
     row = row or {}
     return {
@@ -1396,7 +1417,10 @@ def read_order(order_id):
             kwargs={},
             req_id=221,
         ) or []
-    partner_payload = read_partner_payload((order.get("partner_id") or [False])[0] if isinstance(order.get("partner_id"), list) else False)
+
+    partner_payload = read_partner_payload(
+        (order.get("partner_id") or [False])[0] if isinstance(order.get("partner_id"), list) else False
+    )
     return order_to_payload(order, lines, partner_payload=partner_payload)
 
 
@@ -1476,6 +1500,10 @@ def prepare_order_vals(body):
     if not date_order:
         raise Exception("Fecha de orden es obligatoria")
 
+    x_studio_total = body.get("x_studio_total")
+    if x_studio_total in (None, "", False):
+        x_studio_total = body.get("amount_total")
+
     return {
         "partner_id": partner_id,
         "x_studio_numero_de_celular": str(body.get("x_studio_numero_de_celular") or "").strip(),
@@ -1485,6 +1513,8 @@ def prepare_order_vals(body):
         "x_studio_adelanto": to_float(body.get("x_studio_adelanto"), 0.0),
         "x_studio_cuenta_adelanto": str(body.get("x_studio_cuenta_adelanto") or "").strip() or False,
         "x_studio_fecha_de_entrega": normalize_iso_to_odoo(body.get("x_studio_fecha_de_entrega")),
+        "x_studio_fecha_de_recojo": normalize_iso_to_odoo(body.get("x_studio_fecha_de_recojo")),
+        "x_studio_total": to_float(x_studio_total, 0.0),
         "x_studio_cuenta_restante": str(body.get("x_studio_cuenta_restante") or "").strip() or False,
         "x_studio_adelanto_extra": to_float(body.get("x_studio_adelanto_extra"), 0.0),
         "x_studio_cuenta_de_adelanto_extra": str(body.get("x_studio_cuenta_de_adelanto_extra") or "").strip() or False,
@@ -1492,8 +1522,16 @@ def prepare_order_vals(body):
 
 
 def prepare_line_vals(line):
-    product_template_id = to_int_or_false((line.get("product_template_id") or {}).get("id") if isinstance(line.get("product_template_id"), dict) else line.get("product_template_id"))
-    product_id = to_int_or_false((line.get("product_id") or {}).get("id") if isinstance(line.get("product_id"), dict) else line.get("product_id"))
+    product_template_id = to_int_or_false(
+        (line.get("product_template_id") or {}).get("id")
+        if isinstance(line.get("product_template_id"), dict)
+        else line.get("product_template_id")
+    )
+    product_id = to_int_or_false(
+        (line.get("product_id") or {}).get("id")
+        if isinstance(line.get("product_id"), dict)
+        else line.get("product_id")
+    )
 
     if not product_id and product_template_id:
         product_id = resolve_product_variant_id(product_template_id)
@@ -1615,11 +1653,7 @@ def orden_venta_mobile_partner_create():
     if not name:
         return json_error("Nombre es obligatorio", 400)
 
-    partner_info = get_partner_field_info()
-    vals = {"name": name}
-    create_field = partner_info.get("create_field")
-    if phone and create_field:
-        vals[create_field] = phone
+    vals = build_partner_create_vals(name, phone)
 
     try:
         partner_id = odoo_execute_kw(
