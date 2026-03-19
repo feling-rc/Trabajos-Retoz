@@ -1455,6 +1455,13 @@ def orden_venta_mobile_meta():
         cuentas_extra = get_selection_choices(MODEL_ORDER, "x_studio_cuenta_de_adelanto_extra")
         revisado_choices = get_selection_choices(MODEL_ORDER, "x_studio_plantillas_y_pasadores_revisadas_1")
         responsable_choices = get_selection_choices(MODEL_ORDER_LINE, "x_studio_responsable_r")
+        taxes = odoo_execute_kw(
+            MODEL_TAX,
+            "search_read",
+            args=[[["type_tax_use", "in", ["sale", "none"]], ["active", "=", True]]],
+            kwargs={"fields": ["id", "name", "amount"], "limit": 200, "order": "name asc"},
+            req_id=231,
+        ) or []
 
         return jsonify({
             "cuentas_adelanto": cuentas_adelanto,
@@ -1462,6 +1469,7 @@ def orden_venta_mobile_meta():
             "cuentas_adelanto_extra": cuentas_extra,
             "plantillas_pasadores_revisadas": revisado_choices,
             "responsable_linea": responsable_choices,
+            "taxes": taxes,
             "actions": list(ORDER_ACTIONS.keys()),
         })
     except Exception as e:
@@ -1508,19 +1516,33 @@ def orden_venta_mobile_partner_create():
     if not name:
         return json_error("Nombre es obligatorio", 400)
 
-    partner_id = odoo_execute_kw(
-        MODEL_PARTNER,
-        "create",
-        args=[{
-            "name": name,
-            "phone": phone or False,
-            "mobile": phone or False,
-        }],
-        kwargs={},
-        req_id=251,
-    )
-
-    return jsonify({"ok": True, "partner": {"id": partner_id, "name": name, "phone": phone}})
+    try:
+        partner_id = odoo_execute_kw(
+            MODEL_PARTNER,
+            "create",
+            args=[{
+                "name": name,
+                "phone": phone or False,
+                "mobile": phone or False,
+            }],
+            kwargs={},
+            req_id=251,
+        )
+        rows = odoo_execute_kw(
+            MODEL_PARTNER,
+            "read",
+            args=[[partner_id], ["id", "name", "phone", "mobile"]],
+            kwargs={},
+            req_id=2511,
+        ) or []
+        created = rows[0] if rows else {"id": partner_id, "name": name, "phone": phone, "mobile": phone}
+        return jsonify({"ok": True, "partner": {
+            "id": created.get("id") or partner_id,
+            "name": created.get("name") or name,
+            "phone": created.get("phone") or created.get("mobile") or phone,
+        }})
+    except Exception as e:
+        return json_error(str(e), 500)
 
 
 @encargado_bp.route("/orden-venta/mobile/api/products")
@@ -1538,7 +1560,7 @@ def orden_venta_mobile_products():
         MODEL_PRODUCT_TEMPLATE,
         "search_read",
         args=[domain],
-        kwargs={"fields": ["id", "name", "list_price"], "limit": 40, "order": "name asc"},
+        kwargs={"fields": ["id", "name", "list_price", "taxes_id", "product_variant_id"], "limit": 40, "order": "name asc"},
         req_id=252,
     ) or []
 
@@ -1546,6 +1568,8 @@ def orden_venta_mobile_products():
         "id": r.get("id"),
         "name": r.get("name") or "",
         "list_price": to_float(r.get("list_price"), 0.0),
+        "taxes_id": m2m_ids(r.get("taxes_id")),
+        "product_variant_id": (r.get("product_variant_id") or [False])[0] if isinstance(r.get("product_variant_id"), list) else False,
     } for r in rows]
     return jsonify({"result": result})
 
