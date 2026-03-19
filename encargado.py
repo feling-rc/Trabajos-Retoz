@@ -1147,12 +1147,19 @@ LINE_FIELDS = [
     "name",
     "product_id",
     "product_template_id",
+    "company_id",
+    "currency_id",
+    "display_type",
+    "product_uom_qty",
+    "qty_invoiced",
     "x_studio_modelo_de_par_1",
     "x_studio_ps",
     "x_studio_pl",
     "x_studio_responsable_r",
     "x_studio_comprar_1",
     "price_unit",
+    "price_subtotal",
+    "price_tax",
     "price_total",
     "tax_ids",
 ]
@@ -1341,19 +1348,41 @@ def resolve_product_variant_id(product_template_id):
 
 
 def line_to_payload(line):
+    raw_name = line.get("name") or ""
+    raw_lines = [part.rstrip() for part in str(raw_name).splitlines()]
+    product_label = m2o_to_json(line.get("product_id")).get("name") or m2o_to_json(line.get("product_template_id")).get("name") or ""
+    if raw_lines:
+        first_line = raw_lines[0].strip()
+        description = "\n".join(part for part in raw_lines[1:] if part != "")
+        if not product_label:
+            product_label = first_line
+    else:
+        first_line = ""
+        description = ""
+
     return {
         "id": line.get("id"),
-        "name": line.get("name") or "",
+        "name": raw_name,
+        "product_display_name": product_label or first_line,
+        "description": description,
         "product_id": m2o_to_json(line.get("product_id")),
         "product_template_id": m2o_to_json(line.get("product_template_id")),
+        "company_id": m2o_to_json(line.get("company_id")),
+        "currency_id": m2o_to_json(line.get("currency_id")),
+        "display_type": line.get("display_type") or False,
+        "product_uom_qty": to_float(line.get("product_uom_qty"), 0.0),
+        "qty_invoiced": to_float(line.get("qty_invoiced"), 0.0),
         "x_studio_modelo_de_par_1": line.get("x_studio_modelo_de_par_1") or "",
         "x_studio_ps": bool(line.get("x_studio_ps")),
         "x_studio_pl": bool(line.get("x_studio_pl")),
         "x_studio_responsable_r": line.get("x_studio_responsable_r") or "",
         "x_studio_comprar_1": line.get("x_studio_comprar_1") or "",
         "price_unit": to_float(line.get("price_unit"), 0.0),
+        "price_subtotal": to_float(line.get("price_subtotal"), 0.0),
+        "price_tax": to_float(line.get("price_tax"), 0.0),
         "price_total": to_float(line.get("price_total"), 0.0),
         "tax_ids": m2m_ids(line.get("tax_ids")),
+        "price_unit_readonly": to_float(line.get("qty_invoiced"), 0.0) > 0,
     }
 
 
@@ -1422,6 +1451,35 @@ def read_order(order_id):
         (order.get("partner_id") or [False])[0] if isinstance(order.get("partner_id"), list) else False
     )
     return order_to_payload(order, lines, partner_payload=partner_payload)
+
+
+def get_order_company_id(order_id):
+    rows = odoo_execute_kw(
+        MODEL_ORDER,
+        "read",
+        args=[[order_id], ["company_id"]],
+        kwargs={},
+        req_id=222,
+    ) or []
+    company = (rows[0].get("company_id") or [False]) if rows else [False]
+    return to_int_or_false(company[0] if isinstance(company, list) else False)
+
+
+def search_sale_taxes(company_id=False, q=""):
+    domain = [["type_tax_use", "in", ["sale", "none"]], ["active", "=", True]]
+    clean_company_id = to_int_or_false(company_id)
+    if clean_company_id:
+        domain.extend(["|", ["company_id", "=", False], ["company_id", "=", clean_company_id]])
+    if q:
+        domain.append(["name", "ilike", q])
+
+    return odoo_execute_kw(
+        MODEL_TAX,
+        "search_read",
+        args=[domain],
+        kwargs={"fields": ["id", "name", "amount", "company_id"], "limit": 200, "order": "name asc"},
+        req_id=223,
+    ) or []
 
 
 def get_selection_choices(model, field_name):
@@ -1521,6 +1579,18 @@ def prepare_order_vals(body):
     }
 
 
+def compose_line_name(product_label, description, fallback_name=""):
+    base = str(product_label or "").strip()
+    desc = str(description or "").strip()
+    if base and desc:
+        return f"{base}\n{desc}"
+    if base:
+        return base
+    if desc:
+        return desc
+    return str(fallback_name or "").strip() or "-"
+
+
 def prepare_line_vals(line):
     product_template_id = to_int_or_false(
         (line.get("product_template_id") or {}).get("id")
@@ -1542,8 +1612,12 @@ def prepare_line_vals(line):
     else:
         clean_taxes = []
 
+    product_label = str(line.get("product_display_name") or "").strip()
+    description = line.get("description")
+    fallback_name = line.get("name")
+
     vals = {
-        "name": str(line.get("name") or "").strip() or "-",
+        "name": compose_line_name(product_label, description, fallback_name=fallback_name),
         "x_studio_modelo_de_par_1": str(line.get("x_studio_modelo_de_par_1") or "").strip(),
         "x_studio_ps": bool(line.get("x_studio_ps")),
         "x_studio_pl": bool(line.get("x_studio_pl")),
@@ -1582,18 +1656,13 @@ def orden_venta_mobile_meta():
         return err
 
     try:
+        order_id = to_int_or_false(request.args.get("order_id"))
         cuentas_adelanto = get_selection_choices(MODEL_ORDER, "x_studio_cuenta_adelanto")
         cuentas_restante = get_selection_choices(MODEL_ORDER, "x_studio_cuenta_restante")
         cuentas_extra = get_selection_choices(MODEL_ORDER, "x_studio_cuenta_de_adelanto_extra")
         revisado_choices = get_selection_choices(MODEL_ORDER, "x_studio_plantillas_y_pasadores_revisadas_1")
         responsable_choices = get_selection_choices(MODEL_ORDER_LINE, "x_studio_responsable_r")
-        taxes = odoo_execute_kw(
-            MODEL_TAX,
-            "search_read",
-            args=[[["type_tax_use", "in", ["sale", "none"]], ["active", "=", True]]],
-            kwargs={"fields": ["id", "name", "amount"], "limit": 200, "order": "name asc"},
-            req_id=231,
-        ) or []
+        taxes = search_sale_taxes(get_order_company_id(order_id) if order_id else False)
 
         return jsonify({
             "cuentas_adelanto": cuentas_adelanto,
@@ -1704,17 +1773,9 @@ def orden_venta_mobile_taxes():
         return err
 
     q = (request.args.get("q") or "").strip()
-    domain = [["type_tax_use", "in", ["sale", "none"]], ["active", "=", True]]
-    if q:
-        domain.append(["name", "ilike", q])
-
-    rows = odoo_execute_kw(
-        MODEL_TAX,
-        "search_read",
-        args=[domain],
-        kwargs={"fields": ["id", "name", "amount"], "limit": 50, "order": "name asc"},
-        req_id=253,
-    ) or []
+    order_id = to_int_or_false(request.args.get("order_id"))
+    company_id = get_order_company_id(order_id) if order_id else False
+    rows = search_sale_taxes(company_id=company_id, q=q)
 
     return jsonify({"result": rows})
 
