@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request, send_file
 import os
+import re
 import time
 import secrets
 from threading import Lock
@@ -42,6 +43,8 @@ TOKEN_TTL_SECONDS = 60 * 60 * 12
 _OPTIONS_CACHE = {"ts": 0, "data": None}
 _OPTIONS_CACHE_LOCK = Lock()
 OPTIONS_CACHE_SECONDS = 120
+_PARTNER_FIELDS_CACHE = {"ts": 0, "data": None}
+PARTNER_FIELDS_CACHE_SECONDS = 300
 
 
 # =========================
@@ -1097,6 +1100,8 @@ def trabajo_general_complete(tarea_id):
     except Exception as e:
         log("ERROR /complete =", str(e))
         return jsonify({"error": str(e)}), 500
+
+
 # =========================
 # ORDEN DE VENTA MÓVIL
 # =========================
@@ -1214,6 +1219,112 @@ def to_int_or_false(value):
         return False
 
 
+def normalize_partner_phone(value):
+    raw = str(value or "").strip()
+    raw = re.sub(r"\s+", " ", raw)
+    return raw
+
+
+def normalize_partner_search_tokens(value):
+    raw = normalize_partner_phone(value)
+    digits = re.sub(r"\D+", "", raw)
+    alt_digits = digits[2:] if digits.startswith("51") and len(digits) > 2 else digits
+    tokens = []
+    for item in [raw, digits, alt_digits]:
+        item = str(item or "").strip()
+        if item and item not in tokens:
+            tokens.append(item)
+    return tokens
+
+
+def build_or_domain(conditions):
+    clean = [c for c in (conditions or []) if c]
+    if not clean:
+        return []
+    if len(clean) == 1:
+        return [clean[0]]
+    domain = ["|"] * (len(clean) - 1)
+    domain.extend(clean)
+    return domain
+
+
+def get_partner_field_info(force=False):
+    now_ts = time.time()
+    if (
+        not force
+        and _PARTNER_FIELDS_CACHE["data"] is not None
+        and (now_ts - _PARTNER_FIELDS_CACHE["ts"]) < PARTNER_FIELDS_CACHE_SECONDS
+    ):
+        return _PARTNER_FIELDS_CACHE["data"]
+
+    try:
+        meta = odoo_execute_kw(
+            MODEL_PARTNER,
+            "fields_get",
+            args=[["name", "phone", "mobile"]],
+            kwargs={"attributes": ["type", "string"]},
+            req_id=205,
+        ) or {}
+    except Exception:
+        meta = {}
+
+    data = {
+        "has_phone": "phone" in meta,
+        "has_mobile": "mobile" in meta,
+        "search_fields": [f for f in ["name", "phone", "mobile"] if f == "name" or f in meta],
+        "read_fields": [f for f in ["id", "name", "phone", "mobile"] if f in ["id", "name"] or f in meta],
+        "create_field": "phone" if "phone" in meta else ("mobile" if "mobile" in meta else None),
+    }
+
+    _PARTNER_FIELDS_CACHE["ts"] = now_ts
+    _PARTNER_FIELDS_CACHE["data"] = data
+    return data
+
+
+def build_partner_create_vals(name, phone):
+    partner_info = get_partner_field_info()
+    vals = {"name": name}
+
+    phone = normalize_partner_phone(phone)
+    if phone:
+        if partner_info.get("has_phone"):
+            vals["phone"] = phone
+        if partner_info.get("has_mobile"):
+            vals["mobile"] = phone
+
+        # fallback defensivo: si fields_get no devolvió nada útil, intentamos con create_field
+        create_field = partner_info.get("create_field")
+        if create_field and create_field not in vals:
+            vals[create_field] = phone
+
+    return vals
+
+
+def partner_row_to_payload(row):
+    row = row or {}
+    return {
+        "id": row.get("id"),
+        "name": row.get("name") or "",
+        "phone": normalize_partner_phone(row.get("phone") or row.get("mobile") or ""),
+    }
+
+
+def read_partner_payload(partner_id):
+    pid = to_int_or_false(partner_id)
+    if not pid:
+        return {"id": None, "name": "", "phone": ""}
+
+    partner_info = get_partner_field_info()
+    rows = odoo_execute_kw(
+        MODEL_PARTNER,
+        "read",
+        args=[[pid], partner_info["read_fields"]],
+        kwargs={},
+        req_id=206,
+    ) or []
+    return partner_row_to_payload(rows[0] if rows else {"id": pid})
+
+
 def resolve_product_variant_id(product_template_id):
     pt_id = to_int_or_false(product_template_id)
     if not pt_id:
@@ -1246,7 +1357,7 @@ def line_to_payload(line):
     }
 
 
-def order_to_payload(order, lines):
+def order_to_payload(order, lines, partner_payload=None):
     tax_totals = order.get("tax_totals")
     if isinstance(tax_totals, str):
         try:
@@ -1255,12 +1366,15 @@ def order_to_payload(order, lines):
         except Exception:
             tax_totals = {}
 
+    partner_payload = partner_payload or {"id": None, "name": "", "phone": ""}
+
     return {
         "id": order.get("id"),
         "name": order.get("name") or "",
         "state": order.get("state") or "",
         "partner_id": m2o_to_json(order.get("partner_id")),
-        "x_studio_numero_de_celular": order.get("x_studio_numero_de_celular") or "",
+        "partner_phone": partner_payload.get("phone") or "",
+        "x_studio_numero_de_celular": order.get("x_studio_numero_de_celular") or partner_payload.get("phone") or "",
         "x_studio_plantillas_y_pasadores_revisadas_1": order.get("x_studio_plantillas_y_pasadores_revisadas_1") or "",
         "x_studio_pasadores_o_plantillas_lugar": order.get("x_studio_pasadores_o_plantillas_lugar") if order.get("x_studio_pasadores_o_plantillas_lugar") not in (None, False) else "",
         "date_order": order.get("date_order") or "",
@@ -1303,7 +1417,11 @@ def read_order(order_id):
             kwargs={},
             req_id=221,
         ) or []
-    return order_to_payload(order, lines)
+
+    partner_payload = read_partner_payload(
+        (order.get("partner_id") or [False])[0] if isinstance(order.get("partner_id"), list) else False
+    )
+    return order_to_payload(order, lines, partner_payload=partner_payload)
 
 
 def get_selection_choices(model, field_name):
@@ -1382,6 +1500,10 @@ def prepare_order_vals(body):
     if not date_order:
         raise Exception("Fecha de orden es obligatoria")
 
+    x_studio_total = body.get("x_studio_total")
+    if x_studio_total in (None, "", False):
+        x_studio_total = body.get("amount_total")
+
     return {
         "partner_id": partner_id,
         "x_studio_numero_de_celular": str(body.get("x_studio_numero_de_celular") or "").strip(),
@@ -1391,6 +1513,8 @@ def prepare_order_vals(body):
         "x_studio_adelanto": to_float(body.get("x_studio_adelanto"), 0.0),
         "x_studio_cuenta_adelanto": str(body.get("x_studio_cuenta_adelanto") or "").strip() or False,
         "x_studio_fecha_de_entrega": normalize_iso_to_odoo(body.get("x_studio_fecha_de_entrega")),
+        "x_studio_fecha_de_recojo": normalize_iso_to_odoo(body.get("x_studio_fecha_de_recojo")),
+        "x_studio_total": to_float(x_studio_total, 0.0),
         "x_studio_cuenta_restante": str(body.get("x_studio_cuenta_restante") or "").strip() or False,
         "x_studio_adelanto_extra": to_float(body.get("x_studio_adelanto_extra"), 0.0),
         "x_studio_cuenta_de_adelanto_extra": str(body.get("x_studio_cuenta_de_adelanto_extra") or "").strip() or False,
@@ -1398,8 +1522,16 @@ def prepare_order_vals(body):
 
 
 def prepare_line_vals(line):
-    product_template_id = to_int_or_false((line.get("product_template_id") or {}).get("id") if isinstance(line.get("product_template_id"), dict) else line.get("product_template_id"))
-    product_id = to_int_or_false((line.get("product_id") or {}).get("id") if isinstance(line.get("product_id"), dict) else line.get("product_id"))
+    product_template_id = to_int_or_false(
+        (line.get("product_template_id") or {}).get("id")
+        if isinstance(line.get("product_template_id"), dict)
+        else line.get("product_template_id")
+    )
+    product_id = to_int_or_false(
+        (line.get("product_id") or {}).get("id")
+        if isinstance(line.get("product_id"), dict)
+        else line.get("product_id")
+    )
 
     if not product_id and product_template_id:
         product_id = resolve_product_variant_id(product_template_id)
@@ -1482,24 +1614,29 @@ def orden_venta_mobile_partners():
     if err:
         return err
 
-    q = (request.args.get("q") or "").strip()
-    domain = []
-    if q:
-        domain = ["|", "|", ["name", "ilike", q], ["phone", "ilike", q], ["mobile", "ilike", q]]
+    q = request.args.get("q") or ""
+    partner_info = get_partner_field_info()
+    tokens = normalize_partner_search_tokens(q)
 
+    conditions = []
+    if tokens:
+        conditions.append(["name", "ilike", tokens[0]])
+        for field_name in ["phone", "mobile"]:
+            if field_name not in partner_info["search_fields"]:
+                continue
+            for token in tokens:
+                conditions.append([field_name, "ilike", token])
+
+    domain = build_or_domain(conditions)
     rows = odoo_execute_kw(
         MODEL_PARTNER,
         "search_read",
         args=[domain],
-        kwargs={"fields": ["id", "name", "phone", "mobile"], "limit": 30, "order": "name asc"},
+        kwargs={"fields": partner_info["read_fields"], "limit": 30, "order": "name asc"},
         req_id=250,
     ) or []
 
-    result = [{
-        "id": r.get("id"),
-        "name": r.get("name") or "",
-        "phone": r.get("phone") or r.get("mobile") or "",
-    } for r in rows]
+    result = [partner_row_to_payload(r) for r in rows]
     return jsonify({"result": result})
 
 
@@ -1511,36 +1648,22 @@ def orden_venta_mobile_partner_create():
 
     body = request.get_json(silent=True) or {}
     name = str(body.get("name") or "").strip()
-    phone = str(body.get("phone") or "").strip()
+    phone = normalize_partner_phone(body.get("phone"))
 
     if not name:
         return json_error("Nombre es obligatorio", 400)
+
+    vals = build_partner_create_vals(name, phone)
 
     try:
         partner_id = odoo_execute_kw(
             MODEL_PARTNER,
             "create",
-            args=[{
-                "name": name,
-                "phone": phone or False,
-                "mobile": phone or False,
-            }],
+            args=[vals],
             kwargs={},
             req_id=251,
         )
-        rows = odoo_execute_kw(
-            MODEL_PARTNER,
-            "read",
-            args=[[partner_id], ["id", "name", "phone", "mobile"]],
-            kwargs={},
-            req_id=2511,
-        ) or []
-        created = rows[0] if rows else {"id": partner_id, "name": name, "phone": phone, "mobile": phone}
-        return jsonify({"ok": True, "partner": {
-            "id": created.get("id") or partner_id,
-            "name": created.get("name") or name,
-            "phone": created.get("phone") or created.get("mobile") or phone,
-        }})
+        return jsonify({"ok": True, "partner": read_partner_payload(partner_id)})
     except Exception as e:
         return json_error(str(e), 500)
 
