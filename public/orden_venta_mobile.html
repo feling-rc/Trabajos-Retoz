@@ -488,6 +488,8 @@
     let CURRENT_PARTNER = null;
     let LINES = [];
     let TAX_MAP = new Map();
+    let SYNC_TIMER = null;
+    let IS_SYNCING = false;
 
     function byId(id){
       return document.getElementById(id);
@@ -523,25 +525,6 @@
       return Number(parseMoney(value) || 0).toFixed(2);
     }
 
-    function taxAmountFromId(taxId, base){
-      const tax = TAX_MAP.get(Number(taxId));
-      if(!tax) return 0;
-      return base * (Number(tax.amount || 0) / 100);
-    }
-
-    function lineSubtotal(line){
-      return parseMoney(line.price_unit);
-    }
-
-    function lineTax(line){
-      const base = lineSubtotal(line);
-      return (line.tax_ids || []).reduce((sum, id) => sum + taxAmountFromId(id, base), 0);
-    }
-
-    function lineTotal(line){
-      return lineSubtotal(line) + lineTax(line);
-    }
-
     function formatTaxLabel(taxIds){
       if(!(taxIds || []).length) return '<span class="muted">Sin impuestos</span>';
       return (taxIds || []).map(id => {
@@ -551,8 +534,8 @@
     }
 
     function recalcSummary(){
-      const untaxed = LINES.reduce((sum, ln) => sum + lineSubtotal(ln), 0);
-      const tax = LINES.reduce((sum, ln) => sum + lineTax(ln), 0);
+      const untaxed = LINES.reduce((sum, ln) => sum + parseMoney(ln.price_subtotal), 0);
+      const tax = LINES.reduce((sum, ln) => sum + parseMoney(ln.price_tax), 0);
       const total = untaxed + tax;
       const restante = total - parseMoney(byId('adelanto').value) - parseMoney(byId('adelantoExtra').value);
 
@@ -635,8 +618,14 @@
         x_studio_responsable_r: data.x_studio_responsable_r || '',
         x_studio_comprar_1: data.x_studio_comprar_1 || '',
         price_unit: Number(data.price_unit || 0),
+        price_subtotal: Number(data.price_subtotal || 0),
+        price_tax: Number(data.price_tax || 0),
         price_total: Number(data.price_total || 0),
         tax_ids: Array.isArray(data.tax_ids) ? data.tax_ids : [],
+        product_display_name: data.product_display_name || data.product_template_id?.name || data.product_id?.name || '',
+        description: data.description || '',
+        qty_invoiced: Number(data.qty_invoiced || 0),
+        price_unit_readonly: !!data.price_unit_readonly,
       };
     }
 
@@ -649,7 +638,7 @@
         div.className = 'line';
         div.innerHTML = `
           <div class="line-head">
-            <div class="line-title">Ficha #${idx + 1} ${ln.product_template_id?.name ? `· ${ln.product_template_id.name}` : ''}</div>
+            <div class="line-title">Ficha #${idx + 1} ${ln.product_display_name ? `· ${ln.product_display_name}` : ''}</div>
             <button class="btn soft" type="button" data-del="${idx}">Eliminar</button>
           </div>
 
@@ -689,14 +678,21 @@
             </div>
             <div>
               <label>Precio unitario *</label>
-              <input class="money-input" inputmode="decimal" data-f="price" data-i="${idx}" value="${formatMoneyInput(ln.price_unit || 0)}">
+              <input class="money-input" inputmode="decimal" data-f="price" data-i="${idx}" value="${formatMoneyInput(ln.price_unit || 0)}" ${ln.price_unit_readonly ? 'readonly' : ''}>
+              ${ln.price_unit_readonly ? '<div class="muted">Solo lectura porque la línea ya tiene cantidad facturada.</div>' : ''}
             </div>
           </div>
 
           <div class="row two">
             <div>
-              <label>Impuestos (ids separados por coma)</label>
-              <input data-f="tax" data-i="${idx}" value="${(ln.tax_ids || []).join(',')}">
+              <label>Impuestos</label>
+              <select multiple data-f="tax" data-i="${idx}">
+                ${(META?.taxes || []).map(tax => `
+                  <option value="${tax.id}" ${(ln.tax_ids || []).includes(Number(tax.id)) ? 'selected' : ''}>
+                    ${tax.name} (${Number(tax.amount || 0)}%)
+                  </option>
+                `).join('')}
+              </select>
               <div class="line-summary">${formatTaxLabel(ln.tax_ids)}</div>
             </div>
             <div>
@@ -706,8 +702,9 @@
           </div>
 
           <div>
-            <label>Detalle adicional</label>
-            <textarea data-f="name" data-i="${idx}" placeholder="Detalle / nota">${ln.name || ''}</textarea>
+            <label>Descripción debajo del producto</label>
+            <div class="muted" style="margin-bottom:6px">${ln.product_display_name || 'Sin producto seleccionado'}</div>
+            <textarea data-f="description" data-i="${idx}" placeholder="Detalle / nota">${ln.description || ''}</textarea>
           </div>
 
           <div>
@@ -756,18 +753,19 @@
         }
       }
       if(f === 'tax'){
-        ln.tax_ids = (el.value || '')
-          .split(',')
-          .map(v => Number(v.trim()))
+        ln.tax_ids = Array.from(el.selectedOptions || [])
+          .map(opt => Number(opt.value))
           .filter(v => Number.isFinite(v) && v > 0);
       }
-      if(f === 'name') ln.name = el.value;
+      if(f === 'description') ln.description = el.value;
       if(f === 'comprar') ln.x_studio_comprar_1 = el.value;
-
-      ln.price_total = lineTotal(ln);
       recalcSummary();
 
-      if(f === 'price' || f === 'tax'){
+      if(f === 'price' || f === 'tax' || f === 'description'){
+        scheduleSync();
+      }
+
+      if(f === 'tax' || f === 'description'){
         renderLines();
       }
     }
@@ -809,15 +807,16 @@
               id: Number(op.dataset.vid || 0),
               name: op.dataset.name
             };
+            LINES[idx].product_display_name = op.dataset.name;
             LINES[idx].price_unit = Number(op.dataset.price || 0);
             LINES[idx].tax_ids = (op.dataset.taxes || '')
               .split(',')
               .map(v => Number(v.trim()))
               .filter(Boolean);
-            LINES[idx].price_total = lineTotal(LINES[idx]);
 
             renderLines();
             recalcSummary();
+            scheduleSync();
           };
         });
       }catch(e){
@@ -931,9 +930,7 @@
       byId('sumTotal').textContent = money(order.amount_total || 0);
       byId('sumRestante').textContent = money(order.x_studio_total || 0);
 
-      LINES = (order.lines || [])
-        .map(makeLine)
-        .map(ln => ({ ...ln, price_total: lineTotal(ln) }));
+      LINES = (order.lines || []).map(makeLine);
 
       renderLines();
       recalcSummary();
@@ -957,9 +954,36 @@
       };
     }
 
+    function canAutosave(){
+      const payload = buildPayload();
+      return !!(payload.partner_id && payload.x_studio_plantillas_y_pasadores_revisadas_1 && payload.date_order);
+    }
+
+    async function syncOrderSilently(){
+      if(IS_SYNCING || !canAutosave()) return;
+      IS_SYNCING = true;
+      try{
+        const data = await api('/order/save', 'POST', buildPayload());
+        if(data.order){
+          await refreshMetaForOrder(data.order.id);
+          fillForm(data.order);
+        }
+      }catch(e){
+        showError(e.message);
+      }finally{
+        IS_SYNCING = false;
+      }
+    }
+
+    function scheduleSync(){
+      clearTimeout(SYNC_TIMER);
+      SYNC_TIMER = setTimeout(syncOrderSilently, 350);
+    }
+
     async function saveOrder(){
       try{
         const data = await api('/order/save', 'POST', buildPayload());
+        await refreshMetaForOrder(data.order?.id);
         fillForm(data.order);
         showOk('Orden guardada');
 
@@ -986,8 +1010,9 @@
       }
     }
 
-    async function loadMeta(){
-      META = await api('/meta');
+    async function loadMeta(orderId=null){
+      const suffix = orderId ? `?order_id=${encodeURIComponent(orderId)}` : '';
+      META = await api(`/meta${suffix}`);
       TAX_MAP = new Map((META.taxes || []).map(t => [Number(t.id), t]));
 
       fillSelect(byId('revisadas'), META.plantillas_pasadores_revisadas);
@@ -996,10 +1021,16 @@
       fillSelect(byId('cuentaAdelantoExtra'), META.cuentas_adelanto_extra);
     }
 
+    async function refreshMetaForOrder(orderId){
+      if(!orderId) return;
+      await loadMeta(orderId);
+    }
+
     async function loadOrderIfEdit(){
       const m = location.pathname.match(/\/orden-venta\/mobile\/(\d+)$/);
 
       if(m){
+        await refreshMetaForOrder(Number(m[1]));
         const d = await api(`/order/${m[1]}`);
         fillForm(d.order);
       }else{
