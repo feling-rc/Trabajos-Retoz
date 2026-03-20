@@ -4,10 +4,12 @@ import threading
 from datoscliente import main as datoscliente_main
 from tareas import tareas_bp
 from encargado import encargado_bp
+from trabajo_general_frontend import trabajo_general_frontend_bp
 
 # registrar modulos
 app.register_blueprint(tareas_bp)
 app.register_blueprint(encargado_bp)
+app.register_blueprint(trabajo_general_frontend_bp)
 
 # arrancar bot
 threading.Thread(target=datoscliente_main, daemon=True).start()
