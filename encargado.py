@@ -1,5 +1,6 @@
-from flask import jsonify, request
+from flask import Blueprint, jsonify, request, send_file
 import os
+import re
 import time
 import secrets
 from threading import Lock
@@ -7,6 +8,8 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 import requests
+
+encargado_bp = Blueprint("encargado_bp", __name__)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PUBLIC_DIR = os.path.join(BASE_DIR, "public")
 
@@ -18,6 +21,7 @@ USERNAME = os.getenv("ODOO_USERNAME", "retoz2023@gmail.com").strip()
 API_KEY = (os.getenv("ODOO_API_KEY") or "").strip()
 
 ACCESS_CODE = (os.getenv("ENCARGADO_ACCESS_CODE") or "210720").strip()
+AUTH_REQUIRED = (os.getenv("ENCARGADO_AUTH_REQUIRED") or "false").strip().lower() in {"1", "true", "yes", "on"}
 
 HTML_CANDIDATES = [
     os.path.join(PUBLIC_DIR, "encargadobonito.html"),
@@ -37,6 +41,8 @@ TOKEN_TTL_SECONDS = 60 * 60 * 12
 _OPTIONS_CACHE = {"ts": 0, "data": None}
 _OPTIONS_CACHE_LOCK = Lock()
 OPTIONS_CACHE_SECONDS = 120
+_PARTNER_FIELDS_CACHE = {"ts": 0, "data": None}
+PARTNER_FIELDS_CACHE_SECONDS = 300
 
 
 # =========================
@@ -275,6 +281,9 @@ def create_token():
 
 
 def require_token():
+    if not AUTH_REQUIRED:
+        return None, None
+
     cleanup_tokens()
     token = request.headers.get("X-Encargado-Token", "").strip()
 
@@ -740,3 +749,1123 @@ def search_tasks_by_query(query, limit, fields):
 # Las rutas de trabajo-general se movieron a modulos separados:
 # - trabajo_general_frontend.py
 # - trabajo_general_api.py
+
+@encargado_bp.route("/trabajo-general/api/login", methods=["POST"])
+def trabajo_general_login():
+    if not AUTH_REQUIRED:
+        return jsonify({
+            "ok": True,
+            "token": "",
+            "user": "Trabajo general",
+        })
+
+    body = request.get_json(silent=True) or {}
+    code = str(body.get("code", "")).strip()
+
+    if not code:
+        return json_error("Ingresa el código.", 400)
+
+    if code != ACCESS_CODE:
+        return json_error("Código inválido.", 401)
+
+    token = create_token()
+    return jsonify({
+        "ok": True,
+        "token": token,
+        "user": "Trabajo general",
+    })
+
+
+@encargado_bp.route("/trabajo-general/api/logout", methods=["POST"])
+def trabajo_general_logout():
+    token = request.headers.get("X-Encargado-Token", "").strip()
+    if token:
+        with TOKENS_LOCK:
+            TOKENS.pop(token, None)
+    return jsonify({"ok": True})
+
+
+@encargado_bp.route("/trabajo-general/api/health")
+def trabajo_general_health():
+    return jsonify({"ok": True}), 200
+
+
+@encargado_bp.route("/trabajo-general/api/options")
+def trabajo_general_options():
+    _, err = require_token()
+    if err:
+        return err
+
+    try:
+        opts = get_live_options(force=False)
+        return jsonify({
+            "responsables": choices_to_json(opts["responsables"]),
+            "ubicaciones": choices_to_json(opts["ubicaciones"]),
+            "trabajado_por": choices_to_json(opts["trabajado_por"]),
+            "estados": choices_to_json(opts["estados"]),
+        })
+    except Exception as e:
+        log("ERROR /options =", str(e))
+        return jsonify({
+            "responsables": choices_to_json(RESPONSABLE_CHOICES_FALLBACK),
+            "ubicaciones": choices_to_json(UBICACION_CHOICES_FALLBACK),
+            "trabajado_por": choices_to_json(TRABAJADO_POR_CHOICES_FALLBACK),
+            "estados": choices_to_json(ESTADO_CHOICES_FALLBACK),
+        })
+
+
+@encargado_bp.route("/trabajo-general/api/tasks")
+def trabajo_general_tasks():
+    _, err = require_token()
+    if err:
+        return err
+
+    try:
+        opts = get_live_options(force=False)
+        estado_labels = {value: label for value, label in opts["estados"]}
+
+        q = (request.args.get("q", "") or "").strip()
+        mode = (request.args.get("mode", "") or "").strip().lower()
+        limit_raw = request.args.get("limit", "20")
+
+        try:
+            limit = int(limit_raw)
+        except Exception:
+            limit = 20
+
+        if limit <= 0:
+            limit = 20
+        if limit > 300:
+            limit = 300
+
+        base_fields = COMMON_TASK_FIELDS
+
+        if q:
+            result = search_tasks_by_query(q, limit, base_fields)
+        else:
+            base_domain = [[FIELD_MODELO, "!=", False]]
+            if mode == "latest":
+                result = search_read_tasks(
+                    base_domain,
+                    base_fields,
+                    order=f"{FIELD_CREATE_DATE} desc",
+                    limit=limit,
+                    req_id=70,
+                )
+            else:
+                result = search_read_tasks(
+                    base_domain,
+                    base_fields,
+                    order=f"{FIELD_CREATE_DATE} desc",
+                    limit=limit,
+                    req_id=72,
+                )
+
+        payload = [task_to_payload(r, estado_labels) for r in (result or [])]
+
+        return jsonify({"result": payload})
+
+    except Exception as e:
+        log("ERROR /tasks =", str(e))
+        return jsonify({"error": str(e), "result": []}), 500
+
+
+@encargado_bp.route("/trabajo-general/api/terminados")
+def trabajo_general_terminados():
+    _, err = require_token()
+    if err:
+        return err
+
+    try:
+        trabajado_por = (request.args.get("trabajado_por", "") or "").strip()
+        limit_raw = request.args.get("limit", "500")
+
+        try:
+            limit = int(limit_raw)
+        except Exception:
+            limit = 500
+
+        if limit <= 0:
+            limit = 500
+        if limit > 1000:
+            limit = 1000
+
+        opts = get_live_options(force=False)
+        estado_labels = {value: label for value, label in opts["estados"]}
+
+        domain = [
+            [FIELD_MODELO, "!=", False],
+            [FIELD_TRABAJADO_POR, "!=", False],
+            [FIELD_FECHA_TRABAJADO, "!=", False],
+            [FIELD_ESTADO, "!=", "03_approved"],
+        ]
+
+        if trabajado_por and trabajado_por.upper() != "ALL":
+            domain.append([FIELD_TRABAJADO_POR, "=", trabajado_por])
+
+        result = search_read_tasks(
+            domain,
+            COMMON_TASK_FIELDS,
+            order=f"{FIELD_FECHA_TRABAJADO} desc",
+            limit=limit,
+            req_id=80,
+        )
+
+        payload = [task_to_payload(r, estado_labels) for r in (result or [])]
+        return jsonify({"result": payload})
+
+    except Exception as e:
+        log("ERROR /terminados =", str(e))
+        return jsonify({"error": str(e), "result": []}), 500
+
+
+@encargado_bp.route("/trabajo-general/api/task/<int:tarea_id>/update", methods=["POST"])
+def trabajo_general_update_task(tarea_id):
+    _, err = require_token()
+    if err:
+        return err
+
+    try:
+        body = request.get_json(silent=True) or {}
+        data = body.get("data", {}) or {}
+
+        current = read_task(tarea_id, COMMON_TASK_FIELDS)
+        if not current:
+            return json_error("Tarea no encontrada.", 404)
+
+        opts = get_live_options(force=True)
+        responsable_values = {value for value, _ in opts["responsables"]}
+        ubicacion_values = {value for value, _ in opts["ubicaciones"]}
+        trabajado_por_values = {value for value, _ in opts["trabajado_por"]}
+        valid_estado_values = {value for value, _ in opts["estados"]}
+        estado_labels = {value: label for value, label in opts["estados"]}
+
+        update_data = {}
+
+        if FIELD_RESPONSABLE in data:
+            responsable = str(data.get(FIELD_RESPONSABLE) or "").strip()
+            if responsable and responsable not in responsable_values:
+                return json_error(f"Responsable no válido: {responsable}", 400)
+            update_data[FIELD_RESPONSABLE] = responsable or False
+
+        if FIELD_ANDAMIO in data or FIELD_UBICACION_ALIAS_OLD in data:
+            raw_ubi = data.get(FIELD_ANDAMIO, data.get(FIELD_UBICACION_ALIAS_OLD))
+            ubicacion = str(raw_ubi or "").strip()
+            if ubicacion and ubicacion not in ubicacion_values:
+                return json_error(f"Ubicación no válida: {ubicacion}", 400)
+            update_data[FIELD_ANDAMIO] = ubicacion or False
+
+        if FIELD_TRABAJADO_POR in data:
+            trabajado_por = str(data.get(FIELD_TRABAJADO_POR) or "").strip()
+            if trabajado_por and trabajado_por not in trabajado_por_values:
+                return json_error(f"Trabajado por no válido: {trabajado_por}", 400)
+            update_data[FIELD_TRABAJADO_POR] = trabajado_por or False
+
+        if FIELD_ESTADO in data:
+            estado = normalize_state(data.get(FIELD_ESTADO))
+            if estado and estado not in valid_estado_values:
+                return json_error(f"Estado no válido: {estado}", 400)
+            update_data[FIELD_ESTADO] = estado or False
+            apply_state_coherence(update_data, estado, current)
+
+        if FIELD_FECHA_TRABAJADO in data:
+            update_data[FIELD_FECHA_TRABAJADO] = normalize_iso_to_odoo(data.get(FIELD_FECHA_TRABAJADO))
+
+        if not update_data:
+            return json_error("No hay campos válidos para actualizar.", 400)
+
+        ok = write_task(tarea_id, update_data, req_id=90)
+        if ok is not True:
+            return json_error("Odoo no confirmó la actualización.", 500)
+
+        updated = read_task(tarea_id, COMMON_TASK_FIELDS)
+        log("UPDATED =", updated)
+
+        return jsonify({
+            "ok": True,
+            "message": "Actualizado correctamente.",
+            "task": task_to_payload(updated, estado_labels),
+        })
+
+    except Exception as e:
+        log("ERROR /update =", str(e))
+        return jsonify({"error": str(e)}), 500
+
+
+@encargado_bp.route("/trabajo-general/api/task/<int:tarea_id>/toggle_listo", methods=["POST"])
+def trabajo_general_toggle_listo(tarea_id):
+    _, err = require_token()
+    if err:
+        return err
+
+    try:
+        body = request.get_json(silent=True) or {}
+
+        actual = read_task(tarea_id, COMMON_TASK_FIELDS)
+        if not actual:
+            return json_error("Tarea no encontrada.", 404)
+
+        opts = get_live_options(force=True)
+        trabajado_por_values = {value for value, _ in opts["trabajado_por"]}
+        estado_labels = {value: label for value, label in opts["estados"]}
+
+        estado_actual = normalize_state(actual.get(FIELD_ESTADO))
+        estaba_listo = (estado_actual == "TRABAJADO")
+
+        if not estaba_listo:
+            trabajado_por = str(
+                body.get("trabajado_por", "") or actual.get(FIELD_TRABAJADO_POR) or ""
+            ).strip()
+
+            if not trabajado_por:
+                return json_error("Primero debes seleccionar Trabajado por.", 400)
+
+            if trabajado_por not in trabajado_por_values:
+                return json_error(f'Valor de "Trabajado por" no válido: {trabajado_por}', 400)
+
+            data_to_update = {
+                FIELD_ESTADO: "TRABAJADO",
+                FIELD_VERIF: True,
+                FIELD_FECHA_TRABAJADO: actual.get(FIELD_FECHA_TRABAJADO) or now_lima_str(),
+                FIELD_TRABAJADO_POR: trabajado_por,
+                FIELD_ANDAMIO: actual.get(FIELD_ANDAMIO) or False,
+            }
+            msg = "Marcado como listo."
+        else:
+            data_to_update = {
+                FIELD_ESTADO: "03_approved",
+                FIELD_VERIF: False,
+                FIELD_FECHA_TRABAJADO: False,
+                FIELD_TRABAJADO_POR: False,
+                FIELD_ANDAMIO: actual.get(FIELD_ANDAMIO) or False,
+            }
+            msg = "Listo desmarcado."
+
+        ok = write_task(tarea_id, data_to_update, req_id=92)
+        if ok is not True:
+            return json_error("Odoo no confirmó el cambio.", 500)
+
+        updated = read_task(tarea_id, COMMON_TASK_FIELDS)
+        log("UPDATED =", updated)
+
+        return jsonify({
+            "ok": True,
+            "message": msg,
+            "task": task_to_payload(updated, estado_labels),
+        })
+
+    except Exception as e:
+        log("ERROR /toggle_listo =", str(e))
+        return jsonify({"error": str(e)}), 500
+
+
+@encargado_bp.route("/trabajo-general/api/task/<int:tarea_id>/complete", methods=["POST"])
+def trabajo_general_complete(tarea_id):
+    _, err = require_token()
+    if err:
+        return err
+
+    try:
+        actual = read_task(tarea_id, COMMON_TASK_FIELDS)
+        if not actual:
+            return json_error("Tarea no encontrada.", 404)
+
+        opts = get_live_options(force=False)
+        estado_labels = {value: label for value, label in opts["estados"]}
+
+        data_to_update = {
+            FIELD_ESTADO: "1_done",
+        }
+
+        ok = write_task(tarea_id, data_to_update, req_id=94)
+        if ok is not True:
+            return json_error("Odoo no confirmó el completado.", 500)
+
+        updated = read_task(tarea_id, COMMON_TASK_FIELDS)
+        log("UPDATED =", updated)
+
+        return jsonify({
+            "ok": True,
+            "message": "Tarea marcada como completado.",
+            "task": task_to_payload(updated, estado_labels),
+        })
+
+    except Exception as e:
+        log("ERROR /complete =", str(e))
+        return jsonify({"error": str(e)}), 500
+
+
+# =========================
+# ORDEN DE VENTA MÓVIL
+# =========================
+ORDER_MOBILE_HTML_CANDIDATES = [
+    os.path.join(PUBLIC_DIR, "orden_venta_mobile.html"),
+    os.path.join(BASE_DIR, "orden_venta_mobile.html"),
+]
+
+MODEL_PARTNER = "res.partner"
+MODEL_PRODUCT_TEMPLATE = "product.template"
+MODEL_PRODUCT = "product.product"
+MODEL_TAX = "account.tax"
+MODEL_ORDER_LINE = "sale.order.line"
+
+MODEL_ORDER_FIELDS = [
+    "id",
+    "name",
+    "state",
+    "partner_id",
+    "x_studio_numero_de_celular",
+    "x_studio_plantillas_y_pasadores_revisadas_1",
+    "x_studio_pasadores_o_plantillas_lugar",
+    "date_order",
+    "x_studio_adelanto",
+    "x_studio_cuenta_adelanto",
+    "x_studio_fecha_de_entrega",
+    "x_studio_fecha_de_recojo",
+    "x_studio_total",
+    "x_studio_cuenta_restante",
+    "x_studio_adelanto_extra",
+    "x_studio_cuenta_de_adelanto_extra",
+    "amount_untaxed",
+    "amount_tax",
+    "amount_total",
+    "tax_totals",
+    "currency_id",
+    "order_line",
+]
+
+LINE_FIELDS = [
+    "id",
+    "order_id",
+    "name",
+    "product_id",
+    "product_template_id",
+    "company_id",
+    "currency_id",
+    "display_type",
+    "product_uom_qty",
+    "qty_invoiced",
+    "x_studio_modelo_de_par_1",
+    "x_studio_ps",
+    "x_studio_pl",
+    "x_studio_responsable_r",
+    "x_studio_comprar_1",
+    "price_unit",
+    "price_subtotal",
+    "price_tax",
+    "price_total",
+    "tax_ids",
+]
+
+ORDER_ACTIONS = {
+    "desbloquear": {"type": "object", "method": "action_unlock"},
+    "descargar_orden": {
+        "type": "action",
+        "xmlid": os.getenv("ODOO_ACTION_DESCARGAR_ORDEN", "studio_customization.descargar_orden_fd138c11-ff15-4f2c-b7a6-dbc08f1d83e9"),
+    },
+    "recogido": {
+        "type": "action",
+        "xmlid": os.getenv("ODOO_ACTION_RECOGIDO", "studio_customization.ejecutar_codigo_cb879583-6607-476e-bc67-12b301608879"),
+    },
+    "completado": {
+        "type": "action",
+        "xmlid": os.getenv("ODOO_ACTION_COMPLETADO", "studio_customization.completado_348360a9-35a5-4edc-82ef-544fbe13f258"),
+    },
+    "imprimir_nro_orden": {
+        "type": "action",
+        "xmlid": os.getenv("ODOO_ACTION_IMPRIMIR_NRO_ORDEN", "studio_customization.actualizar_imprimir__f139f7d2-771e-4da0-8120-776b1ace4126"),
+    },
+    "actividad": {
+        "type": "action",
+        "xmlid": os.getenv("ODOO_ACTION_ACTIVIDAD", "studio_customization.abrir_actividad_3bb00693-caeb-4305-8a9b-581330496651"),
+    },
+}
+
+
+def find_order_mobile_html_file():
+    for path in ORDER_MOBILE_HTML_CANDIDATES:
+        if os.path.isfile(path):
+            return path
+    return None
+
+
+def m2o_to_json(value):
+    if isinstance(value, list) and len(value) >= 2:
+        return {"id": value[0], "name": value[1]}
+    return {"id": None, "name": ""}
+
+
+def m2m_ids(value):
+    if isinstance(value, list):
+        return [int(v) for v in value if isinstance(v, (int, float))]
+    return []
+
+
+def to_float(value, default=0.0):
+    try:
+        if value in (None, "", False):
+            return default
+        return float(value)
+    except Exception:
+        return default
+
+
+def to_int_or_false(value):
+    try:
+        if value in (None, "", False):
+            return False
+        return int(value)
+    except Exception:
+        return False
+
+
+def normalize_partner_phone(value):
+    raw = str(value or "").strip()
+    raw = re.sub(r"\s+", " ", raw)
+    return raw
+
+
+def normalize_partner_search_tokens(value):
+    raw = normalize_partner_phone(value)
+    digits = re.sub(r"\D+", "", raw)
+    alt_digits = digits[2:] if digits.startswith("51") and len(digits) > 2 else digits
+    tokens = []
+    for item in [raw, digits, alt_digits]:
+        item = str(item or "").strip()
+        if item and item not in tokens:
+            tokens.append(item)
+    return tokens
+
+
+def build_or_domain(conditions):
+    clean = [c for c in (conditions or []) if c]
+    if not clean:
+        return []
+    if len(clean) == 1:
+        return [clean[0]]
+    domain = ["|"] * (len(clean) - 1)
+    domain.extend(clean)
+    return domain
+
+
+def get_partner_field_info(force=False):
+    now_ts = time.time()
+    if (
+        not force
+        and _PARTNER_FIELDS_CACHE["data"] is not None
+        and (now_ts - _PARTNER_FIELDS_CACHE["ts"]) < PARTNER_FIELDS_CACHE_SECONDS
+    ):
+        return _PARTNER_FIELDS_CACHE["data"]
+
+    try:
+        meta = odoo_execute_kw(
+            MODEL_PARTNER,
+            "fields_get",
+            args=[["name", "phone", "mobile"]],
+            kwargs={"attributes": ["type", "string"]},
+            req_id=205,
+        ) or {}
+    except Exception:
+        meta = {}
+
+    data = {
+        "has_phone": "phone" in meta,
+        "has_mobile": "mobile" in meta,
+        "search_fields": [f for f in ["name", "phone", "mobile"] if f == "name" or f in meta],
+        "read_fields": [f for f in ["id", "name", "phone", "mobile"] if f in ["id", "name"] or f in meta],
+        "create_field": "phone" if "phone" in meta else ("mobile" if "mobile" in meta else None),
+    }
+
+    _PARTNER_FIELDS_CACHE["ts"] = now_ts
+    _PARTNER_FIELDS_CACHE["data"] = data
+    return data
+
+
+def build_partner_create_vals(name, phone):
+    partner_info = get_partner_field_info()
+    vals = {"name": name}
+
+    phone = normalize_partner_phone(phone)
+    if phone:
+        if partner_info.get("has_phone"):
+            vals["phone"] = phone
+        if partner_info.get("has_mobile"):
+            vals["mobile"] = phone
+
+        # fallback defensivo: si fields_get no devolvió nada útil, intentamos con create_field
+        create_field = partner_info.get("create_field")
+        if create_field and create_field not in vals:
+            vals[create_field] = phone
+
+    return vals
+
+
+def partner_row_to_payload(row):
+    row = row or {}
+    return {
+        "id": row.get("id"),
+        "name": row.get("name") or "",
+        "phone": normalize_partner_phone(row.get("phone") or row.get("mobile") or ""),
+    }
+
+
+def read_partner_payload(partner_id):
+    pid = to_int_or_false(partner_id)
+    if not pid:
+        return {"id": None, "name": "", "phone": ""}
+
+    partner_info = get_partner_field_info()
+    rows = odoo_execute_kw(
+        MODEL_PARTNER,
+        "read",
+        args=[[pid], partner_info["read_fields"]],
+        kwargs={},
+        req_id=206,
+    ) or []
+    return partner_row_to_payload(rows[0] if rows else {"id": pid})
+
+
+def resolve_product_variant_id(product_template_id):
+    pt_id = to_int_or_false(product_template_id)
+    if not pt_id:
+        return False
+
+    rows = odoo_execute_kw(
+        MODEL_PRODUCT,
+        "search_read",
+        args=[[["product_tmpl_id", "=", pt_id]]],
+        kwargs={"fields": ["id"], "limit": 1},
+        req_id=210,
+    ) or []
+    return rows[0]["id"] if rows else False
+
+
+def line_to_payload(line):
+    raw_name = line.get("name") or ""
+    raw_lines = [part.rstrip() for part in str(raw_name).splitlines()]
+    product_label = m2o_to_json(line.get("product_id")).get("name") or m2o_to_json(line.get("product_template_id")).get("name") or ""
+    if raw_lines:
+        first_line = raw_lines[0].strip()
+        description = "\n".join(part for part in raw_lines[1:] if part != "")
+        if not product_label:
+            product_label = first_line
+    else:
+        first_line = ""
+        description = ""
+
+    return {
+        "id": line.get("id"),
+        "name": raw_name,
+        "product_display_name": product_label or first_line,
+        "description": description,
+        "product_id": m2o_to_json(line.get("product_id")),
+        "product_template_id": m2o_to_json(line.get("product_template_id")),
+        "company_id": m2o_to_json(line.get("company_id")),
+        "currency_id": m2o_to_json(line.get("currency_id")),
+        "display_type": line.get("display_type") or False,
+        "product_uom_qty": to_float(line.get("product_uom_qty"), 0.0),
+        "qty_invoiced": to_float(line.get("qty_invoiced"), 0.0),
+        "x_studio_modelo_de_par_1": line.get("x_studio_modelo_de_par_1") or "",
+        "x_studio_ps": bool(line.get("x_studio_ps")),
+        "x_studio_pl": bool(line.get("x_studio_pl")),
+        "x_studio_responsable_r": line.get("x_studio_responsable_r") or "",
+        "x_studio_comprar_1": line.get("x_studio_comprar_1") or "",
+        "price_unit": to_float(line.get("price_unit"), 0.0),
+        "price_subtotal": to_float(line.get("price_subtotal"), 0.0),
+        "price_tax": to_float(line.get("price_tax"), 0.0),
+        "price_total": to_float(line.get("price_total"), 0.0),
+        "tax_ids": m2m_ids(line.get("tax_ids")),
+        "price_unit_readonly": to_float(line.get("qty_invoiced"), 0.0) > 0,
+    }
+
+
+def order_to_payload(order, lines, partner_payload=None):
+    tax_totals = order.get("tax_totals")
+    if isinstance(tax_totals, str):
+        try:
+            import json
+            tax_totals = json.loads(tax_totals)
+        except Exception:
+            tax_totals = {}
+
+    partner_payload = partner_payload or {"id": None, "name": "", "phone": ""}
+
+    return {
+        "id": order.get("id"),
+        "name": order.get("name") or "",
+        "state": order.get("state") or "",
+        "partner_id": m2o_to_json(order.get("partner_id")),
+        "partner_phone": partner_payload.get("phone") or "",
+        "x_studio_numero_de_celular": order.get("x_studio_numero_de_celular") or partner_payload.get("phone") or "",
+        "x_studio_plantillas_y_pasadores_revisadas_1": order.get("x_studio_plantillas_y_pasadores_revisadas_1") or "",
+        "x_studio_pasadores_o_plantillas_lugar": order.get("x_studio_pasadores_o_plantillas_lugar") if order.get("x_studio_pasadores_o_plantillas_lugar") not in (None, False) else "",
+        "date_order": order.get("date_order") or "",
+        "x_studio_adelanto": to_float(order.get("x_studio_adelanto"), 0.0),
+        "x_studio_cuenta_adelanto": order.get("x_studio_cuenta_adelanto") or "",
+        "x_studio_fecha_de_entrega": order.get("x_studio_fecha_de_entrega") or "",
+        "x_studio_fecha_de_recojo": order.get("x_studio_fecha_de_recojo") or "",
+        "x_studio_total": to_float(order.get("x_studio_total"), 0.0),
+        "x_studio_cuenta_restante": order.get("x_studio_cuenta_restante") or "",
+        "x_studio_adelanto_extra": to_float(order.get("x_studio_adelanto_extra"), 0.0),
+        "x_studio_cuenta_de_adelanto_extra": order.get("x_studio_cuenta_de_adelanto_extra") or "",
+        "amount_untaxed": to_float(order.get("amount_untaxed"), 0.0),
+        "amount_tax": to_float(order.get("amount_tax"), 0.0),
+        "amount_total": to_float(order.get("amount_total"), 0.0),
+        "tax_totals": tax_totals or {},
+        "currency_id": m2o_to_json(order.get("currency_id")),
+        "lines": [line_to_payload(l) for l in lines],
+    }
+
+
+def read_order(order_id):
+    rows = odoo_execute_kw(
+        MODEL_ORDER,
+        "read",
+        args=[[order_id], MODEL_ORDER_FIELDS],
+        kwargs={},
+        req_id=220,
+    ) or []
+    if not rows:
+        return None
+
+    order = rows[0]
+    line_ids = order.get("order_line") or []
+    lines = []
+    if line_ids:
+        lines = odoo_execute_kw(
+            MODEL_ORDER_LINE,
+            "read",
+            args=[line_ids, LINE_FIELDS],
+            kwargs={},
+            req_id=221,
+        ) or []
+
+    partner_payload = read_partner_payload(
+        (order.get("partner_id") or [False])[0] if isinstance(order.get("partner_id"), list) else False
+    )
+    return order_to_payload(order, lines, partner_payload=partner_payload)
+
+
+def get_order_company_id(order_id):
+    rows = odoo_execute_kw(
+        MODEL_ORDER,
+        "read",
+        args=[[order_id], ["company_id"]],
+        kwargs={},
+        req_id=222,
+    ) or []
+    company = (rows[0].get("company_id") or [False]) if rows else [False]
+    return to_int_or_false(company[0] if isinstance(company, list) else False)
+
+
+def search_sale_taxes(company_id=False, q=""):
+    domain = [["type_tax_use", "in", ["sale", "none"]], ["active", "=", True]]
+    clean_company_id = to_int_or_false(company_id)
+    if clean_company_id:
+        domain.extend(["|", ["company_id", "=", False], ["company_id", "=", clean_company_id]])
+    if q:
+        domain.append(["name", "ilike", q])
+
+    return odoo_execute_kw(
+        MODEL_TAX,
+        "search_read",
+        args=[domain],
+        kwargs={"fields": ["id", "name", "amount", "company_id"], "limit": 200, "order": "name asc"},
+        req_id=223,
+    ) or []
+
+
+def get_selection_choices(model, field_name):
+    data = odoo_execute_kw(
+        model,
+        "fields_get",
+        args=[[field_name]],
+        kwargs={"attributes": ["selection"]},
+        req_id=230,
+    ) or {}
+    field_meta = data.get(field_name) or {}
+    choices = field_meta.get("selection") or []
+    out = []
+    for item in choices:
+        if isinstance(item, (list, tuple)) and len(item) >= 2:
+            out.append({"value": str(item[0]), "label": str(item[1])})
+    return out
+
+
+def execute_order_action(order_id, action_key):
+    action_cfg = ORDER_ACTIONS.get(action_key)
+    if not action_cfg:
+        raise Exception("Acción no soportada")
+
+    if action_cfg["type"] == "object":
+        return odoo_execute_kw(
+            MODEL_ORDER,
+            action_cfg["method"],
+            args=[[order_id]],
+            kwargs={},
+            req_id=240,
+        )
+
+    xmlid = action_cfg.get("xmlid")
+    if not xmlid:
+        raise Exception("Acción sin xmlid configurado")
+
+    action_data = odoo_execute_kw(
+        "ir.actions.actions",
+        "_for_xml_id",
+        args=[xmlid],
+        kwargs={},
+        req_id=241,
+    ) or {}
+
+    action_id = action_data.get("id")
+    action_type = action_data.get("type")
+
+    if action_type == "ir.actions.server" and action_id:
+        ctx = {
+            "active_model": MODEL_ORDER,
+            "active_id": order_id,
+            "active_ids": [order_id],
+        }
+        return odoo_execute_kw(
+            "ir.actions.server",
+            "run",
+            args=[[action_id]],
+            kwargs={"context": ctx},
+            req_id=242,
+        )
+
+    return action_data
+
+
+def prepare_order_vals(body):
+    partner_id = to_int_or_false(body.get("partner_id"))
+    if not partner_id:
+        raise Exception("Cliente es obligatorio")
+
+    revisado = str(body.get("x_studio_plantillas_y_pasadores_revisadas_1") or "").strip()
+    if not revisado:
+        raise Exception("Plantillas y pasadores revisadas es obligatorio")
+
+    date_order = normalize_iso_to_odoo(body.get("date_order"))
+    if not date_order:
+        raise Exception("Fecha de orden es obligatoria")
+
+    x_studio_total = body.get("x_studio_total")
+    if x_studio_total in (None, "", False):
+        x_studio_total = body.get("amount_total")
+
+    return {
+        "partner_id": partner_id,
+        "x_studio_numero_de_celular": str(body.get("x_studio_numero_de_celular") or "").strip(),
+        "x_studio_plantillas_y_pasadores_revisadas_1": revisado,
+        "x_studio_pasadores_o_plantillas_lugar": to_int_or_false(body.get("x_studio_pasadores_o_plantillas_lugar")),
+        "date_order": date_order,
+        "x_studio_adelanto": to_float(body.get("x_studio_adelanto"), 0.0),
+        "x_studio_cuenta_adelanto": str(body.get("x_studio_cuenta_adelanto") or "").strip() or False,
+        "x_studio_fecha_de_entrega": normalize_iso_to_odoo(body.get("x_studio_fecha_de_entrega")),
+        "x_studio_fecha_de_recojo": normalize_iso_to_odoo(body.get("x_studio_fecha_de_recojo")),
+        "x_studio_total": to_float(x_studio_total, 0.0),
+        "x_studio_cuenta_restante": str(body.get("x_studio_cuenta_restante") or "").strip() or False,
+        "x_studio_adelanto_extra": to_float(body.get("x_studio_adelanto_extra"), 0.0),
+        "x_studio_cuenta_de_adelanto_extra": str(body.get("x_studio_cuenta_de_adelanto_extra") or "").strip() or False,
+    }
+
+
+def compose_line_name(product_label, description, fallback_name=""):
+    base = str(product_label or "").strip()
+    desc = str(description or "").strip()
+    if base and desc:
+        return f"{base}\n{desc}"
+    if base:
+        return base
+    if desc:
+        return desc
+    return str(fallback_name or "").strip() or "-"
+
+
+def prepare_line_vals(line):
+    product_template_id = to_int_or_false(
+        (line.get("product_template_id") or {}).get("id")
+        if isinstance(line.get("product_template_id"), dict)
+        else line.get("product_template_id")
+    )
+    product_id = to_int_or_false(
+        (line.get("product_id") or {}).get("id")
+        if isinstance(line.get("product_id"), dict)
+        else line.get("product_id")
+    )
+
+    if not product_id and product_template_id:
+        product_id = resolve_product_variant_id(product_template_id)
+
+    tax_ids = line.get("tax_ids") or []
+    if isinstance(tax_ids, list):
+        clean_taxes = [int(x) for x in tax_ids if isinstance(x, (int, float, str)) and str(x).strip().isdigit()]
+    else:
+        clean_taxes = []
+
+    product_label = str(line.get("product_display_name") or "").strip()
+    description = line.get("description")
+    fallback_name = line.get("name")
+
+    vals = {
+        "name": compose_line_name(product_label, description, fallback_name=fallback_name),
+        "x_studio_modelo_de_par_1": str(line.get("x_studio_modelo_de_par_1") or "").strip(),
+        "x_studio_ps": bool(line.get("x_studio_ps")),
+        "x_studio_pl": bool(line.get("x_studio_pl")),
+        "x_studio_responsable_r": str(line.get("x_studio_responsable_r") or "").strip() or False,
+        "x_studio_comprar_1": str(line.get("x_studio_comprar_1") or "").strip(),
+        "price_unit": to_float(line.get("price_unit"), 0.0),
+        "tax_ids": [(6, 0, clean_taxes)],
+    }
+
+    if product_id:
+        vals["product_id"] = product_id
+
+    return vals
+
+
+@encargado_bp.route("/orden-venta/mobile/nueva")
+def orden_venta_mobile_new():
+    html_path = find_order_mobile_html_file()
+    if not html_path:
+        return "No encuentro orden_venta_mobile.html", 404
+    return send_file(html_path)
+
+
+@encargado_bp.route("/orden-venta/mobile/<int:order_id>")
+def orden_venta_mobile_edit(order_id):
+    html_path = find_order_mobile_html_file()
+    if not html_path:
+        return "No encuentro orden_venta_mobile.html", 404
+    return send_file(html_path)
+
+
+@encargado_bp.route("/orden-venta/mobile/api/meta")
+def orden_venta_mobile_meta():
+    _, err = require_token()
+    if err:
+        return err
+
+    try:
+        order_id = to_int_or_false(request.args.get("order_id"))
+        cuentas_adelanto = get_selection_choices(MODEL_ORDER, "x_studio_cuenta_adelanto")
+        cuentas_restante = get_selection_choices(MODEL_ORDER, "x_studio_cuenta_restante")
+        cuentas_extra = get_selection_choices(MODEL_ORDER, "x_studio_cuenta_de_adelanto_extra")
+        revisado_choices = get_selection_choices(MODEL_ORDER, "x_studio_plantillas_y_pasadores_revisadas_1")
+        responsable_choices = get_selection_choices(MODEL_ORDER_LINE, "x_studio_responsable_r")
+        taxes = search_sale_taxes(get_order_company_id(order_id) if order_id else False)
+
+        return jsonify({
+            "cuentas_adelanto": cuentas_adelanto,
+            "cuentas_restante": cuentas_restante,
+            "cuentas_adelanto_extra": cuentas_extra,
+            "plantillas_pasadores_revisadas": revisado_choices,
+            "responsable_linea": responsable_choices,
+            "taxes": taxes,
+            "actions": list(ORDER_ACTIONS.keys()),
+        })
+    except Exception as e:
+        return json_error(str(e), 500)
+
+
+@encargado_bp.route("/orden-venta/mobile/api/partners")
+def orden_venta_mobile_partners():
+    _, err = require_token()
+    if err:
+        return err
+
+    q = request.args.get("q") or ""
+    partner_info = get_partner_field_info()
+    tokens = normalize_partner_search_tokens(q)
+
+    conditions = []
+    if tokens:
+        conditions.append(["name", "ilike", tokens[0]])
+        for field_name in ["phone", "mobile"]:
+            if field_name not in partner_info["search_fields"]:
+                continue
+            for token in tokens:
+                conditions.append([field_name, "ilike", token])
+
+    domain = build_or_domain(conditions)
+    rows = odoo_execute_kw(
+        MODEL_PARTNER,
+        "search_read",
+        args=[domain],
+        kwargs={"fields": partner_info["read_fields"], "limit": 30, "order": "name asc"},
+        req_id=250,
+    ) or []
+
+    result = [partner_row_to_payload(r) for r in rows]
+    return jsonify({"result": result})
+
+
+@encargado_bp.route("/orden-venta/mobile/api/partners/create", methods=["POST"])
+def orden_venta_mobile_partner_create():
+    _, err = require_token()
+    if err:
+        return err
+
+    body = request.get_json(silent=True) or {}
+    name = str(body.get("name") or "").strip()
+    phone = normalize_partner_phone(body.get("phone"))
+
+    if not name:
+        return json_error("Nombre es obligatorio", 400)
+
+    vals = build_partner_create_vals(name, phone)
+
+    try:
+        partner_id = odoo_execute_kw(
+            MODEL_PARTNER,
+            "create",
+            args=[vals],
+            kwargs={},
+            req_id=251,
+        )
+        return jsonify({"ok": True, "partner": read_partner_payload(partner_id)})
+    except Exception as e:
+        return json_error(str(e), 500)
+
+
+@encargado_bp.route("/orden-venta/mobile/api/products")
+def orden_venta_mobile_products():
+    _, err = require_token()
+    if err:
+        return err
+
+    q = (request.args.get("q") or "").strip()
+    domain = [["sale_ok", "=", True]]
+    if q:
+        domain = ["&", ["sale_ok", "=", True], "|", ["name", "ilike", q], ["default_code", "ilike", q]]
+
+    rows = odoo_execute_kw(
+        MODEL_PRODUCT_TEMPLATE,
+        "search_read",
+        args=[domain],
+        kwargs={"fields": ["id", "name", "list_price", "taxes_id", "product_variant_id"], "limit": 40, "order": "name asc"},
+        req_id=252,
+    ) or []
+
+    result = [{
+        "id": r.get("id"),
+        "name": r.get("name") or "",
+        "list_price": to_float(r.get("list_price"), 0.0),
+        "taxes_id": m2m_ids(r.get("taxes_id")),
+        "product_variant_id": (r.get("product_variant_id") or [False])[0] if isinstance(r.get("product_variant_id"), list) else False,
+    } for r in rows]
+    return jsonify({"result": result})
+
+
+@encargado_bp.route("/orden-venta/mobile/api/taxes")
+def orden_venta_mobile_taxes():
+    _, err = require_token()
+    if err:
+        return err
+
+    q = (request.args.get("q") or "").strip()
+    order_id = to_int_or_false(request.args.get("order_id"))
+    company_id = get_order_company_id(order_id) if order_id else False
+    rows = search_sale_taxes(company_id=company_id, q=q)
+
+    return jsonify({"result": rows})
+
+
+@encargado_bp.route("/orden-venta/mobile/api/order/<int:order_id>")
+def orden_venta_mobile_get_order(order_id):
+    _, err = require_token()
+    if err:
+        return err
+
+    try:
+        data = read_order(order_id)
+        if not data:
+            return json_error("Orden no encontrada", 404)
+        return jsonify({"ok": True, "order": data})
+    except Exception as e:
+        return json_error(str(e), 500)
+
+
+@encargado_bp.route("/orden-venta/mobile/api/order/save", methods=["POST"])
+def orden_venta_mobile_save_order():
+    _, err = require_token()
+    if err:
+        return err
+
+    body = request.get_json(silent=True) or {}
+
+    try:
+        order_vals = prepare_order_vals(body)
+        order_id = to_int_or_false(body.get("id"))
+
+        if order_id:
+            ok = odoo_execute_kw(
+                MODEL_ORDER,
+                "write",
+                args=[[order_id], order_vals],
+                kwargs={},
+                req_id=260,
+            )
+            if ok is not True:
+                raise Exception("No se pudo actualizar la orden")
+        else:
+            order_id = odoo_execute_kw(
+                MODEL_ORDER,
+                "create",
+                args=[order_vals],
+                kwargs={},
+                req_id=261,
+            )
+
+        lines = body.get("lines") or []
+        current_ids = odoo_execute_kw(
+            MODEL_ORDER_LINE,
+            "search",
+            args=[[["order_id", "=", order_id]]],
+            kwargs={},
+            req_id=262,
+        ) or []
+
+        sent_ids = []
+        commands = []
+        for line in lines:
+            lid = to_int_or_false(line.get("id"))
+            vals = prepare_line_vals(line)
+            if lid:
+                sent_ids.append(lid)
+                commands.append((1, lid, vals))
+            else:
+                commands.append((0, 0, vals))
+
+        to_remove = [lid for lid in current_ids if lid not in sent_ids]
+        for rid in to_remove:
+            commands.append((2, rid, 0))
+
+        odoo_execute_kw(
+            MODEL_ORDER,
+            "write",
+            args=[[order_id], {"order_line": commands}],
+            kwargs={},
+            req_id=263,
+        )
+
+        saved = read_order(order_id)
+        return jsonify({"ok": True, "order": saved})
+    except Exception as e:
+        return json_error(str(e), 500)
+
+
+@encargado_bp.route("/orden-venta/mobile/api/order/<int:order_id>/action/<action_key>", methods=["POST"])
+def orden_venta_mobile_action(order_id, action_key):
+    _, err = require_token()
+    if err:
+        return err
+
+    try:
+        result = execute_order_action(order_id, action_key)
+        updated = read_order(order_id)
+        return jsonify({"ok": True, "result": result, "order": updated})
+    except Exception as e:
+        return json_error(str(e), 500)
